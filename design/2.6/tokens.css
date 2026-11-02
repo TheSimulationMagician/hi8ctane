@@ -1,0 +1,42 @@
+/* Hi8ctane 2.6 design tokens, taken from the 2.6 screens */
+:root {
+  --ink: #111111;          /* text, borders, hard shadows */
+  --paper: #F3EFE3;        /* page background (cream) */
+  --card: #FFFFFF;
+  --lime: #C8FF3D;         /* good wind, selected, highlights */
+  --pink: #FF2D78;         /* main call to action, live dot, gusts */
+  --pink-light: #FFC2D6;
+  --yellow: #FFE14D;       /* light wind, founding plate */
+  --mint: #8DF5E8;         /* secondary actions */
+  --grey: #E7E2D4;         /* too light, disabled */
+  --muted: #4A4538;        /* small print */
+  --steel-light: #5A94AB;  /* header gradient, light end */
+  --steel-mid: #3A6C83;
+  --steel: #163A51;        /* header gradient, deep end */
+  --header: linear-gradient(135deg, #5A94AB 0%, #3A6C83 48%, #163A51 100%);
+
+  /* sport colours: badges, sport tiles, map pins, sport tabs only */
+  --sport-kite: #2A6F86;
+  --sport-wing: #5B3F99;
+  --sport-surf: #2297AA;
+  --sport-sup: #2A8C74;
+  --sport-mtb: #1F4FA0;
+  --sport-mx: #5C6B2F;
+  /* sport header art: light top-left, the sport colour, deep bottom-right (with white dots on top) */
+  --duo-kite: linear-gradient(135deg, #4592AA 0%, #2F758B 48%, #1C4C63 100%);
+  --duo-mtb: linear-gradient(135deg, #3F7FD6 0%, #2257AB 48%, #14397A 100%);
+  --duo-wing: linear-gradient(135deg, #8466C0 0%, #5B3F99 48%, #36226A 100%);
+  --duo-surf: linear-gradient(135deg, #4FC0CF 0%, #2297AA 48%, #136070 100%);
+  --duo-sup: linear-gradient(135deg, #53B79C 0%, #2A8C74 48%, #175746 100%);
+  --duo-mx: linear-gradient(135deg, #8E9C57 0%, #5C6B2F 48%, #363F18 100%);
+
+  --border: 3px solid var(--ink);
+  --border-thin: 2px solid var(--ink);
+  --shadow: 7px 7px 0 var(--ink);    /* cards */
+  --shadow-btn: 4px 4px 0 var(--ink); /* buttons; 2px 2px when pressed */
+  --radius: 0;
+
+  --font-head: 'Archivo Black', sans-serif;
+  --font-num: 'Anton', sans-serif;
+  --font-body: 'Space Mono', monospace;
+}
