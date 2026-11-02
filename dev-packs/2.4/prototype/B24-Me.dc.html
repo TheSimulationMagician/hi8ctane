@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Hi8ctane — Profile</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&amp;family=Anton&amp;family=Permanent+Marker&amp;family=Space+Mono:wght@400;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#111111}a:hover{color:#FF2D78}
+.htd{background-color:#173D57;background-image:radial-gradient(rgba(255,255,255,.12) 1px,transparent 1.3px);background-size:6px 6px}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 1220px; background: #F3EFE3; color: #111111; overflow: hidden; font-family: 'Space Mono', monospace">
+
+  <div class="htd" style="position: absolute; left: 0; right: 0; top: 0; height: 226px; border-bottom: 2.5px solid #111111; padding: 18px 16px; box-sizing: border-box; color: #FFFFFF">
+    <div style="display: flex; gap: 14px">
+      <button type="button" style="position: relative; width: 92px; height: 92px; flex-shrink: 0; padding: 0; background: #FFE14D; border: 2.5px solid #111111; box-shadow: 4px 4px 0 #FF2D78; overflow: hidden; cursor: pointer" aria-label="Change photo">
+        <svg width="88" height="88" viewBox="0 0 88 88" aria-hidden="true"><circle cx="44" cy="32" r="14" fill="#7A6A2E"></circle><path d="M14 88 C16 62 30 52 44 52 C58 52 72 62 74 88 Z" fill="#7A6A2E"></path></svg>
+        <span style="position: absolute; left: 0; right: 0; bottom: 0; background: #111111; color: #C8FF3D; font-family: 'Space Mono', monospace; font-size: 8px; font-weight: 700; padding: 3px 0">CHANGE PHOTO</span>
+      </button>
+      <div style="display: flex; flex-direction: column; gap: 6px; min-width: 0">
+        <span style="font-family: 'Archivo Black', sans-serif; font-size: 28px; line-height: 1">FRANKIE</span>
+        <span style="font-size: 11px">Amsterdam · kitesurf, MTB</span>
+        <span style="display: flex; gap: 6px; flex-wrap: wrap">
+          <span style="display: inline-flex; align-items: center; gap: 5px; font-size: 9px; font-weight: 700"><svg width="24" height="24" viewBox="0 0 48 48" aria-hidden="true" style="flex-shrink: 0"><rect x="2" y="2" width="44" height="44" rx="9" fill="#FFE14D" stroke="#111111" stroke-width="3"/><rect x="5.5" y="5.5" width="37" height="37" rx="6.5" fill="none" stroke="#111111" stroke-width="1.6"/><circle cx="9" cy="9" r="1.5" fill="#111111"/><circle cx="39" cy="9" r="1.5" fill="#111111"/><circle cx="9" cy="39" r="1.5" fill="#111111"/><circle cx="39" cy="39" r="1.5" fill="#111111"/><text x="24" y="33" text-anchor="middle" font-family="Archivo Black, sans-serif" font-size="24" fill="#111111">38</text></svg>FOUNDING CREW</span>
+          <span style="background: #35677D; border: 2px solid #111111; padding: 1px 6px; font-size: 9px; font-weight: 700">KITE · CONFIDENT</span>
+        </span>
+      </div>
+    </div>
+    <div style="margin-top: 16px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+      <span style="background: #F3EFE3; color: #111111; border: 2.5px solid #111111; box-shadow: 3px 3px 0 #111111; padding: 6px; text-align: center; display: flex; flex-direction: column"><span style="font-family: 'Anton', sans-serif; font-size: 26px; line-height: 1">0</span><span style="font-size: 9px; font-weight: 700">POINTS</span></span>
+      <span style="background: #F3EFE3; color: #111111; border: 2.5px solid #111111; box-shadow: 3px 3px 0 #111111; padding: 6px; text-align: center; display: flex; flex-direction: column"><span style="font-family: 'Anton', sans-serif; font-size: 26px; line-height: 1">1</span><span style="font-size: 9px; font-weight: 700">CREWS</span></span>
+      <span style="background: #F3EFE3; color: #111111; border: 2.5px solid #111111; box-shadow: 3px 3px 0 #111111; padding: 6px; text-align: center; display: flex; flex-direction: column"><span style="font-family: 'Anton', sans-serif; font-size: 26px; line-height: 1">0</span><span style="font-size: 9px; font-weight: 700">DAYS ON WATER</span></span>
+    </div>
+  </div>
+
+  <div style="position: absolute; left: 16px; right: 22px; top: 244px; display: flex; flex-direction: column; gap: 10px">
+    <span style="font-family: 'Archivo Black', sans-serif; font-size: 17px">LOGBOOK</span>
+    <div style="background: #FFFFFF; border: 2.5px dashed #111111; padding: 12px; display: flex; flex-direction: column; gap: 4px">
+      <span style="font-family: 'Permanent Marker', cursive; font-size: 17px; color: #35677D">Your first session goes here.</span>
+      <span style="font-size: 11px">Sat 17 · Wijk aan Zee · ride 14:00. Check in at the beach for +15 pts.</span>
+    </div>
+
+    <span style="margin-top: 6px; font-family: 'Archivo Black', sans-serif; font-size: 17px">SPOTS YOU WATCH</span>
+    <div style="background: #FFFFFF; border: 2.5px solid #111111; box-shadow: 4px 4px 0 #111111">
+      <sc-for list="{{spots}}" as="s" hint-placeholder-count="3">
+        <div style="display: flex; align-items: center; justify-content: space-between; min-height: 48px; padding: 0 12px; border-bottom: 1.5px solid #111111">
+          <span style="font-size: 12px"><b>{{s.name}}</b> · {{s.sport}}</span>
+          <button type="button" onClick="{{s.toggle}}" aria-pressed="{{s.pressed}}" aria-label="Alerts for {{s.name}}" style="{{s.style}}">{{s.lbl}}</button>
+        </div>
+      </sc-for>
+    </div>
+
+    <span style="margin-top: 6px; font-family: 'Archivo Black', sans-serif; font-size: 17px">SETTINGS</span>
+    <div style="background: #FFFFFF; border: 2.5px solid #111111; box-shadow: 4px 4px 0 #111111; font-size: 12px">
+      <div style="display: flex; justify-content: space-between; align-items: center; min-height: 46px; padding: 0 12px; border-bottom: 1.5px solid #111111"><span>Reminders before a crew</span><button type="button" onClick="{{toggleRem}}" aria-pressed="{{remPressed}}" style="height: 36px; padding: 0 8px; background: none; border: 0; font-family: 'Space Mono', monospace; font-size: 12px; font-weight: 700; cursor: pointer">{{remLbl}}</button></div>
+      <div style="display: flex; justify-content: space-between; align-items: center; min-height: 46px; padding: 0 12px; border-bottom: 1.5px solid #111111"><span>Weight (for kite size)</span><b>75 kg</b></div>
+      <div style="display: flex; justify-content: space-between; align-items: center; min-height: 46px; padding: 0 12px; border-bottom: 1.5px solid #111111"><span>Your kites</span><b>9 · 12 m</b></div>
+      <div style="display: flex; justify-content: space-between; align-items: center; min-height: 46px; padding: 0 12px; border-bottom: 1.5px solid #111111"><span>Invite a rider (+30 pts each)</span><button type="button" onClick="{{invite}}" style="height: 36px; padding: 0 8px; background: none; border: 0; color: #C81F5C; font-family: 'Space Mono', monospace; font-size: 12px; font-weight: 700; cursor: pointer">{{inviteLbl}}</button></div>
+      <div style="display: flex; justify-content: space-between; align-items: center; min-height: 46px; padding: 0 12px; border-bottom: 1.5px solid #111111"><span>Request a filmer</span><span style="background: #FF2D78; color: #FFFFFF; padding: 1px 5px; font-size: 9px; font-weight: 700">SOON</span></div>
+      <a href="#legal" style="display: flex; justify-content: space-between; align-items: center; min-height: 46px; padding: 0 12px; border-bottom: 1.5px solid #111111; text-decoration: none"><span>Cookie settings · Terms · Privacy</span><span>›</span></a>
+      <a href="#export" style="display: flex; justify-content: space-between; align-items: center; min-height: 46px; padding: 0 12px; border-bottom: 1.5px solid #111111; text-decoration: none"><span>Download my data</span><span>›</span></a>
+      <a href="#delete" style="display: flex; justify-content: space-between; align-items: center; min-height: 46px; padding: 0 12px; color: #C81F5C; text-decoration: none"><span>Delete my account</span><span>›</span></a>
+    </div>
+  </div>
+
+  <div style="position: absolute; left: 0; right: 0; bottom: 80px; padding: 10px 16px; background: #F3EFE3; border-top: 2.5px solid #111111; display: flex; align-items: center; gap: 10px"><span style="flex: 1; min-width: 0; font-size: 10px; font-weight: 700; line-height: 1.35">YOUR NEXT CREW · WIJK AAN ZEE · TODAY 14:00 · SEAT IN MARTA'S CAR</span><a href="B24-Crew.dc.html" style="flex-shrink: 0; height: 46px; padding: 0 14px; display: flex; align-items: center; background: #FF2D78; color: #FFFFFF; border: 2.5px solid #111111; box-shadow: 3px 3px 0 #111111; text-decoration: none; font-family: 'Archivo Black', sans-serif; font-size: 13px; white-space: nowrap">OPEN MY CREW</a></div>
+  <nav aria-label="Main" style="position: absolute; left: 0; right: 0; bottom: 0; height: 80px; background: #F3EFE3; border-top: 2.5px solid #111111; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: center; padding-bottom: 10px; box-sizing: border-box">
+<a href="B24-Today.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 4px; text-decoration: none; font-size: 10px; font-weight: 700; color: #111111"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3"></circle><circle cx="17" cy="9" r="2.5"></circle><path d="M3 19c0-3 3-5 6-5s6 2 6 5"></path><path d="M15 14c3 0 6 1.5 6 4"></path></svg>CREWS</a>
+<a href="B24-Map.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 4px; text-decoration: none; font-size: 10px; font-weight: 700; color: #111111"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6-7-11a7 7 0 0 1 14 0c0 5-7 11-7 11z"></path><circle cx="12" cy="10" r="2.5"></circle></svg>LIVE MAP</a>
+<a href="B24-Start.dc.html" aria-label="Start a crew" style="justify-self: center; width: 56px; height: 56px; box-sizing: border-box; margin-top: -16px; background: #C8FF3D; border: 2.5px solid #111111; box-shadow: 4px 4px 0 #111111; display: flex; align-items: center; justify-content: center"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></a>
+<a href="B24-Try.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 4px; text-decoration: none; font-size: 10px; font-weight: 700; color: #111111"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l2.9 6.9 7.1.6-5.4 4.7 1.7 7.3L12 17.6 5.7 21.5l1.7-7.3L2 9.5l7.1-.6z"></path></svg>TRY</a>
+<a href="B24-Me.dc.html" aria-current="page" style="display: flex; flex-direction: column; align-items: center; gap: 4px; text-decoration: none; font-size: 10px; font-weight: 700; color: #FF2D78"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4 4-7 8-7s8 3 8 7"></path></svg>ME</a>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1220}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { watch: { wijk: true, ijm: true, schoorl: false }, rem: true, invited: false };
+  }
+  renderVals() {
+    const st = this.state;
+    const spots = [["wijk", "Wijk aan Zee", "kite"], ["ijm", "IJmuiden", "kite"], ["schoorl", "Schoorl dunes", "MTB"]].map((p) => {
+      const on = !!st.watch[p[0]];
+      return {
+        name: p[1], sport: p[2],
+        pressed: on ? "true" : "false",
+        lbl: on ? "ALERTS ON" : "OFF",
+        toggle: () => this.setState({ watch: Object.assign({}, st.watch, { [p[0]]: !on }) }),
+        style: (on ? "background:#C8FF3D;" : "background:#FFFFFF;") + "height:36px;min-width:44px;padding:0 8px;border:2px solid #111111;font-family:'Space Mono',monospace;font-size:10px;font-weight:700;cursor:pointer"
+      };
+    });
+    return {
+      spots: spots,
+      remPressed: st.rem ? "true" : "false",
+      remLbl: st.rem ? "ON" : "OFF",
+      toggleRem: () => this.setState({ rem: !st.rem }),
+      inviteLbl: st.invited ? "LINK COPIED" : "SHARE",
+      invite: () => this.setState({ invited: true })
+    };
+  }
+}
+</script>
+</body>
+</html>

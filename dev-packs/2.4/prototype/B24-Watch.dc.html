@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Hi8ctane — Window Watch alerts (2.4)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&amp;family=Anton&amp;family=Space+Mono:wght@400;700&amp;family=Bowlby+One&amp;family=Yellowtail&amp;family=Permanent+Marker&amp;family=Special+Elite&amp;family=VT323&amp;family=Shrikhand&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#111111}a:hover{color:#FF2D78}
+.ht{background-color:#33637A;background-image:radial-gradient(rgba(255,255,255,.16) 1px,transparent 1.3px),linear-gradient(135deg,#5A94AB 0%,#3A6C83 48%,#163A51 100%);background-size:6px 6px,100% 100%}
+.htd{background-color:#173D57;background-image:radial-gradient(rgba(255,255,255,.12) 1px,transparent 1.3px);background-size:6px 6px}
+.htb{background-color:#35677D;background-image:radial-gradient(rgba(255,255,255,.14) 1px,transparent 1.3px);background-size:6px 6px}
+.htl{background-color:#62CDD6;background-image:radial-gradient(rgba(255,255,255,.38) 1.1px,transparent 1.5px);background-size:6px 6px}
+.htl2{background-color:#A8E6EA;background-image:radial-gradient(rgba(14,122,140,.22) 1px,transparent 1.4px);background-size:5px 5px}
+@keyframes wig{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
+.wig{animation:wig .18s linear 6}
+.sea{background-color:#DCEBEF;background-image:radial-gradient(rgba(17,17,17,.14) 1px,transparent 1.4px);background-size:7px 7px}
+@keyframes blink{50%{opacity:.25}}
+.blink{animation:blink 1.2s steps(2) infinite}
+@keyframes pop{0%{transform:scale(.94);opacity:0}100%{transform:none;opacity:1}}
+.pop{animation:pop .25s ease-out both}
+@keyframes ping{0%{transform:scale(.6);opacity:.9}100%{transform:scale(2.4);opacity:0}}
+.ping{animation:ping 1.8s ease-out infinite}
+@keyframes bob{0%,100%{transform:translate(0,0)}50%{transform:translate(2px,-3px)}}
+.bob{animation:bob 2.6s ease-in-out infinite}
+@keyframes marq{to{transform:translateX(-50%)}}
+.marq{animation:marq 20s linear infinite}
+button:focus-visible,a:focus-visible{outline:3px solid #FF2D78;outline-offset:2px}
+.rail{scrollbar-width:none}.rail::-webkit-scrollbar{display:none}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; background: #F3EFE3; height: 1300px; color: #111111; overflow: hidden; font-family: 'Space Mono', monospace">
+
+  <div class="ht" style="height: 56px; border-bottom: 2.5px solid #111111; display: flex; align-items: center; justify-content: space-between; padding: 0 6px">
+    <a href="B24-Today.dc.html" aria-label="Back" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFF4DF" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg></a>
+    <span style="font-family: 'Archivo Black', sans-serif; font-size: 15px; color: #C8FF3D">WINDOW WATCH</span>
+    <span style="width: 44px"></span>
+  </div>
+
+  <div style="padding: 18px 16px 0; display: flex; align-items: flex-end; gap: 8px">
+    <span style="transform: skewX(-10deg); background: #FFE14D; color: #111111; border: 2.5px solid #FFF4DF; box-shadow: 4px 4px 0 #111111; padding: 1px 10px; font-family: 'Archivo Black', sans-serif; font-size: 22px; line-height: 1.15; white-space: nowrap">NEVER MISS</span>
+    <span style="font-family: 'Yellowtail', cursive; font-size: 32px; line-height: .9; color: #35677D; transform: rotate(-6deg)">the window</span>
+  </div>
+  <div style="padding: 12px 16px 0; font-size: 12px; line-height: 1.5; color: #111111">Set your conditions once. We ping you the moment they line up, and when a crew forms for it.</div>
+
+  <div style="padding: 20px 16px 0; font-family: 'Archivo Black', sans-serif; font-size: 16px; ">YOUR WATCHES</div>
+  <div style="padding: 10px 16px 0; display: flex; flex-direction: column; gap: 12px">
+    <sc-for list="{{watches}}" as="w" hint-placeholder-count="3">
+      <div style="background: #FFFFFF; color: #111111; border: 2.5px solid #111111; box-shadow: 4px 4px 0 {{w.shadow}}; opacity: {{w.op}}">
+        <div style="display: flex; align-items: center; gap: 10px; padding: 10px 10px 8px">
+          <span style="width: 36px; height: 36px; flex-shrink: 0; background: {{w.bg}}; border: 2px solid #111111; display: flex; align-items: center; justify-content: center"><sc-if value="{{w.is_kite}}" hint-placeholder-val="{{false}}"><svg width="22" height="22" viewBox="0 0 48 48" aria-hidden="true"><path d="M5 23 C13 6 35 6 43 23 L37 24 C30 16 18 16 11 24 Z" fill="#FFFFFF" stroke="none"/><path d="M11 24 L24 40 M37 24 L24 40 M18 41 H30" fill="none" stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round"/></svg></sc-if><sc-if value="{{w.is_wing}}" hint-placeholder-val="{{false}}"><svg width="22" height="22" viewBox="0 0 48 48" aria-hidden="true"><path d="M6 33 C8 17 21 8 42 7 C36 16 34 25 34 39 C25 34 15 33 6 33 Z" fill="#FFFFFF"/></svg></sc-if><sc-if value="{{w.is_surf}}" hint-placeholder-val="{{false}}"><svg width="22" height="22" viewBox="0 0 48 48" aria-hidden="true"><path d="M3 41 C3 20 15 9 28 9 C38 9 45 15 45 24 C38 21 32 24 31 31 C30 36 33 39 37 41 Z" fill="#FFFFFF"/></svg></sc-if><sc-if value="{{w.is_sup}}" hint-placeholder-val="{{false}}"><svg width="22" height="22" viewBox="0 0 48 48" aria-hidden="true"><path d="M4 34 H43 Q46 37 43 40 H4 Q2 37 4 34 Z" fill="#111111"/><path d="M35 5 L25 30" stroke="#111111" stroke-width="3.6" stroke-linecap="round"/><path d="M22 27 L29.5 30 L27 37 L19.5 34 Z" fill="#111111"/></svg></sc-if><sc-if value="{{w.is_mtb}}" hint-placeholder-val="{{false}}"><svg width="22" height="22" viewBox="0 0 48 48" aria-hidden="true"><g fill="none" stroke="#111111" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="32" r="7"/><circle cx="36" cy="32" r="7"/><path d="M12 32 L19 20 H30 L36 32 M19 20 L24 32 L30 20 M27 15 H33"/></g></svg></sc-if></span>
+          <span style="flex: 1; display: flex; flex-direction: column; gap: 1px"><b style="font-family: 'Archivo Black', sans-serif; font-weight: 400; font-size: 13px">{{w.title}}</b><span style="font-size: 10px">{{w.rule}}</span></span>
+          <button type="button" onClick="{{w.toggle}}" role="switch" aria-checked="{{w.checked}}" aria-label="{{w.aria}}" style="width: 52px; height: 30px; flex-shrink: 0; border: 2.5px solid #111111; background: {{w.swBg}}; position: relative; cursor: pointer; padding: 0"><span style="position: absolute; top: 2px; left: {{w.knob}}px; width: 20px; height: 20px; background: #111111"></span></button>
+        </div>
+        <sc-if value="{{w.hit}}" hint-placeholder-val="{{true}}">
+          <div style="display: flex; align-items: center; gap: 8px; padding: 8px 10px; background: #111111; color: #FFF4DF; font-size: 11px; font-weight: 700"><span class="blink" style="width: 8px; height: 8px; border-radius: 50%; background: #C8FF3D; flex-shrink: 0"></span><span style="flex: 1">{{w.next}}</span><a href="{{w.href}}" style="flex-shrink: 0; height: 32px; padding: 0 10px; display: flex; align-items: center; background: #FF2D78; color: #111111; border: 2px solid #FFF4DF; text-decoration: none; font-family: 'Archivo Black', sans-serif; font-size: 11px">{{w.cta}}</a></div>
+        </sc-if>
+        <sc-if value="{{w.wait}}" hint-placeholder-val="{{false}}">
+          <div style="padding: 8px 10px; border-top: 2px dashed #111111; font-size: 11px">{{w.next}}</div>
+        </sc-if>
+      </div>
+    </sc-for>
+  </div>
+
+  <div class="htd" style="margin: 26px 16px 0; padding: 14px; color: #FFFFFF; border: 3px solid #111111; box-shadow: 5px 5px 0 #C8FF3D">
+    <div style="font-family: 'Archivo Black', sans-serif; font-size: 16px; color: #C8FF3D">+ NEW WATCH</div>
+    <div style="margin-top: 12px; font-size: 10px; font-weight: 700; color: #A9B8BA">SPORT</div>
+    <div class="rail" role="group" aria-label="Sport" style="margin-top: 6px; display: flex; gap: 6px; overflow-x: auto">
+      <sc-for list="{{sports}}" as="s" hint-placeholder-count="5"><button type="button" onClick="{{s.pick}}" aria-pressed="{{s.pressed}}" style="{{s.style}}">{{s.label}}</button></sc-for>
+    </div>
+    <div style="margin-top: 12px; font-size: 10px; font-weight: 700; color: #A9B8BA">SPOT</div>
+    <div role="group" aria-label="Spot" style="margin-top: 6px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px">
+      <sc-for list="{{spots}}" as="s" hint-placeholder-count="3"><button type="button" onClick="{{s.pick}}" aria-pressed="{{s.pressed}}" style="{{s.style}}">{{s.label}}</button></sc-for>
+    </div>
+    <div style="margin-top: 14px; display: flex; align-items: center; justify-content: space-between">
+      <span style="font-size: 10px; font-weight: 700; color: #A9B8BA">{{rangeLbl}}</span>
+      <span style="font-family: 'Archivo Black', sans-serif; font-size: 18px; color: #FFF4DF">{{range}}</span>
+    </div>
+    <div style="margin-top: 6px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px">
+      <button type="button" onClick="{{minDown}}" aria-label="Lower minimum" style="height: 40px; border: 2px solid #FFF4DF; background: none; color: #FFF4DF; font-size: 13px; font-weight: 700; cursor: pointer">MIN −</button>
+      <button type="button" onClick="{{minUp}}" aria-label="Raise minimum" style="height: 40px; border: 2px solid #FFF4DF; background: none; color: #FFF4DF; font-size: 13px; font-weight: 700; cursor: pointer">MIN +</button>
+      <button type="button" onClick="{{maxDown}}" aria-label="Lower maximum" style="height: 40px; border: 2px solid #FFF4DF; background: none; color: #FFF4DF; font-size: 13px; font-weight: 700; cursor: pointer">MAX −</button>
+      <button type="button" onClick="{{maxUp}}" aria-label="Raise maximum" style="height: 40px; border: 2px solid #FFF4DF; background: none; color: #FFF4DF; font-size: 13px; font-weight: 700; cursor: pointer">MAX +</button>
+    </div>
+    <div style="margin-top: 12px; font-size: 10px; font-weight: 700; color: #A9B8BA">WHEN CAN YOU GO?</div>
+    <div role="group" aria-label="When" style="margin-top: 6px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px">
+      <sc-for list="{{whens}}" as="s" hint-placeholder-count="3"><button type="button" onClick="{{s.pick}}" aria-pressed="{{s.pressed}}" style="{{s.style}}">{{s.label}}</button></sc-for>
+    </div>
+    <div style="margin-top: 12px; display: flex; flex-direction: column; gap: 8px">
+      <sc-for list="{{opts}}" as="o" hint-placeholder-count="2">
+        <button type="button" onClick="{{o.toggle}}" role="switch" aria-checked="{{o.checked}}" style="display: flex; align-items: center; gap: 10px; padding: 0; border: 0; background: none; cursor: pointer; color: #FFF4DF; text-align: left; font-family: 'Space Mono', monospace"><span style="width: 24px; height: 24px; flex-shrink: 0; border: 2.5px solid #FFF4DF; background: {{o.bg}}; color: #111111; font-weight: 700; display: flex; align-items: center; justify-content: center">{{o.mark}}</span><span style="font-size: 11px; line-height: 1.4">{{o.label}}</span></button>
+      </sc-for>
+    </div>
+    <div style="margin-top: 14px; padding: 10px; background: #17505C; font-size: 11px; line-height: 1.5"><b style="color: #FFE14D">{{caught}}</b> windows like this in the last 30 days. You'd have caught <b style="color: #C8FF3D">{{weekend}}</b> on days you said you're free.</div>
+    <button type="button" onClick="{{save}}" style="margin-top: 12px; width: 100%; height: 54px; background: #FF2D78; color: #111111; border: 3px solid #FFF4DF; font-family: 'Archivo Black', sans-serif; font-size: 16px; cursor: pointer">{{saveLbl}}</button>
+  </div>
+
+  <nav aria-label="Main" style="position: absolute; left: 0; right: 0; bottom: 0; height: 80px; background: #F3EFE3; border-top: 2.5px solid #111111; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: center; padding-bottom: 10px; box-sizing: border-box">
+<a href="B24-Today.dc.html" aria-current="page" style="display: flex; flex-direction: column; align-items: center; gap: 4px; text-decoration: none; font-size: 10px; font-weight: 700; color: #FF2D78"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3"></circle><circle cx="17" cy="9" r="2.5"></circle><path d="M3 19c0-3 3-5 6-5s6 2 6 5"></path><path d="M15 14c3 0 6 1.5 6 4"></path></svg>CREWS</a>
+<a href="B24-Map.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 4px; text-decoration: none; font-size: 10px; font-weight: 700; color: #111111"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6-7-11a7 7 0 0 1 14 0c0 5-7 11-7 11z"></path><circle cx="12" cy="10" r="2.5"></circle></svg>LIVE MAP</a>
+<a href="B24-Start.dc.html" aria-label="Start a crew" style="justify-self: center; width: 56px; height: 56px; box-sizing: border-box; margin-top: -16px; background: #C8FF3D; border: 2.5px solid #111111; box-shadow: 4px 4px 0 #111111; display: flex; align-items: center; justify-content: center"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></a>
+<a href="B24-Try.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 4px; text-decoration: none; font-size: 10px; font-weight: 700; color: #111111"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l2.9 6.9 7.1.6-5.4 4.7 1.7 7.3L12 17.6 5.7 21.5l1.7-7.3L2 9.5l7.1-.6z"></path></svg>TRY</a>
+<a href="B24-Me.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 4px; text-decoration: none; font-size: 10px; font-weight: 700; color: #111111"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4 4-7 8-7s8 3 8 7"></path></svg>ME</a>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1300}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { on: [true, true, false], sport: "kite", spot: "wijk", min: 18, max: 28, when: ["sat", "sun"], auto: true, rookie: false, saved: false }; }
+  flags(s) { return { is_kite: s === "kite", is_wing: s === "wing", is_surf: s === "surf", is_sup: s === "sup", is_mtb: s === "mtb" }; }
+  renderVals() {
+    const st = this.state;
+    const W = [
+      { s: "kite", title: "KITE · WIJK AAN ZEE", rule: "18–28 kts · SW to W · weekends + after 16:00", next: "HIT · TODAY 14:00–17:00 · crew 5/8", cta: "JOIN", href: "B24-Crew.dc.html" },
+      { s: "surf", title: "SURF · WIJK AAN ZEE", rule: "0.8–1.5 m · wind under 12 kts · mornings", next: "NEXT · TUE 08:00–10:00 · rookie crew forming", cta: "SEE", href: "B24-Spot.dc.html" },
+      { s: "mtb", title: "MTB · SCHOORL", rule: "2 dry days · 8–20° · weekends", next: "Paused. Turn on to get pinged.", cta: "", href: "#" }
+    ];
+    const watches = W.map((w, i) => {
+      const on = st.on[i];
+      return Object.assign({}, w, this.flags(w.s), { bg: { kite: "#35677D", surf: "#FF2D78", mtb: "#C8FF3D" }[w.s], hit: on && i < 2, wait: !on || i >= 2, op: on ? "1" : ".6", shadow: on ? "#FFE14D" : "#111111",
+        checked: on ? "true" : "false", aria: w.title + " alert", swBg: on ? "#C8FF3D" : "#E9DFC8", knob: on ? "25" : "2",
+        toggle: () => { const a = st.on.slice(); a[i] = !a[i]; this.setState({ on: a }); } });
+    });
+    const unit = { kite: ["kts", "WIND"], wing: ["kts", "WIND"], surf: ["m", "WAVES"], sup: ["kts", "WIND (MAX)"], mtb: ["dry days", "TRAILS"] }[st.sport];
+    const chip = (on) => (on ? "background:#C8FF3D;color:#111111;border-color:#C8FF3D;" : "background:transparent;color:#FFF4DF;border-color:#FFF4DF;") + "height:38px;padding:0 12px;border-width:2px;border-style:solid;font-family:'Bowlby One',sans-serif;font-size:11px;cursor:pointer;flex-shrink:0";
+    const sports = ["kite", "wing", "surf", "sup", "mtb"].map((k) => ({ label: k.toUpperCase(), pressed: st.sport === k ? "true" : "false", style: chip(st.sport === k),
+      pick: () => this.setState({ sport: k, min: { kite: 18, wing: 14, surf: 0.8, sup: 0, mtb: 2 }[k], max: { kite: 28, wing: 22, surf: 1.5, sup: 10, mtb: 7 }[k], saved: false }) }));
+    const spots = [["wijk", "WIJK"], ["ijm", "IJMUIDEN"], ["schoorl", "SCHOORL"]].map((p) => ({ label: p[1], pressed: st.spot === p[0] ? "true" : "false", style: chip(st.spot === p[0]), pick: () => this.setState({ spot: p[0], saved: false }) }));
+    const whens = [["eve", "WEEKDAY EVE"], ["sat", "SAT"], ["sun", "SUN"]].map((p) => {
+      const on = st.when.includes(p[0]);
+      return { label: p[1], pressed: on ? "true" : "false", style: chip(on), pick: () => this.setState({ when: on ? st.when.filter((x) => x !== p[0]) : st.when.concat([p[0]]), saved: false }) };
+    });
+    const step = st.sport === "surf" ? 0.1 : 1;
+    const f = (v) => st.sport === "surf" ? v.toFixed(1) : String(Math.round(v));
+    const caught = Math.max(1, Math.round(14 - Math.abs(st.min - 18) * .6 - Math.abs(st.max - 28) * .3));
+    return {
+      watches: watches, sports: sports, spots: spots, whens: whens,
+      rangeLbl: unit[1] + " RANGE", range: f(st.min) + "–" + f(st.max) + " " + unit[0],
+      minUp: () => this.setState({ min: Math.min(st.max - step, st.min + step) }), minDown: () => this.setState({ min: Math.max(0, st.min - step) }),
+      maxUp: () => this.setState({ max: st.max + step }), maxDown: () => this.setState({ max: Math.max(st.min + step, st.max - step) }),
+      opts: [
+        { label: "If nobody has started a crew, start one for me and invite people who watch the same window", checked: st.auto ? "true" : "false", bg: st.auto ? "#C8FF3D" : "transparent", mark: st.auto ? "✓" : "", toggle: () => this.setState({ auto: !st.auto }) },
+        { label: "Rookie mode: only ping me for rookie crews with a captain", checked: st.rookie ? "true" : "false", bg: st.rookie ? "#C8FF3D" : "transparent", mark: st.rookie ? "✓" : "", toggle: () => this.setState({ rookie: !st.rookie }) }
+      ],
+      caught: String(caught), weekend: String(Math.max(1, Math.round(caught * st.when.length / 4))),
+      saveLbl: st.saved ? "WATCHING ✓" : "WATCH THIS WINDOW",
+      save: () => this.setState({ saved: true })
+    };
+  }
+}
+</script>
+</body>
+</html>

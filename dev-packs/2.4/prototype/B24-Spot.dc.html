@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Hi8ctane — Wijk aan Zee forecast</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&amp;family=Anton&amp;family=Space+Mono:wght@400;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#111111}a:hover{color:#FF2D78}
+.ht{background-color:#33637A;background-image:radial-gradient(rgba(255,255,255,.16) 1px,transparent 1.3px),linear-gradient(135deg,#5A94AB 0%,#3A6C83 48%,#163A51 100%);background-size:6px 6px,100% 100%}
+.htd{background-color:#173D57;background-image:radial-gradient(rgba(255,255,255,.12) 1px,transparent 1.3px);background-size:6px 6px}
+@keyframes blink{50%{opacity:.25}}
+.blink{animation:blink 1.2s steps(2) infinite}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 1360px; background: #F3EFE3; color: #111111; overflow: hidden; font-family: 'Space Mono', monospace">
+
+  <div style="position: absolute; left: 0; right: 0; top: 0; height: 60px; display: flex; align-items: center; justify-content: space-between; padding: 0 14px 0 8px; box-sizing: border-box; border-bottom: 2.5px solid #111111">
+    <a href="B24-Today.dc.html" style="height: 44px; padding: 0 8px; display: flex; align-items: center; gap: 6px; text-decoration: none; font-family: 'Archivo Black', sans-serif; font-size: 14px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>BACK
+    </a>
+    <span style="display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700"><span class="blink" style="width: 7px; height: 7px; border-radius: 50%; background: #FF2D78"></span>UPDATED {{ago}}</span>
+  </div>
+
+  <div role="group" aria-label="Day" style="position: absolute; left: 16px; right: 16px; top: 74px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px">
+    <sc-for list="{{days}}" as="d" hint-placeholder-count="3">
+      <button type="button" onClick="{{d.pick}}" aria-pressed="{{d.pressed}}" style="{{d.style}}">{{d.label}}</button>
+    </sc-for>
+  </div>
+
+  <div style="position: absolute; left: 16px; right: 22px; top: 134px; background: #FFFFFF; border: 2.5px solid #111111; box-shadow: 6px 6px 0 #111111">
+    <div style="display: flex; height: 112px; border-bottom: 2.5px solid #111111">
+      <span style="width: 62px; background: #35677D; border-right: 2px solid #111111; display: flex; align-items: center; justify-content: center; text-align: center; color: #FFFFFF; font-size: 9px; font-weight: 700; line-height: 1.3">KITE<br>SURF</span>
+      <div class="ht" style="flex: 1; padding: 10px 12px; display: flex; flex-direction: column; justify-content: space-between; color: #FFFFFF">
+        <span style="font-size: 10px; font-weight: 700; letter-spacing: 0.06em">FORECAST · {{dayLong}}</span>
+        <span style="display: flex; justify-content: space-between; align-items: flex-end">
+          <span style="font-family: 'Archivo Black', sans-serif; font-size: 22px; line-height: 1; text-shadow: 2px 2px 0 #111111">WIJK AAN ZEE</span>
+          <span style="font-family: 'Anton', sans-serif; font-size: 34px; line-height: 0.9; text-shadow: 2px 2px 0 #111111">{{bigWind}} KTS</span>
+        </span>
+        <span style="font-size: 10px; text-align: right">SW · gusts {{bigGust}} · {{goodWindow}}</span>
+      </div>
+    </div>
+
+    <div style="padding: 12px; display: flex; flex-direction: column; gap: 10px">
+      <span style="align-self: flex-start; background: #C8FF3D; border: 2px solid #111111; padding: 3px 8px; font-family: 'Archivo Black', sans-serif; font-size: 12px">SIDE-ONSHORE</span>
+      <span style="font-size: 11px">The ideal direction for kiting at this beach.</span>
+      <sc-if value="{{hasReport}}" hint-placeholder-val="{{true}}">
+        <div style="padding: 8px 10px; background: #EEFBD0; border: 2px solid #111111; font-size: 11px; line-height: 1.45"><b>Rider report 12 min ago:</b> stronger than forecast · choppy · OK busy (3 reports)</div>
+      </sc-if>
+
+      <div style="display: flex; justify-content: space-between; align-items: baseline">
+        <span style="font-family: 'Archivo Black', sans-serif; font-size: 13px">WIND &amp; GUSTS, KNOTS</span>
+        <span style="font-size: 10px">tap an hour</span>
+      </div>
+      <div style="position: relative; display: grid; grid-template-columns: 48px repeat(10, minmax(0, 1fr)); border: 2px solid #111111; text-align: center">
+        <span aria-hidden="true" style="position: absolute; top: -2px; bottom: -2px; left: calc(48px + (100% - 48px) * {{ringI}} / 10 - 1px); width: calc((100% - 48px) / 10 + 2px); box-sizing: border-box; border: 3px solid #FF2D78; pointer-events: none; z-index: 2"></span>
+        <span style="background: #111111; color: #FFFFFF; font-size: 8px; font-weight: 700; padding: 6px 0">TIME</span>
+        <sc-for list="{{cols}}" as="c" hint-placeholder-count="10">
+          <button type="button" onClick="{{c.pick}}" aria-pressed="{{c.pressed}}" aria-label="{{c.aria}}" style="{{c.hStyle}}">{{c.h}}</button>
+        </sc-for>
+        <span style="background: #111111; color: #FFFFFF; font-size: 8px; font-weight: 700; padding: 10px 0; border-top: 1.5px solid #111111">WIND</span>
+        <sc-for list="{{cols}}" as="c" hint-placeholder-count="10">
+          <span style="{{c.wStyle}}">{{c.w}}</span>
+        </sc-for>
+        <span style="background: #111111; color: #FFFFFF; font-size: 8px; font-weight: 700; padding: 10px 0; border-top: 1.5px solid #111111">GUST</span>
+        <sc-for list="{{cols}}" as="c" hint-placeholder-count="10">
+          <span style="{{c.gStyle}}">{{c.g}}</span>
+        </sc-for>
+        <span style="background: #111111; color: #FFFFFF; font-size: 8px; font-weight: 700; padding: 6px 0; border-top: 1.5px solid #111111">DIR</span>
+        <sc-for list="{{cols}}" as="c" hint-placeholder-count="10">
+          <span style="padding: 4px 0 3px; border-left: 1px solid #111111; border-top: 1.5px solid #111111; font-size: 9px; font-weight: 700; display: flex; flex-direction: column; align-items: center; gap: 1px"><svg width="11" height="11" viewBox="0 0 24 24" aria-hidden="true" style="transform: rotate(-45deg)"><path d="M12 2l8 20-8-5-8 5z" fill="#111111"></path></svg>SW</span>
+        </sc-for>
+      </div>
+      <div style="padding: 8px 10px; border: 2.5px solid #111111; background: #F3EFE3; font-family: 'Archivo Black', sans-serif; font-size: 12px">{{hourLine}}</div>
+      <div style="display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 10px">
+        <span style="display: flex; align-items: center; gap: 4px"><span style="width: 11px; height: 11px; background: #C8FF3D; border: 1.5px solid #111111"></span>15–30 good</span>
+        <span style="display: flex; align-items: center; gap: 4px"><span style="width: 11px; height: 11px; background: #FFE14D; border: 1.5px solid #111111"></span>12–14 light</span>
+        <span style="display: flex; align-items: center; gap: 4px"><span style="width: 11px; height: 11px; background: #E7E2D4; border: 1.5px solid #111111"></span>too light</span>
+        <span style="display: flex; align-items: center; gap: 4px"><span style="width: 11px; height: 11px; background: #FFC2D6; border: 1.5px solid #111111"></span>gust +7 or more</span>
+        <span style="display: flex; align-items: center; gap: 4px"><span style="width: 11px; height: 11px; background: #FF2D78; border: 1.5px solid #111111"></span>gust +10 / over 30</span>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1.3fr 1fr 1fr; gap: 10px; padding-top: 10px; border-top: 2px dashed #9C968A">
+        <span style="display: flex; flex-direction: column; gap: 3px">
+          <span style="font-family: 'Archivo Black', sans-serif; font-size: 12px">TIDE</span>
+          <span style="position: relative; display: block; width: 110px; height: 40px"><svg width="110" height="40" viewBox="0 0 110 40" aria-hidden="true"><path d="M0 20 C14 0 28 0 42 20 S70 40 84 20 S104 4 110 10" fill="none" stroke="#35677D" stroke-width="2.5"></path></svg><span style="position: absolute; left: {{tideX}}px; top: 0; width: 2.5px; height: 40px; background: #FF2D78"></span></span>
+          <span style="font-size: 9px; line-height: 1.4"><b>{{tideHigh}}</b><br>{{tideLow}}</span>
+        </span>
+        <span style="display: flex; flex-direction: column; gap: 2px">
+          <span style="font-family: 'Archivo Black', sans-serif; font-size: 12px">WAVES</span>
+          <span style="font-family: 'Anton', sans-serif; font-size: 28px; line-height: 1">{{waves}}</span>
+          <span style="font-size: 9px">6 s period · from SW</span>
+        </span>
+        <span style="display: flex; flex-direction: column; gap: 2px">
+          <span style="font-family: 'Archivo Black', sans-serif; font-size: 12px">WATER</span>
+          <span style="font-family: 'Anton', sans-serif; font-size: 28px; line-height: 1">14°C</span>
+          <span style="font-size: 9px">4/3 mm wetsuit</span>
+        </span>
+      </div>
+
+      <div class="htd" style="border: 2.5px solid #111111; padding: 12px; color: #FFFFFF; display: flex; flex-direction: column; gap: 10px">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start">
+          <span style="display: flex; flex-direction: column; gap: 2px">
+            <span style="font-family: 'Archivo Black', sans-serif; font-size: 13px">KITE SIZE AT {{hourLabel}}</span>
+            <span style="font-size: 10px">{{selWind}} kts SW, gusts {{selGust}}</span>
+          </span>
+          <span style="font-family: 'Anton', sans-serif; font-size: 44px; line-height: 0.9; color: #C8FF3D; text-shadow: 2px 2px 0 #111111">{{kiteSize}}</span>
+        </div>
+        <div role="group" aria-label="Your weight" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px">
+          <sc-for list="{{weights}}" as="w" hint-placeholder-count="3">
+            <button type="button" onClick="{{w.pick}}" aria-pressed="{{w.pressed}}" style="{{w.style}}">{{w.label}}</button>
+          </sc-for>
+        </div>
+        <span style="font-size: 10px; line-height: 1.45">Rule of thumb for a twin-tip. Gusty or new to the spot? Size down and ask the locals.</span>
+      </div>
+    </div>
+
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px; border-top: 2.5px solid #111111">
+      <span style="font-size: 11px">{{crewLine}}</span>
+      <a href="{{crewHref}}" style="flex-shrink: 0; height: 44px; padding: 0 12px; display: flex; align-items: center; background: #8DF5E8; border: 2.5px solid #111111; box-shadow: 3px 3px 0 #111111; text-decoration: none; font-family: 'Archivo Black', sans-serif; font-size: 12px">{{crewBtn}}</a>
+    </div>
+  </div>
+
+  <div style="position: absolute; left: 16px; right: 22px; top: 950px; padding: 14px; color: #FFFFFF; border: 2.5px solid #111111; box-shadow: 6px 6px 0 #FF2D78" class="htd">
+    <div style="font-size: 10px; font-weight: 700; color: #C8FF3D; letter-spacing: .06em">YOUR BEST WINDOW · TUNED TO 75 KG · CONFIDENT</div>
+    <div style="margin-top: 6px; font-family: 'Anton', sans-serif; font-size: 30px; line-height: 1">{{dayLong}} · 13:00–17:00</div>
+    <div style="margin-top: 4px; font-size: 11px">9 m kite · side-onshore · 3 in the crew already</div>
+    <div style="margin-top: 12px; display: grid; grid-template-columns: 1.2fr 1fr; gap: 8px">
+      <a href="B24-Crew.dc.html" style="height: 46px; display: flex; align-items: center; justify-content: center; background: #FF2D78; color: #FFFFFF; border: 2.5px solid #111111; text-decoration: none; font-family: 'Archivo Black', sans-serif; font-size: 12px">JOIN THE CREW</a>
+      <a href="B24-Invite.dc.html" style="height: 46px; display: flex; align-items: center; justify-content: center; background: #FFE14D; color: #111111; border: 2.5px solid #111111; text-decoration: none; font-family: 'Archivo Black', sans-serif; font-size: 12px"><svg width="16" height="16" viewBox="0 0 24 24" fill="#111111" style="color: #111111; flex-shrink: 0" aria-hidden="true"><path d="M12 1.5 5.8 7.8h4.2V15h4V7.8h4.2z"/><path d="M3 12h3.2v6.8h11.6V12H21v10H3z"/></svg>&nbsp;SEND TO A MATE</a>
+    </div>
+  </div>
+  <p style="position: absolute; left: 16px; right: 16px; top: 1148px; margin: 0; font-size: 9px; line-height: 1.5; color: #4A4538">Forecast: KNMI HARMONIE-AROME via Open-Meteo.com · Tide: Rijkswaterstaat · Rider reports: Hi8ctane riders on site. Model forecast, not a beach sensor.</p>
+
+  <div style="position: absolute; left: 0; right: 0; bottom: 80px; padding: 10px 16px; background: #F3EFE3; border-top: 2.5px solid #111111; display: flex; align-items: center; gap: 10px"><span style="flex: 1; min-width: 0; font-size: 10px; font-weight: 700; line-height: 1.35">BEST WINDOW · {{dayLong}} · 13:00–17:00 · 3 IN THE CREW</span><a href="B24-Crew.dc.html" style="flex-shrink: 0; height: 46px; padding: 0 14px; display: flex; align-items: center; background: #FF2D78; color: #FFFFFF; border: 2.5px solid #111111; box-shadow: 3px 3px 0 #111111; text-decoration: none; font-family: 'Archivo Black', sans-serif; font-size: 13px; white-space: nowrap">JOIN THE CREW</a></div>
+  <nav aria-label="Main" style="position: absolute; left: 0; right: 0; bottom: 0; height: 80px; background: #F3EFE3; border-top: 2.5px solid #111111; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: center; padding-bottom: 10px; box-sizing: border-box">
+<a href="B24-Today.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 4px; text-decoration: none; font-size: 10px; font-weight: 700; color: #111111"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3"></circle><circle cx="17" cy="9" r="2.5"></circle><path d="M3 19c0-3 3-5 6-5s6 2 6 5"></path><path d="M15 14c3 0 6 1.5 6 4"></path></svg>CREWS</a>
+<a href="B24-Map.dc.html" aria-current="page" style="display: flex; flex-direction: column; align-items: center; gap: 4px; text-decoration: none; font-size: 10px; font-weight: 700; color: #FF2D78"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6-7-11a7 7 0 0 1 14 0c0 5-7 11-7 11z"></path><circle cx="12" cy="10" r="2.5"></circle></svg>LIVE MAP</a>
+<a href="B24-Start.dc.html" aria-label="Start a crew" style="justify-self: center; width: 56px; height: 56px; box-sizing: border-box; margin-top: -16px; background: #C8FF3D; border: 2.5px solid #111111; box-shadow: 4px 4px 0 #111111; display: flex; align-items: center; justify-content: center"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></a>
+<a href="B24-Try.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 4px; text-decoration: none; font-size: 10px; font-weight: 700; color: #111111"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l2.9 6.9 7.1.6-5.4 4.7 1.7 7.3L12 17.6 5.7 21.5l1.7-7.3L2 9.5l7.1-.6z"></path></svg>TRY</a>
+<a href="B24-Me.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 4px; text-decoration: none; font-size: 10px; font-weight: 700; color: #111111"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4 4-7 8-7s8 3 8 7"></path></svg>ME</a>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1360}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { day: "today", hour: 14, kg: 75, t: 0 };
+    this.iv = null;
+  }
+  componentDidMount() {
+    this.iv = setInterval(() => this.setState({ t: this.state.t + 1 }), 1000);
+  }
+  componentWillUnmount() {
+    if (this.iv) clearInterval(this.iv);
+  }
+  renderVals() {
+    const st = this.state;
+    const D = {
+      today: { label: "TODAY", long: "TODAY, TUE 20", w: [16, 18, 20, 20, 21, 20, 20, 18, 16, 14], g: [20, 25, 25, 25, 29, 25, 25, 25, 20, 17], good: "good 13:00 to 17:00", high: "High 10:42 · +0.9 m", low: "Low 16:55 · −0.7 m", waves: "1.0 m", report: false, crewLine: "2 riders going · updated 6 min ago", crewHref: "B24-Crew.dc.html", crewBtn: "JOIN" },
+      sat: { label: "SAT 24", long: "SAT 24 OCT", w: [12, 14, 17, 20, 21, 21, 20, 18, 15, 12], g: [15, 18, 24, 25, 29, 26, 25, 25, 19, 15], good: "good 12:00 to 18:00", high: "High 12:06 · +0.9 m", low: "Low 18:18 · −0.7 m", waves: "1.2 m", report: false, crewLine: "3 in the crew · ride 14:00", crewHref: "B24-Crew.dc.html", crewBtn: "JOIN THE CREW" },
+      sun: { label: "SUN 25", long: "SUN 25 OCT", w: [8, 10, 12, 14, 16, 17, 17, 16, 13, 11], g: [11, 13, 15, 18, 20, 21, 21, 20, 17, 14], good: "good 14:00 to 17:00", high: "High 12:52 · +0.8 m", low: "Low 19:05 · −0.6 m", waves: "0.7 m", report: false, crewLine: "No crew yet for Sunday", crewHref: "B24-Start.dc.html", crewBtn: "START ONE" }
+    };
+    const d = D[st.day];
+    const hours = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
+    const cols = hours.map((h, i) => {
+      const on = h === st.hour;
+      const w = d.w[i], g = d.g[i];
+      const wBg = w >= 15 && w <= 30 ? "#C8FF3D" : w >= 12 ? "#FFE14D" : "#E7E2D4";
+      const gBg = (g - w >= 10 || g > 30) ? "#FF2D78" : g - w >= 7 ? "#FFC2D6" : "#FFFFFF";
+      const ring = "";
+      return {
+        h: String(h),
+        w: String(w),
+        g: String(g),
+        aria: h + ":00, " + w + " knots",
+        pressed: on ? "true" : "false",
+        pick: () => this.setState({ hour: h }),
+        hStyle: "padding:6px 0;border:0;border-left:1px solid #111111;background:#FFFFFF;color:#111111;font-family:'Space Mono',monospace;font-size:11px;font-weight:700;cursor:pointer;min-height:32px",
+        wStyle: "padding:4px 0;border-left:1px solid #111111;border-top:1.5px solid #111111;background:" + wBg + ";font-family:'Anton',sans-serif;font-size:19px;" + ring,
+        gStyle: "padding:4px 0;border-left:1px solid #111111;border-top:1.5px solid #111111;background:" + gBg + ";color:" + (gBg === "#FF2D78" ? "#FFFFFF" : "#111111") + ";font-family:'Anton',sans-serif;font-size:19px;" + ring
+      };
+    });
+    const idx = hours.indexOf(st.hour);
+    const w = d.w[idx], g = d.g[idx];
+    const size = Math.max(5, Math.min(17, Math.round((st.kg * 2.2) / Math.max(w, 1))));
+    const days = Object.keys(D).map((k) => {
+      const on = st.day === k;
+      return { label: D[k].label, pressed: on ? "true" : "false", pick: () => this.setState({ day: k }), style: (on ? "background:#FF2D78;color:#FFFFFF;" : "background:#FFFFFF;color:#111111;") + "height:44px;border:2.5px solid #111111;font-family:'Space Mono',monospace;font-size:13px;font-weight:700;cursor:pointer" };
+    });
+    const weights = [65, 75, 85].map((kg) => {
+      const on = st.kg === kg;
+      return { label: kg + " KG", pressed: on ? "true" : "false", pick: () => this.setState({ kg: kg }), style: (on ? "background:#111111;color:#C8FF3D;" : "background:#FFFFFF;color:#111111;") + "height:44px;border:2px solid #111111;font-family:'Archivo Black',sans-serif;font-size:12px;cursor:pointer" };
+    });
+    const a = st.t % 9;
+    return {
+      days: days,
+      cols: cols,
+      weights: weights,
+      dayLong: d.long,
+      bigWind: String(d.w[4]),
+      bigGust: String(d.g[4]),
+      goodWindow: d.good,
+      hasReport: d.report,
+      hourLabel: st.hour + ":00",
+      selWind: String(w),
+      selGust: String(g),
+      hourLine: st.hour + ":00 · " + w + " kts, gusts " + g + " (+" + (g - w) + ") · SW · " + (w >= 15 ? "side-onshore" : w >= 12 ? "light, big kite" : "too light"),
+      kiteSize: w < 11 ? "—" : size + "m",
+      tideX: String(Math.round(((st.hour - 10) / 9) * 104 + 3)), ringI: String(hours.indexOf(st.hour)),
+      tideHigh: d.high,
+      tideLow: d.low,
+      waves: d.waves,
+      crewLine: d.crewLine,
+      crewHref: d.crewHref,
+      crewBtn: d.crewBtn,
+      ago: (6 + Math.floor(st.t / 60) % 50) + " MIN AGO"
+    };
+  }
+}
+</script>
+</body>
+</html>

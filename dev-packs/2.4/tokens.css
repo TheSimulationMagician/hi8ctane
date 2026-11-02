@@ -1,0 +1,99 @@
+/* Hi8ctane 2.4 design tokens (2.2 tokens + the duotone crew card) */
+:root {
+  --ink: #111111;          /* text, 2.5px borders, hard shadows */
+  --paper: #F3EFE3;        /* page background */
+  --card: #FFFFFF;
+  --steel: #35677D;        /* kite, tide line */
+  --navy: #173D57;         /* dark boxes: kite size, best window */
+  --lime: #C8FF3D;         /* good wind 15-30 kts, SIGN IN, selected ride */
+  --pink: #FF2D78;         /* main CTA, live dot, gust +10 / over 30, selected hour */
+  --pink-light: #FFC2D6;   /* gust +7 or more */
+  --yellow: #FFE14D;       /* light wind 12-14 kts, founding badge, watch */
+  --mint: #8DF5E8;         /* secondary actions: JOIN, FORECAST */
+  --grey: #E7E2D4;         /* too light / disabled */
+  --muted: #4A4538;        /* small print */
+  --orange: #F7953F;       /* "LESS SCROLLING · MORE GOING" */
+  /* sport colours: only on sport cards, sport tiles, map pins, sport tabs */
+  --sport-kite: #35677D;   --sport-kite-fg: #FFFFFF;
+  --sport-wing: #173D57;   --sport-wing-fg: #FFFFFF;
+  --sport-surf: #FF2D78;   --sport-surf-fg: #FFFFFF;
+  --sport-sup:  #8DF5E8;   --sport-sup-fg:  #111111;
+  --sport-mtb:  #C8FF3D;   --sport-mtb-fg:  #111111;
+  --border: 2.5px solid var(--ink);
+  --shadow: 6px 6px 0 var(--ink);
+  --shadow-sm: 3px 3px 0 var(--ink);
+  --radius: 0;
+  --font-head: 'Archivo Black', sans-serif;
+  --font-num: 'Anton', sans-serif;
+  --font-body: 'Space Mono', monospace;
+  --font-script: 'Yellowtail', cursive;
+}
+/* card header + hero: steel-blue gradient with halftone dots */
+.ht {
+  background-color: #33637A;
+  background-image:
+    radial-gradient(rgba(255,255,255,.16) 1px, transparent 1.3px),
+    linear-gradient(135deg, #5A94AB 0%, #3A6C83 48%, #163A51 100%);
+  background-size: 6px 6px, 100% 100%;
+}
+.htd { /* navy halftone box */
+  background-color: #173D57;
+  background-image: radial-gradient(rgba(255,255,255,.12) 1px, transparent 1.3px);
+  background-size: 6px 6px;
+}
+/* wind cell colours */
+.wind-good { background: var(--lime); }      /* 15-30 kts */
+.wind-light { background: var(--yellow); }   /* 12-14 kts */
+.wind-low { background: var(--grey); }       /* under 12 */
+.gust-warn { background: var(--pink-light); }/* gust >= mean + 7 */
+.gust-hard { background: var(--pink); color: #fff; } /* gust >= mean + 10 or > 30 */
+
+/* ── 2.4 · the crew card, high-end (prototype B24-H24b/H25b/H26b) ──────────────────────────
+   One card for Home, the deck on the landing and the crew page header: an 82 px sport tile in the
+   sport colour + a duotone art panel per sport with square halftone dots, cream body, hard shadow. */
+:root {
+  --duo-kite-a: #5A94AB; --duo-kite-b: #163A51; --duo-kite-fg: #FFFFFF;
+  --duo-wing-a: #3A6C83; --duo-wing-b: #0B2233; --duo-wing-fg: #FFFFFF;
+  --duo-surf-a: #FF4F8F; --duo-surf-b: #173D57; --duo-surf-fg: #FFFFFF;
+  --duo-sup-a:  #B9FFF6; --duo-sup-b:  #3A8E99; --duo-sup-fg:  #111111;
+  --duo-mtb-a:  #DFFF7A; --duo-mtb-b:  #4A4538; --duo-mtb-fg:  #111111;
+  --card-border: 3px solid var(--ink);
+  --card-shadow: 7px 7px 0 var(--ink);
+  --btn-shadow: 4px 4px 0 var(--ink);
+  --dots-square: conic-gradient(from 0deg at 4px 4px, transparent 75%, rgba(8,22,32,.2) 0);
+}
+/* duotone art panel: add the sport class, e.g. <div class="hart duo-kite"> */
+.duo-kite { background: linear-gradient(150deg, var(--duo-kite-a), var(--duo-kite-b)); color: var(--duo-kite-fg); }
+.duo-wing { background: linear-gradient(150deg, var(--duo-wing-a), var(--duo-wing-b)); color: var(--duo-wing-fg); }
+.duo-surf { background: linear-gradient(150deg, var(--duo-surf-a), var(--duo-surf-b)); color: var(--duo-surf-fg); }
+.duo-sup  { background: linear-gradient(150deg, var(--duo-sup-a),  var(--duo-sup-b));  color: var(--duo-sup-fg); }
+.duo-mtb  { background: linear-gradient(150deg, var(--duo-mtb-a),  var(--duo-mtb-b));  color: var(--duo-mtb-fg); }
+/* the tile left of the art uses the sport colour: .htile { background: var(--sport-kite); color: var(--sport-kite-fg) } */
+/* state bars inside the card (Plan B): in / checked in = lime, late = yellow, cancelled = grey, waitlist = white */
+.hbar { margin-top: 12px; padding: 9px 10px; border: 2px solid var(--ink); font-family: var(--font-head); font-size: 11px; line-height: 1.4; }
+.hbar.in, .hbar.here { background: var(--lime); }
+.hbar.late { background: var(--yellow); }
+.hbar.cancelled { background: var(--grey); }
+.hbar.waitlist { background: #FFFFFF; }
+.hcard{position:relative;background:#F3EFE3;border:3px solid #111111;box-shadow:7px 7px 0 #111111;color:#111111}
+.hhead{position:relative;display:flex;height:116px;border-bottom:3px solid #111111}
+.htile{width:82px;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;font-family:'Archivo Black',sans-serif;font-size:11px;line-height:1.05;letter-spacing:.3px;text-align:center;border-right:3px solid #111111}
+.hart{position:relative;flex:1;min-width:0;overflow:hidden}
+.hart svg.pic{position:absolute;right:0;top:0}
+.hdots{position:absolute;inset:0;pointer-events:none;background-image:conic-gradient(from 0deg at 4px 4px,transparent 75%,rgba(8,22,32,.2) 0);background-size:10px 10px}
+.hname{position:absolute;left:13px;right:13px;bottom:11px;font-family:'Archivo Black',sans-serif;font-size:17px;line-height:1.05}
+.hsub{display:block;margin-bottom:4px;font-family:'Space Mono',monospace;font-weight:700;font-size:9px;letter-spacing:.6px}
+.hrib{position:absolute;right:0;top:0;width:46px;height:46px;background:#FF2D78;clip-path:polygon(0 0,100% 0,100% 100%)}
+.hmeta{display:flex;align-items:center;flex-wrap:wrap;column-gap:12px;row-gap:4px;font-family:'Space Mono',monospace;font-weight:700;font-size:11px}
+.hcond{display:inline-flex;align-items:center;gap:4px;font-family:'Space Mono',monospace;font-weight:700;font-size:10px;color:#4A4538;white-space:nowrap}
+.hpill{display:inline-flex;align-items:center;height:22px;padding:0 8px;border:2px solid #111111;font-family:'Archivo Black',sans-serif;font-size:10px;white-space:nowrap}
+.hbtn{height:44px;display:flex;align-items:center;justify-content:center;gap:6px;padding:0 10px;border:3px solid #111111;box-shadow:4px 4px 0 #111111;font-family:'Archivo Black',sans-serif;font-size:12px;letter-spacing:.2px;cursor:pointer;text-decoration:none;color:#111111;background:#FFFFFF;white-space:nowrap}
+.hbtn:active{transform:translate(2px,2px);box-shadow:2px 2px 0 #111111}
+.hnote{display:flex;align-items:center;gap:8px;padding:9px 14px 10px;background:#FFFFFF;border-top:2px dashed rgba(17,17,17,.28);font-family:'Space Mono',monospace;font-size:10px}
+.mark{background:linear-gradient(transparent 56%,#C8FF3D 56%,#C8FF3D 94%,transparent 94%);padding:0 3px}
+.kick{display:flex;align-items:center;gap:7px;font-family:'Space Mono',monospace;font-weight:700;font-size:10px;letter-spacing:.4px}
+@keyframes popb{0%{transform:scale(.96);opacity:0}
+100%{transform:none;opacity:1}
+}
+.popb{animation:popb .25s ease-out both}
+

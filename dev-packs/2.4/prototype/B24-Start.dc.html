@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Hi8ctane — Start a crew</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&amp;family=Anton&amp;family=Space+Mono:wght@400;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#111111}a:hover{color:#FF2D78}
+.ht{background-color:#33637A;background-image:radial-gradient(rgba(255,255,255,.16) 1px,transparent 1.3px),linear-gradient(135deg,#5A94AB 0%,#3A6C83 48%,#163A51 100%);background-size:6px 6px,100% 100%}
+input::placeholder{color:#77705F}
+input:focus,select:focus{outline:3px solid #FF2D78;outline-offset:1px}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; background: #F3EFE3; color: #111111; overflow: hidden; font-family: 'Space Mono', monospace">
+  <div class="ht" style="position: absolute; left: 0; right: 0; top: 0; height: 52px; border-bottom: 4px solid #C8FF3D"></div>
+
+  <div style="position: absolute; left: 16px; right: 16px; top: 66px; display: flex; justify-content: space-between; align-items: center">
+    <h1 style="margin: 0; font-family: 'Archivo Black', sans-serif; font-size: 30px; font-style: italic">START A CREW</h1>
+    <a href="B24-Today.dc.html" aria-label="Close" style="width: 44px; height: 44px; box-sizing: border-box; border: 2.5px solid #111111; background: #FFFFFF; display: flex; align-items: center; justify-content: center">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+    </a>
+  </div>
+
+  <div class="ht" style="position: absolute; left: 16px; right: 16px; top: 124px; border: 2.5px solid #111111; padding: 10px 12px; box-sizing: border-box; display: flex; justify-content: space-between; align-items: center; color: #FFFFFF">
+    <span style="display: flex; flex-direction: column; gap: 3px">
+      <span style="font-size: 9px; font-weight: 700; color: #C8FF3D; letter-spacing: 0.08em">PREFILLED FROM THE BEST WINDOW</span>
+      <span style="font-family: 'Archivo Black', sans-serif; font-size: 16px">Sat 17 Oct · {{spotName}}</span>
+      <span style="font-size: 10px">{{windowText}}</span>
+    </span>
+    <span style="display: flex; flex-direction: column; align-items: flex-end">
+      <span style="font-family: 'Anton', sans-serif; font-size: 28px; line-height: 1">{{bigVal}}</span>
+      <span style="font-size: 10px">{{bigSub}}</span>
+    </span>
+  </div>
+
+  <div style="position: absolute; left: 16px; right: 16px; top: 214px; display: flex; flex-direction: column; gap: 6px">
+    <span style="font-size: 10px; font-weight: 700; letter-spacing: 0.1em">SPORT</span>
+    <div role="group" aria-label="Sport" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 2.5px solid #111111">
+      <sc-for list="{{sports}}" as="s" hint-placeholder-count="3">
+        <button type="button" onClick="{{s.pick}}" aria-pressed="{{s.pressed}}" disabled="{{s.disabled}}" style="{{s.style}}">{{s.label}}</button>
+      </sc-for>
+    </div>
+
+    <label for="spot" style="margin-top: 6px; font-size: 10px; font-weight: 700; letter-spacing: 0.1em">SPOT</label>
+    <select id="spot" value="{{spot}}" onChange="{{setSpot}}" style="height: 48px; padding: 0 10px; border: 2.5px solid #111111; background: #FFFFFF; font-family: 'Archivo Black', sans-serif; font-size: 16px; color: #111111">
+      <sc-for list="{{spotOptions}}" as="o" hint-placeholder-count="2">
+        <option value="{{o.id}}">{{o.name}}</option>
+      </sc-for>
+    </select>
+    <span style="font-size: 11px">Meet at: <b>{{meetPoint}}</b> · <a href="#change">change</a></span>
+
+    <span style="margin-top: 6px; font-size: 10px; font-weight: 700; letter-spacing: 0.1em">RIDE TIME · SAT 17 OCT</span>
+    <div role="group" aria-label="Ride time" style="display: flex; gap: 6px">
+      <sc-for list="{{times}}" as="t" hint-placeholder-count="5">
+        <button type="button" onClick="{{t.pick}}" aria-pressed="{{t.pressed}}" style="{{t.style}}">{{t.label}}</button>
+      </sc-for>
+    </div>
+    <span style="font-size: 11px">{{timeLine}}</span>
+
+    <label for="notes" style="margin-top: 6px; font-size: 10px; font-weight: 700; letter-spacing: 0.1em">NOTES (OPTIONAL)</label>
+    <input id="notes" type="text" placeholder="Bringing a 9 and a 12" style="height: 46px; box-sizing: border-box; padding: 0 12px; border: 2.5px solid #111111; background: #FFFFFF; font-family: 'Space Mono', monospace; font-size: 14px">
+
+    <div style="margin-top: 6px; display: flex; align-items: center; gap: 14px; padding: 10px 12px; border: 2px dashed #111111">
+      <span style="font-family: 'Archivo Black', sans-serif; font-size: 12px; line-height: 1.2">More<br>details</span>
+      <span style="font-size: 10px; line-height: 1.5">max riders · rookies welcome · group link · ask my regulars</span>
+    </div>
+  </div>
+
+  <div style="position: absolute; left: 16px; right: 20px; bottom: 22px; display: flex; flex-direction: column; gap: 8px">
+    <a href="B24-Crew.dc.html" style="height: 58px; display: flex; align-items: center; justify-content: center; background: #FF2D78; color: #FFFFFF; border: 2.5px solid #111111; box-shadow: 4px 4px 0 #111111; text-decoration: none; font-family: 'Archivo Black', sans-serif; font-size: 20px; letter-spacing: 0.06em">POST IT</a>
+    <span style="text-align: center; font-size: 11px">Riders watching {{spotName}} see it in tonight's alert.</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { sport: "kite", spot: "wijk", time: "14:00" };
+  }
+  renderVals() {
+    const st = this.state;
+    const spots = {
+      wijk: { name: "Wijk aan Zee", meet: "Kite beach, access 3", sport: "kite", window: "good 12:00–17:00 · side-onshore", f: { "12:00": [19, 24], "13:00": [20, 28], "14:00": [21, 27], "15:00": [20, 25] } },
+      ijm: { name: "IJmuiden", meet: "South beach, kite zone", sport: "kite", window: "good 13:00–16:00 · onshore", f: { "12:00": [15, 19], "13:00": [16, 21], "14:00": [17, 21], "15:00": [17, 22] } },
+      schoorl: { name: "Schoorl dunes", meet: "Car park Schoorl aan Zee", sport: "mtb", window: "dry all day · 14°C · rain 0%", f: null }
+    };
+    const s = spots[st.spot] || spots.wijk;
+    const sports = [["kite", "KITE"], ["mtb", "MTB"], ["mx", "MX · SOON"]].map((p) => {
+      const on = st.sport === p[0];
+      const dis = p[0] === "mx";
+      return {
+        label: p[1],
+        pressed: on ? "true" : "false",
+        disabled: dis,
+        pick: () => { if (!dis) this.setState({ sport: p[0], spot: p[0] === "mtb" ? "schoorl" : "wijk" }); },
+        style: (dis ? "background:#E7E2D4;color:#77705F;cursor:not-allowed;" : on ? "background:" + (p[0] === "mtb" ? "#C8FF3D;color:#111111" : "#35677D;color:#FFFFFF") + ";cursor:pointer;" : "background:#FFFFFF;color:#111111;cursor:pointer;") + "height:46px;border:0;border-right:2px solid #111111;font-family:'Space Mono',monospace;font-size:12px;font-weight:700"
+      };
+    });
+    const spotOptions = Object.keys(spots).filter((k) => spots[k].sport === st.sport).map((k) => ({ id: k, name: spots[k].name }));
+    const times = ["12:00", "13:00", "14:00", "15:00", "Other"].map((t) => {
+      const on = st.time === t;
+      return {
+        label: t,
+        pressed: on ? "true" : "false",
+        pick: () => this.setState({ time: t }),
+        style: (on ? "background:#111111;color:#C8FF3D;" : "background:#FFFFFF;color:#111111;") + "flex:1;height:46px;border:2.5px solid #111111;font-family:'Space Mono',monospace;font-size:12px;font-weight:700;cursor:pointer"
+      };
+    });
+    const hh = parseInt(st.time, 10);
+    const meet = isNaN(hh) ? "pick a time" : (hh - 1) + ":45";
+    const fc = s.f && s.f[st.time];
+    const timeLine = isNaN(hh)
+      ? "Pick any time inside the window."
+      : "Meet " + meet + " · " + (fc ? "forecast at " + st.time + ": " + fc[0] + " kts, gusts " + fc[1] : "trails dry at " + st.time);
+    return {
+      sports: sports,
+      spot: st.spot,
+      spotOptions: spotOptions,
+      setSpot: (e) => this.setState({ spot: e.target.value }),
+      spotName: s.name,
+      meetPoint: s.meet,
+      windowText: s.window,
+      bigVal: s.f ? String((s.f["14:00"] || [0])[0]) + " kts" : "DRY",
+      bigSub: s.f ? "gusts " + s.f["14:00"][1] : "trails",
+      times: times,
+      timeLine: timeLine
+    };
+  }
+}
+</script>
+</body>
+</html>

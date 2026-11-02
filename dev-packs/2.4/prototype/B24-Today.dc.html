@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Hi8ctane — Home · find or start a crew (2.4)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&amp;family=Anton&amp;family=Space+Mono:wght@400;700&amp;family=Bowlby+One&amp;family=Yellowtail&amp;family=Permanent+Marker&amp;family=Special+Elite&amp;family=VT323&amp;family=Shrikhand&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#111111}a:hover{color:#FF2D78}
+.ht{background-color:#33637A;background-image:radial-gradient(rgba(255,255,255,.16) 1px,transparent 1.3px),linear-gradient(135deg,#5A94AB 0%,#3A6C83 48%,#163A51 100%);background-size:6px 6px,100% 100%}
+.htd{background-color:#173D57;background-image:radial-gradient(rgba(255,255,255,.12) 1px,transparent 1.3px);background-size:6px 6px}
+.htb{background-color:#35677D;background-image:radial-gradient(rgba(255,255,255,.14) 1px,transparent 1.3px);background-size:6px 6px}
+.htl{background-color:#62CDD6;background-image:radial-gradient(rgba(255,255,255,.38) 1.1px,transparent 1.5px);background-size:6px 6px}
+.htl2{background-color:#A8E6EA;background-image:radial-gradient(rgba(14,122,140,.22) 1px,transparent 1.4px);background-size:5px 5px}
+@keyframes wig{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
+.wig{animation:wig .18s linear 6}
+.sea{background-color:#DCEBEF;background-image:radial-gradient(rgba(17,17,17,.14) 1px,transparent 1.4px);background-size:7px 7px}
+@keyframes blink{50%{opacity:.25}}
+.blink{animation:blink 1.2s steps(2) infinite}
+@keyframes pop{0%{transform:scale(.94);opacity:0}100%{transform:none;opacity:1}}
+.pop{animation:pop .25s ease-out both}
+@keyframes ping{0%{transform:scale(.6);opacity:.9}100%{transform:scale(2.4);opacity:0}}
+.ping{animation:ping 1.8s ease-out infinite}
+@keyframes bob{0%,100%{transform:translate(0,0)}50%{transform:translate(2px,-3px)}}
+.bob{animation:bob 2.6s ease-in-out infinite}
+@keyframes marq{to{transform:translateX(-50%)}}
+.marq{animation:marq 20s linear infinite}
+button:focus-visible,a:focus-visible{outline:3px solid #FF2D78;outline-offset:2px}
+@keyframes eq{0%,100%{height:3px}50%{height:12px}}
+.eq span{display:inline-block;width:3px;background:#C8FF3D;animation:eq .8s ease-in-out infinite}
+.eq span:nth-child(2){animation-delay:.2s}.eq span:nth-child(3){animation-delay:.4s}.eq span:nth-child(4){animation-delay:.1s}
+.chip{height:38px;padding:0 12px;border:2.5px solid #111111;font-family:'Archivo Black',sans-serif;font-size:12px;cursor:pointer;white-space:nowrap}
+@keyframes spinr{to{transform:rotate(360deg)}}
+.spin{animation:spinr 1.6s linear infinite}
+@keyframes popb{0%{transform:scale(.94);opacity:0}100%{transform:none;opacity:1}}
+.popb{animation:popb .25s ease-out both}
+.why{display:flex;align-items:flex-start;gap:8px;font-size:11px;line-height:1.4}
+.why > span:first-child{flex-shrink:0;width:16px;display:flex;justify-content:center;padding-top:1px}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 2440px; background: #F3EFE3; color: #111111; overflow: hidden; font-family: 'Space Mono', monospace">
+
+  <div style="height: 52px; background: #111111; display: flex; align-items: center; justify-content: space-between; padding: 0 10px 0 12px">
+    <a href="B24-Landing.dc.html" style="display: flex; text-decoration: none"><span role="img" aria-label="Hi8ctane" style="display: inline-flex; align-items: center; white-space: nowrap"><span style="display: inline-block; padding: 1px 2px 1px; margin: 0 -1px; background: #FFFFFF; color: #111111; font-family: 'Archivo Black', sans-serif; font-size: 15px; line-height: 1; transform: rotate(-6deg); clip-path: polygon(0 4%, 96% 0, 100% 92%, 3% 100%)">H</span><span style="display: inline-block; padding: 1px 2px 1px; margin: 0 -1px; background: #FFE14D; color: #111111; font-family: 'Anton', sans-serif; font-size: 15px; line-height: 1; transform: rotate(4deg); clip-path: polygon(0 4%, 96% 0, 100% 92%, 3% 100%)">I</span><span style="display: inline-block; padding: 1px 2px 1px; margin: 0 -1px; background: #FF2D78; color: #FFFFFF; font-family: 'Bowlby One', sans-serif; font-size: 20px; line-height: 1; transform: rotate(-3deg); clip-path: polygon(0 4%, 96% 0, 100% 92%, 3% 100%)">8</span><span style="display: inline-block; padding: 1px 2px 1px; margin: 0 -1px; background: #35677D; color: #FFFFFF; font-family: 'Special Elite', sans-serif; font-size: 15px; line-height: 1; transform: rotate(5deg); clip-path: polygon(0 4%, 96% 0, 100% 92%, 3% 100%)">c</span><span style="display: inline-block; padding: 1px 2px 1px; margin: 0 -1px; background: #FFFFFF; color: #111111; font-family: 'Shrikhand', sans-serif; font-size: 15px; line-height: 1; transform: rotate(-4deg); clip-path: polygon(0 4%, 96% 0, 100% 92%, 3% 100%)">T</span><span style="display: inline-block; padding: 1px 2px 1px; margin: 0 -1px; background: #C8FF3D; color: #111111; font-family: 'Archivo Black', sans-serif; font-size: 15px; line-height: 1; transform: rotate(3deg); clip-path: polygon(0 4%, 96% 0, 100% 92%, 3% 100%)">A</span><span style="display: inline-block; padding: 1px 2px 1px; margin: 0 -1px; background: #111111; color: #C8FF3D; font-family: 'Anton', sans-serif; font-size: 15px; line-height: 1; transform: rotate(-5deg); clip-path: polygon(0 4%, 96% 0, 100% 92%, 3% 100%)">N</span><span style="display: inline-block; padding: 1px 2px 1px; margin: 0 -1px; background: #8DF5E8; color: #111111; font-family: 'Permanent Marker', sans-serif; font-size: 15px; line-height: 1; transform: rotate(6deg); clip-path: polygon(0 4%, 96% 0, 100% 92%, 3% 100%)">E</span></span></a>
+    <button type="button" onClick="{{toggleRadio}}" aria-pressed="{{radioOn}}" aria-label="Hi8 Radio" style="height: 34px; display: flex; align-items: center; gap: 8px; padding: 0 10px; background: #1E2427; border: 2px solid {{radioEdge}}; color: #FFFFFF; font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700; cursor: pointer">
+      <sc-if value="{{radioOn}}" hint-placeholder-val="{{false}}"><span class="eq" style="display: flex; align-items: flex-end; gap: 2px; height: 12px"><span></span><span></span><span></span><span></span></span></sc-if>
+      <sc-if value="{{radioOff}}" hint-placeholder-val="{{true}}"><svg width="12" height="12" viewBox="0 0 24 24" fill="#C8FF3D" aria-hidden="true"><path d="M6 3v18l15-9z"></path></svg></sc-if>
+      <span>{{radioLbl}}</span>
+    </button>
+  </div>
+  <sc-if value="{{radioOn}}" hint-placeholder-val="{{false}}">
+    <div class="pop" style="background: #1E2427; color: #FFFFFF; padding: 12px 12px 10px; border-bottom: 3px solid #111111">
+      <sc-if value="{{radioOpen}}" hint-placeholder-val="{{true}}">
+      <div style="display: flex; gap: 12px; align-items: center">
+        <span style="width: 54px; height: 38px; flex-shrink: 0; background: #FF2D78; border: 2px solid #111111; border-radius: 4px; display: flex; align-items: center; justify-content: center; gap: 6px"><span class="{{reel}}" style="width: 12px; height: 12px; border-radius: 50%; border: 3px dashed #111111; background: #F3EFE3"></span><span class="{{reel}}" style="width: 12px; height: 12px; border-radius: 50%; border: 3px dashed #111111; background: #F3EFE3"></span></span>
+        <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px"><b style="font-family: 'Archivo Black', sans-serif; font-weight: 400; font-size: 13px; color: #C8FF3D">HI8 RADIO · PSYCH SURF FOR THE DRIVE</b><span style="font-size: 10px; line-height: 1.4">{{nowLine}}</span></span>
+      </div>
+      <div role="tablist" aria-label="Hi8 Radio" style="margin-top: 12px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 2px solid #F3EFE3">
+        <sc-for list="{{rtabs}}" as="t" hint-placeholder-count="3"><button type="button" role="tab" aria-selected="{{t.sel}}" onClick="{{t.pick}}" style="{{t.style}}">{{t.t}}</button></sc-for>
+      </div>
+      <sc-if value="{{isTapes}}" hint-placeholder-val="{{true}}">
+        <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 6px">
+          <sc-for list="{{tapes}}" as="p" hint-placeholder-count="2"><button type="button" onClick="{{p.pick}}" aria-pressed="{{p.on}}" style="{{p.style}}"><span style="{{p.dot}}"></span><span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; text-align: left"><b style="font-family: 'Archivo Black', sans-serif; font-weight: 400; font-size: 12px">{{p.t}}</b><span style="font-family: 'Space Mono', monospace; font-size: 9px">{{p.by}}</span></span></button></sc-for>
+        </div>
+      </sc-if>
+      <sc-if value="{{isLink}}" hint-placeholder-val="{{false}}">
+        <div style="margin-top: 10px; display: flex; gap: 8px">
+          <input type="url" value="{{link}}" onChange="{{setLink}}" placeholder="Paste a Mixcloud, Spotify or SoundCloud link" aria-label="Music link" style="flex: 1; min-width: 0; height: 42px; padding: 0 10px; box-sizing: border-box; background: #F3EFE3; color: #111111; border: 2px solid #111111; font-family: 'Space Mono', monospace; font-size: 11px">
+          <button type="button" onClick="{{playLink}}" style="flex-shrink: 0; height: 42px; padding: 0 14px; background: #C8FF3D; color: #111111; border: 2px solid #111111; font-family: 'Archivo Black', sans-serif; font-size: 12px; cursor: pointer">PLAY</button>
+        </div>
+        <div style="margin-top: 6px; font-size: 9px; line-height: 1.45; color: {{linkMsgC}}">{{linkMsg}}</div>
+      </sc-if>
+      <sc-if value="{{isNts}}" hint-placeholder-val="{{false}}">
+        <div style="margin-top: 10px; padding: 10px; background: #111111; border: 2px solid #F3EFE3; font-size: 10px; line-height: 1.5">NTS broadcasts live, all day, on two channels. It opens in NTS and keeps playing while you plan.</div>
+        <a href="https://www.nts.live/" target="_blank" rel="noopener" style="margin-top: 8px; height: 44px; display: flex; align-items: center; justify-content: center; gap: 8px; background: #F3EFE3; color: #111111; border: 2px solid #111111; text-decoration: none; font-family: 'Archivo Black', sans-serif; font-size: 12px"><span class="blink" style="width: 8px; height: 8px; border-radius: 50%; background: #FF2D78"></span>LISTEN LIVE ON NTS ↗</a>
+      </sc-if>
+      </sc-if>
+      <sc-if value="{{hasEmbed}}" hint-placeholder-val="{{true}}">
+        <iframe title="{{embedTitle}}" src="{{embed}}" allow="autoplay; encrypted-media; clipboard-write" style="margin-top: 10px; display: block; width: 100%; height: {{embedH}}px; box-sizing: border-box; border: 2px solid #111111; background: #111111"></iframe>
+      </sc-if>
+      <div style="margin-top: 6px; display: flex; align-items: center; gap: 10px; font-size: 9px; color: #E7E2D4"><span style="flex: 1; min-width: 0">{{miniLine}}</span><a href="{{srcUrl}}" target="_blank" rel="noopener" style="color: #C8FF3D; font-weight: 700; white-space: nowrap">OPEN ↗</a><button type="button" onClick="{{foldRadio}}" aria-expanded="{{radioOpenS}}" style="height: 26px; padding: 0 8px; background: transparent; color: #FFFFFF; border: 1.5px solid #F3EFE3; font-family: 'Space Mono', monospace; font-size: 9px; font-weight: 700; cursor: pointer; white-space: nowrap">{{foldLbl}}</button></div>
+    </div>
+  </sc-if>
+
+  <div class="ht" style="padding: 18px 16px 20px; color: #FFFFFF; border-bottom: 3px solid #111111">
+    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 10px; font-weight: 700"><span>HEY FRANKIE · {{out}} OUT RIGHT NOW</span><span style="display: inline-flex; align-items: center; gap: 5px; color: #111111"><svg width="24" height="24" viewBox="0 0 48 48" aria-hidden="true" style="flex-shrink: 0"><rect x="2" y="2" width="44" height="44" rx="9" fill="#FFE14D" stroke="#111111" stroke-width="3"/><rect x="5.5" y="5.5" width="37" height="37" rx="6.5" fill="none" stroke="#111111" stroke-width="1.6"/><circle cx="9" cy="9" r="1.5" fill="#111111"/><circle cx="39" cy="9" r="1.5" fill="#111111"/><circle cx="9" cy="39" r="1.5" fill="#111111"/><circle cx="39" cy="39" r="1.5" fill="#111111"/><text x="24" y="33" text-anchor="middle" font-family="Archivo Black, sans-serif" font-size="24" fill="#111111">38</text></svg></span></div>
+    <div style="margin-top: 12px; font-family: 'Archivo Black', sans-serif; font-size: 26px; line-height: 1.25; text-shadow: 2px 2px 0 #111111">
+      I want to
+      <button type="button" onClick="{{openWhat}}" aria-expanded="{{wOpen}}" style="{{whatStyle}}">{{whatLbl}} ▾</button>
+      near
+      <button type="button" onClick="{{openWhere}}" aria-expanded="{{pOpen}}" style="{{whereStyle}}">{{whereLbl}} ▾</button>
+      <button type="button" onClick="{{openWhen}}" aria-expanded="{{tOpen}}" style="{{whenStyle}}">{{whenLbl}} ▾</button>
+    </div>
+    <sc-if value="{{anyOpen}}" hint-placeholder-val="{{false}}">
+      <div class="pop" role="group" aria-label="{{optAria}}" style="margin-top: 12px; padding: 10px; background: #F3EFE3; border: 2.5px solid #111111; box-shadow: 4px 4px 0 #111111; display: flex; flex-wrap: wrap; gap: 8px">
+        <sc-for list="{{opts}}" as="o" hint-placeholder-count="6"><button type="button" onClick="{{o.pick}}" aria-pressed="{{o.pressed}}" class="chip" style="{{o.style}}">{{o.t}}</button></sc-for>
+      </div>
+    </sc-if>
+    <sc-if value="{{travel}}" hint-placeholder-val="{{false}}">
+      <div class="pop" style="margin-top: 12px; padding: 8px 10px; background: #FFE14D; color: #111111; border: 2.5px solid #111111; font-size: 11px; line-height: 1.45; display: flex; gap: 8px; align-items: flex-start"><svg width="16" height="16" viewBox="0 0 24 24" fill="#111111" style="color: #111111; flex-shrink: 0" aria-hidden="true"><path fill-rule="evenodd" d="M12 1.5A7.5 7.5 0 0 0 4.5 9c0 5.4 7.5 13.5 7.5 13.5S19.5 14.4 19.5 9A7.5 7.5 0 0 0 12 1.5zm0 4.4a3.1 3.1 0 1 1 0 6.2 3.1 3.1 0 0 1 0-6.2z"/></svg><span><b>Travel mode.</b> {{travelLine}}</span></div>
+    </sc-if>
+    <div style="margin-top: 14px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px">
+      <button type="button" onClick="{{surprise}}" style="height: 48px; display: flex; align-items: center; justify-content: center; gap: 8px; background: #C8FF3D; color: #111111; border: 2.5px solid #111111; box-shadow: 3px 3px 0 #111111; font-family: 'Archivo Black', sans-serif; font-size: 13px; cursor: pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="#111111" style="color: #111111; flex-shrink: 0" aria-hidden="true"><path d="M13.5 1.5 4 13.5h6.5L9 22.5l11-13.5h-6.8z"/></svg>SURPRISE ME</button>
+      <a href="B24-Start.dc.html" style="height: 48px; display: flex; align-items: center; justify-content: center; gap: 8px; background: #FFFFFF; color: #111111; border: 2.5px solid #111111; box-shadow: 3px 3px 0 #111111; text-decoration: none; font-family: 'Archivo Black', sans-serif; font-size: 13px">+ START MY OWN</a>
+    </div>
+  </div>
+
+  <div style="margin: 18px 22px 0 16px; background: #FFFFFF; border: 2.5px solid #111111; box-shadow: 6px 6px 0 #FF2D78">
+    <div style="display: flex; justify-content: space-between; align-items: center; height: 32px; padding: 0 12px; background: #111111; color: #C8FF3D; font-size: 10px; font-weight: 700"><span style="display: flex; align-items: center; gap: 6px"><svg width="13" height="13" viewBox="0 0 24 24" fill="#C8FF3D" style="color: #C8FF3D; flex-shrink: 0" aria-hidden="true"><path d="M12 1.8l3 6.6 7.1.8-5.3 4.8 1.5 7.1L12 17.5l-6.3 3.6 1.5-7.1L1.9 9.2 9 8.4z"/></svg>PICKED FOR YOU</span><span style="color: #FFFFFF">{{pk.n}}</span></div>
+    <div class="{{pkAnim}}" style="display: flex; min-height: 96px; border-bottom: 2.5px solid #111111">
+      <span style="width: 62px; flex-shrink: 0; background: {{pk.bg}}; border-right: 2.5px solid #111111; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: {{pk.fg}}; font-size: 9px; font-weight: 700"><sc-if value="{{pk.is_kite}}" hint-placeholder-val="{{false}}"><svg width="26" height="26" viewBox="0 0 48 48" aria-hidden="true"><path d="M5 23 C13 6 35 6 43 23 L37 24 C30 16 18 16 11 24 Z" fill="#FFFFFF" stroke="none"/><path d="M11 24 L24 40 M37 24 L24 40 M18 41 H30" fill="none" stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round"/></svg></sc-if><sc-if value="{{pk.is_wing}}" hint-placeholder-val="{{false}}"><svg width="26" height="26" viewBox="0 0 48 48" aria-hidden="true"><path d="M6 33 C8 17 21 8 42 7 C36 16 34 25 34 39 C25 34 15 33 6 33 Z" fill="#FFFFFF"/></svg></sc-if><sc-if value="{{pk.is_surf}}" hint-placeholder-val="{{false}}"><svg width="26" height="26" viewBox="0 0 48 48" aria-hidden="true"><path d="M3 41 C3 20 15 9 28 9 C38 9 45 15 45 24 C38 21 32 24 31 31 C30 36 33 39 37 41 Z" fill="#FFFFFF"/></svg></sc-if><sc-if value="{{pk.is_sup}}" hint-placeholder-val="{{false}}"><svg width="26" height="26" viewBox="0 0 48 48" aria-hidden="true"><path d="M4 34 H43 Q46 37 43 40 H4 Q2 37 4 34 Z" fill="#111111"/><path d="M35 5 L25 30" stroke="#111111" stroke-width="3.6" stroke-linecap="round"/><path d="M22 27 L29.5 30 L27 37 L19.5 34 Z" fill="#111111"/></svg></sc-if><sc-if value="{{pk.is_mtb}}" hint-placeholder-val="{{false}}"><svg width="26" height="26" viewBox="0 0 48 48" aria-hidden="true"><g fill="none" stroke="#111111" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="32" r="7"/><circle cx="36" cy="32" r="7"/><path d="M12 32 L19 20 H30 L36 32 M19 20 L24 32 L30 20 M27 15 H33"/></g></svg></sc-if><span>{{pk.day}}</span><span style="margin-top: -3px">{{pk.time}}</span></span>
+      <span style="flex: 1; min-width: 0; padding: 10px 12px; display: flex; flex-direction: column; gap: 3px">
+        <span style="display: flex; justify-content: space-between; gap: 8px; font-size: 9px; font-weight: 700"><span style="color: #FF2D78">{{pk.kick}}</span><span style="flex-shrink: 0; background: {{pk.vcol}}; border: 1.5px solid #111111; padding: 0 5px">{{pk.verdict}}</span></span>
+        <span style="font-family: 'Archivo Black', sans-serif; font-size: 18px; line-height: 1.1">{{pk.title}}</span>
+        <span style="font-size: 11px; line-height: 1.4">{{pk.cond}}</span>
+      </span>
+    </div>
+    <div style="padding: 10px 12px 12px; display: flex; flex-direction: column; gap: 7px">
+      <span style="font-size: 9px; font-weight: 700; color: #4A4538">WHY THIS ONE</span>
+      <sc-for list="{{pk.why}}" as="w" hint-placeholder-count="4"><span class="why"><span><sc-if value="{{w.is_wave}}" hint-placeholder-val="{{true}}"><svg width="15" height="15" viewBox="0 0 24 24" fill="#111111" style="color: #111111; flex-shrink: 0" aria-hidden="true"><path d="M1 15.5c2.8 0 2.8-3 5.5-3s2.8 3 5.5 3 2.8-3 5.5-3 2.8 3 5.5 3V19c-2.8 0-2.8-3-5.5-3s-2.8 3-5.5 3-2.8-3-5.5-3S3.8 19 1 19z"/><path d="M1 8.5c2.8 0 2.8-3 5.5-3s2.8 3 5.5 3 2.8-3 5.5-3 2.8 3 5.5 3V12c-2.8 0-2.8-3-5.5-3s-2.8 3-5.5 3-2.8-3-5.5-3S3.8 12 1 12z"/></svg></sc-if><sc-if value="{{w.is_shaka}}" hint-placeholder-val="{{false}}"><svg width="15" height="15" viewBox="0 0 24 24" fill="#111111" style="color: #111111; flex-shrink: 0" aria-hidden="true"><rect x="7" y="9" width="10" height="9.5" rx="3"/><rect x="1.5" y="7.2" width="8" height="3.4" rx="1.7" transform="rotate(-28 5.5 8.9)"/><rect x="15.2" y="2.8" width="3.4" height="9.5" rx="1.7" transform="rotate(18 16.9 7.5)"/><rect x="8.5" y="17.5" width="7" height="4.5" rx="1"/></svg></sc-if><sc-if value="{{w.is_star}}" hint-placeholder-val="{{false}}"><svg width="15" height="15" viewBox="0 0 24 24" fill="#111111" style="color: #111111; flex-shrink: 0" aria-hidden="true"><path d="M12 1.8l3 6.6 7.1.8-5.3 4.8 1.5 7.1L12 17.5l-6.3 3.6 1.5-7.1L1.9 9.2 9 8.4z"/></svg></sc-if><sc-if value="{{w.is_car}}" hint-placeholder-val="{{false}}"><svg width="15" height="15" viewBox="0 0 24 24" fill="#111111" style="color: #111111; flex-shrink: 0" aria-hidden="true"><path fill-rule="evenodd" d="M2.5 18v-6l2.8-5.5h13.4L21.5 12v6h-2.3a2.6 2.6 0 0 1-5.2 0h-4a2.6 2.6 0 0 1-5.2 0zM7.2 11.3h9.6l-1.5-3H8.7z"/></svg></sc-if><sc-if value="{{w.is_rookie}}" hint-placeholder-val="{{false}}"><svg width="15" height="15" viewBox="0 0 24 24" fill="#111111" style="color: #111111; flex-shrink: 0" aria-hidden="true"><path fill-rule="evenodd" d="M2 2h20v20H2zm2.8 2.8v14.4h14.4V4.8z"/><path d="M8.2 6.4h3.2v8.4h5v3H8.2z"/></svg></sc-if><sc-if value="{{w.is_board}}" hint-placeholder-val="{{false}}"><svg width="15" height="15" viewBox="0 0 24 24" fill="#111111" style="color: #111111; flex-shrink: 0" aria-hidden="true"><rect x="2" y="2.5" width="20" height="3.2" rx="1.6"/><path fill-rule="evenodd" d="M2.5 19v-6l2.8-5h13.4l2.8 5v6h-2.3a2.6 2.6 0 0 1-5.2 0h-4a2.6 2.6 0 0 1-5.2 0zM7.2 12.6h9.6l-1.5-2.8H8.7z"/></svg></sc-if><sc-if value="{{w.is_bell}}" hint-placeholder-val="{{false}}"><svg width="15" height="15" viewBox="0 0 24 24" fill="#111111" style="color: #111111; flex-shrink: 0" aria-hidden="true"><path d="M12 2.5c-3.6 0-6 2.7-6 6.3v4.4L4 16.5V18h16v-1.5l-2-3.3V8.8c0-3.6-2.4-6.3-6-6.3z"/><path d="M9.3 19.5h5.4a2.7 2.7 0 0 1-5.4 0z"/></svg></sc-if><sc-if value="{{w.is_bike}}" hint-placeholder-val="{{false}}"><svg width="15" height="15" viewBox="0 0 24 24" fill="#111111" style="color: #111111; flex-shrink: 0" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="5.5" cy="16.5" r="3.6"/><circle cx="18.5" cy="16.5" r="3.6"/><path d="M5.5 16.5 9 9.5h6l3.5 7M9 9.5l3 7 3-7M13.6 6.5h3"/></g></svg></sc-if></span><span>{{w.t}}</span></span></sc-for>
+    </div>
+    <sc-if value="{{pkIdle}}" hint-placeholder-val="{{true}}">
+      <div style="display: grid; grid-template-columns: 1.25fr 1fr; border-top: 2.5px solid #111111">
+        <button type="button" onClick="{{pkGo}}" style="height: 54px; background: {{pkBg}}; color: {{pkFg}}; border: 0; font-family: 'Archivo Black', sans-serif; font-size: 14px; cursor: pointer">{{pkLbl}}</button>
+        <button type="button" onClick="{{pkNext}}" style="height: 54px; display: flex; align-items: center; justify-content: center; gap: 6px; background: #FFFFFF; color: #111111; border: 0; border-left: 2.5px solid #111111; font-family: 'Archivo Black', sans-serif; font-size: 12px; cursor: pointer"><svg width="14" height="14" viewBox="0 0 24 24" fill="#111111" style="color: #111111; flex-shrink: 0" aria-hidden="true"><path d="M13.5 1.5 4 13.5h6.5L9 22.5l11-13.5h-6.8z"/></svg>SHOW ANOTHER</button>
+      </div>
+    </sc-if>
+    <sc-if value="{{pkDone}}" hint-placeholder-val="{{false}}">
+      <div class="pop" style="display: grid; grid-template-columns: 1fr auto; border-top: 2.5px solid #111111">
+        <a href="{{pkHref}}" style="height: 54px; display: flex; align-items: center; gap: 8px; padding: 0 12px; background: #C8FF3D; color: #111111; text-decoration: none; font-family: 'Archivo Black', sans-serif; font-size: 12px"><svg width="16" height="16" viewBox="0 0 24 24" fill="#111111" style="color: #111111; flex-shrink: 0" aria-hidden="true"><path d="M2.5 12.5 6 9l3.8 3.8L18 4.6l3.5 3.5L9.8 19.8z"/></svg>{{pkDoneLbl}}</a>
+        <button type="button" onClick="{{pkUndo}}" style="height: 54px; padding: 0 12px; background: #FFFFFF; border: 0; border-left: 2.5px solid #111111; font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700; cursor: pointer; text-decoration: underline">UNDO</button>
+      </div>
+    </sc-if>
+  </div>
+
+  <sc-if value="{{hasNext}}" hint-placeholder-val="{{true}}">
+    <a href="B24-Crew.dc.html" style="margin: 16px 22px 0 16px; display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: #111111; color: #FFFFFF; border: 2.5px solid #111111; box-shadow: 4px 4px 0 #FF2D78; text-decoration: none">
+      <span style="width: 40px; height: 40px; flex-shrink: 0; background: #35677D; border: 2px solid #F3EFE3; display: flex; align-items: center; justify-content: center"><svg width="24" height="24" viewBox="0 0 48 48" aria-hidden="true"><path d="M5 23 C13 6 35 6 43 23 L37 24 C30 16 18 16 11 24 Z" fill="#FFFFFF" stroke="none"/><path d="M11 24 L24 40 M37 24 L24 40 M18 41 H30" fill="none" stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round"/></svg></span>
+      <span style="flex: 1; display: flex; flex-direction: column; gap: 1px"><span style="font-size: 9px; font-weight: 700; color: #C8FF3D">YOUR NEXT CREW · YOU'RE IN</span><b style="font-family: 'Archivo Black', sans-serif; font-weight: 400; font-size: 14px">Wijk aan Zee · today 14:00</b><span style="font-size: 10px">Seat in Marta's car · leaves 12:15</span></span>
+      <span style="font-family: 'Anton', sans-serif; font-size: 22px; color: #C8FF3D">{{countdown}}</span>
+    </a>
+  </sc-if>
+
+  <div style="padding: 22px 16px 0; display: flex; align-items: baseline; justify-content: space-between">
+    <span style="font-family: 'Archivo Black', sans-serif; font-size: 20px">{{resTitle}}</span>
+    <span style="font-size: 10px; font-weight: 700">{{resCount}}</span>
+  </div>
+  <div style="margin: 6px 16px 0; font-size: 11px; color: #4A4538">{{resSub}}</div>
+
+  <div style="margin: 14px 22px 0 16px; display: flex; flex-direction: column; gap: 16px">
+    <sc-if value="{{noRes}}" hint-placeholder-val="{{false}}">
+      <div style="padding: 16px; background: #FFFFFF; border: 2.5px dashed #111111; font-size: 12px; line-height: 1.5">Nothing good for that combo yet. <b>Start the crew yourself</b>: we'll ping riders who watch this spot.<a href="B24-Start.dc.html" style="margin-top: 10px; height: 46px; display: flex; align-items: center; justify-content: center; background: #C8FF3D; border: 2.5px solid #111111; text-decoration: none; color: #111111; font-family: 'Archivo Black', sans-serif; font-size: 13px">+ START A CREW</a></div>
+    </sc-if>
+    <sc-for list="{{res}}" as="r" hint-placeholder-count="4">
+      <div style="background: #FFFFFF; border: 2.5px solid #111111; box-shadow: {{r.shadow}}">
+        <div style="display: flex; min-height: 92px; border-bottom: 2.5px solid #111111">
+          <span style="width: 62px; flex-shrink: 0; background: {{r.bg}}; border-right: 2.5px solid #111111; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: {{r.fg}}; font-size: 9px; font-weight: 700"><sc-if value="{{r.is_kite}}" hint-placeholder-val="{{false}}"><svg width="26" height="26" viewBox="0 0 48 48" aria-hidden="true"><path d="M5 23 C13 6 35 6 43 23 L37 24 C30 16 18 16 11 24 Z" fill="#FFFFFF" stroke="none"/><path d="M11 24 L24 40 M37 24 L24 40 M18 41 H30" fill="none" stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round"/></svg></sc-if><sc-if value="{{r.is_wing}}" hint-placeholder-val="{{false}}"><svg width="26" height="26" viewBox="0 0 48 48" aria-hidden="true"><path d="M6 33 C8 17 21 8 42 7 C36 16 34 25 34 39 C25 34 15 33 6 33 Z" fill="#FFFFFF"/></svg></sc-if><sc-if value="{{r.is_surf}}" hint-placeholder-val="{{false}}"><svg width="26" height="26" viewBox="0 0 48 48" aria-hidden="true"><path d="M3 41 C3 20 15 9 28 9 C38 9 45 15 45 24 C38 21 32 24 31 31 C30 36 33 39 37 41 Z" fill="#FFFFFF"/></svg></sc-if><sc-if value="{{r.is_sup}}" hint-placeholder-val="{{false}}"><svg width="26" height="26" viewBox="0 0 48 48" aria-hidden="true"><path d="M4 34 H43 Q46 37 43 40 H4 Q2 37 4 34 Z" fill="#111111"/><path d="M35 5 L25 30" stroke="#111111" stroke-width="3.6" stroke-linecap="round"/><path d="M22 27 L29.5 30 L27 37 L19.5 34 Z" fill="#111111"/></svg></sc-if><sc-if value="{{r.is_mtb}}" hint-placeholder-val="{{false}}"><svg width="26" height="26" viewBox="0 0 48 48" aria-hidden="true"><g fill="none" stroke="#111111" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="32" r="7"/><circle cx="36" cy="32" r="7"/><path d="M12 32 L19 20 H30 L36 32 M19 20 L24 32 L30 20 M27 15 H33"/></g></svg></sc-if><span>{{r.day}}</span><span style="margin-top: -3px">{{r.time}}</span></span>
+          <span style="flex: 1; min-width: 0; padding: 10px 12px; display: flex; flex-direction: column; gap: 3px">
+            <span style="display: flex; justify-content: space-between; gap: 8px; font-size: 9px; font-weight: 700"><span>{{r.sport}} · {{r.dist}}</span><span style="background: {{r.vcol}}; border: 1.5px solid #111111; padding: 0 5px">{{r.verdict}}</span></span>
+            <span style="font-family: 'Archivo Black', sans-serif; font-size: 17px; line-height: 1.1">{{r.spot}}</span>
+            <span style="font-size: 11px; line-height: 1.4">{{r.cond}}</span>
+          </span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 10px; padding: 10px 12px">
+          <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; font-size: 11px">
+            <sc-if value="{{r.isCrew}}" hint-placeholder-val="{{true}}"><span style="display: flex; align-items: center; gap: 6px"><span style="display: flex"><sc-for list="{{r.faces}}" as="f" hint-placeholder-count="3"><span style="width: 22px; height: 22px; margin-right: -6px; border-radius: 50%; background: {{f.bg}}; border: 2px solid #111111; font-family: 'Archivo Black', sans-serif; font-size: 8px; color: {{f.fg}}; display: flex; align-items: center; justify-content: center">{{f.i}}</span></sc-for></span><b style="margin-left: 6px">{{r.crew}}</b></span></sc-if>
+            <sc-if value="{{r.hasTags}}" hint-placeholder-val="{{true}}"><span style="display: flex; flex-wrap: wrap; gap: 5px"><sc-if value="{{r.hasPal}}" hint-placeholder-val="{{true}}"><span style="display: inline-flex; align-items: center; gap: 4px; background: #FFC2D6; border: 1.5px solid #111111; padding: 0 5px; font-size: 9px; font-weight: 700"><svg width="11" height="11" viewBox="0 0 24 24" fill="#111111" style="color: #111111; flex-shrink: 0" aria-hidden="true"><rect x="7" y="9" width="10" height="9.5" rx="3"/><rect x="1.5" y="7.2" width="8" height="3.4" rx="1.7" transform="rotate(-28 5.5 8.9)"/><rect x="15.2" y="2.8" width="3.4" height="9.5" rx="1.7" transform="rotate(18 16.9 7.5)"/><rect x="8.5" y="17.5" width="7" height="4.5" rx="1"/></svg>{{r.pal}}</span></sc-if><sc-if value="{{r.hasLvl}}" hint-placeholder-val="{{true}}"><span style="display: inline-flex; align-items: center; gap: 4px; background: #8DF5E8; border: 1.5px solid #111111; padding: 0 5px; font-size: 9px; font-weight: 700"><svg width="11" height="11" viewBox="0 0 24 24" fill="#111111" style="color: #111111; flex-shrink: 0" aria-hidden="true"><path d="M12 1.8l3 6.6 7.1.8-5.3 4.8 1.5 7.1L12 17.5l-6.3 3.6 1.5-7.1L1.9 9.2 9 8.4z"/></svg>{{r.lvl}}</span></sc-if></span></sc-if>
+            <sc-if value="{{r.isWin}}" hint-placeholder-val="{{false}}"><b>Good window, no crew yet</b></sc-if>
+            <span style="display: flex; align-items: center; gap: 5px; color: #4A4538"><svg width="13" height="13" viewBox="0 0 24 24" fill="#4A4538" style="color: #4A4538; flex-shrink: 0" aria-hidden="true"><path fill-rule="evenodd" d="M2.5 18v-6l2.8-5.5h13.4L21.5 12v6h-2.3a2.6 2.6 0 0 1-5.2 0h-4a2.6 2.6 0 0 1-5.2 0zM7.2 11.3h9.6l-1.5-3H8.7z"/></svg>{{r.ride}}</span>
+            <sc-if value="{{r.rookie}}" hint-placeholder-val="{{false}}"><span style="align-self: flex-start; background: #C8FF3D; border: 1.5px solid #111111; padding: 0 5px; font-size: 9px; font-weight: 700">NEW TO IT? CAPTAIN + GEAR</span></sc-if>
+          </span>
+          <sc-if value="{{r.idle}}" hint-placeholder-val="{{true}}"><button type="button" onClick="{{r.act}}" style="flex-shrink: 0; height: 46px; padding: 0 14px; background: {{r.btnBg}}; color: {{r.btnFg}}; border: 2.5px solid #111111; box-shadow: 3px 3px 0 #111111; font-family: 'Archivo Black', sans-serif; font-size: 13px; cursor: pointer; white-space: nowrap">{{r.btn}}</button></sc-if>
+        </div>
+        <sc-if value="{{r.mine}}" hint-placeholder-val="{{false}}">
+          <a href="B24-Crew.dc.html" style="display: flex; align-items: center; gap: 8px; height: 50px; padding: 0 12px; border-top: 2.5px solid #111111; background: #111111; color: #C8FF3D; text-decoration: none; font-family: 'Archivo Black', sans-serif; font-size: 12px"><svg width="16" height="16" viewBox="0 0 24 24" fill="#C8FF3D" style="color: #C8FF3D; flex-shrink: 0" aria-hidden="true"><path d="M2.5 12.5 6 9l3.8 3.8L18 4.6l3.5 3.5L9.8 19.8z"/></svg>YOU'RE IN · SEAT IN MARTA'S CAR →</a>
+        </sc-if>
+        <sc-if value="{{r.joined}}" hint-placeholder-val="{{false}}">
+          <div class="pop" style="display: grid; grid-template-columns: 1fr auto; border-top: 2.5px solid #111111">
+            <a href="B24-Ride.dc.html" style="height: 50px; display: flex; align-items: center; gap: 8px; padding: 0 12px; background: #C8FF3D; text-decoration: none; color: #111111; font-family: 'Archivo Black', sans-serif; font-size: 13px"><svg width="16" height="16" viewBox="0 0 24 24" fill="#111111" style="color: #111111; flex-shrink: 0" aria-hidden="true"><path d="M2.5 12.5 6 9l3.8 3.8L18 4.6l3.5 3.5L9.8 19.8z"/></svg>YOU'RE IN · GRAB A SEAT →</a>
+            <button type="button" onClick="{{r.undo}}" style="height: 50px; padding: 0 12px; background: #FFFFFF; border: 0; border-left: 2.5px solid #111111; font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700; cursor: pointer; text-decoration: underline">UNDO</button>
+          </div>
+        </sc-if>
+        <sc-if value="{{r.started}}" hint-placeholder-val="{{false}}">
+          <div class="pop" style="border-top: 2.5px solid #111111; background: #111111; color: #FFFFFF; padding: 10px 12px">
+            <div style="font-family: 'Archivo Black', sans-serif; font-size: 14px; color: #C8FF3D">YOUR CREW IS LIVE</div>
+            <div style="margin-top: 2px; font-size: 10px; line-height: 1.45">{{r.startLine}}</div>
+            <div style="margin-top: 10px; display: grid; grid-template-columns: 1.3fr 1fr auto; gap: 8px">
+              <a href="B24-Invite.dc.html" style="height: 42px; display: flex; align-items: center; justify-content: center; gap: 6px; background: #FF2D78; color: #FFFFFF; border: 2px solid #F3EFE3; text-decoration: none; font-family: 'Archivo Black', sans-serif; font-size: 11px"><svg width="14" height="14" viewBox="0 0 24 24" fill="#FFFFFF" style="color: #FFFFFF; flex-shrink: 0" aria-hidden="true"><path d="M12 1.5 5.8 7.8h4.2V15h4V7.8h4.2z"/><path d="M3 12h3.2v6.8h11.6V12H21v10H3z"/></svg>SEND THE LINK</a>
+              <a href="B24-Crew.dc.html" style="height: 42px; display: flex; align-items: center; justify-content: center; background: #F3EFE3; color: #111111; border: 2px solid #F3EFE3; text-decoration: none; font-family: 'Archivo Black', sans-serif; font-size: 11px">OPEN CREW</a>
+              <button type="button" onClick="{{r.undo}}" style="height: 42px; padding: 0 8px; background: transparent; color: #FFFFFF; border: 2px solid #F3EFE3; font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700; cursor: pointer">UNDO</button>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </sc-for>
+    <sc-if value="{{more}}" hint-placeholder-val="{{true}}"><button type="button" onClick="{{showAll}}" style="height: 46px; background: #FFFFFF; border: 2.5px solid #111111; font-family: 'Archivo Black', sans-serif; font-size: 13px; cursor: pointer">{{moreLbl}} ↓</button></sc-if>
+  </div>
+
+  <div style="margin: 28px 22px 0 16px; padding: 14px; background: #FFFFFF; border: 2.5px solid #111111; box-shadow: 5px 5px 0 #111111">
+    <div style="display: flex; justify-content: space-between; align-items: baseline"><span style="font-family: 'Archivo Black', sans-serif; font-size: 18px">NEVER TRIED IT?</span><span style="font-size: 9px; font-weight: 700">CAPTAIN + GEAR</span></div>
+    <div role="group" aria-label="Try a sport" style="margin-top: 10px; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px">
+      <sc-for list="{{tries}}" as="t" hint-placeholder-count="5"><button type="button" onClick="{{t.pick}}" style="height: 62px; background: {{t.bg}}; color: {{t.fg}}; border: 2.5px solid #111111; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; font-family: 'Archivo Black', sans-serif; font-size: 9px; cursor: pointer"><sc-if value="{{t.is_kite}}" hint-placeholder-val="{{false}}"><svg width="22" height="22" viewBox="0 0 48 48" aria-hidden="true"><path d="M5 23 C13 6 35 6 43 23 L37 24 C30 16 18 16 11 24 Z" fill="#FFFFFF" stroke="none"/><path d="M11 24 L24 40 M37 24 L24 40 M18 41 H30" fill="none" stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round"/></svg></sc-if><sc-if value="{{t.is_wing}}" hint-placeholder-val="{{false}}"><svg width="22" height="22" viewBox="0 0 48 48" aria-hidden="true"><path d="M6 33 C8 17 21 8 42 7 C36 16 34 25 34 39 C25 34 15 33 6 33 Z" fill="#FFFFFF"/></svg></sc-if><sc-if value="{{t.is_surf}}" hint-placeholder-val="{{false}}"><svg width="22" height="22" viewBox="0 0 48 48" aria-hidden="true"><path d="M3 41 C3 20 15 9 28 9 C38 9 45 15 45 24 C38 21 32 24 31 31 C30 36 33 39 37 41 Z" fill="#FFFFFF"/></svg></sc-if><sc-if value="{{t.is_sup}}" hint-placeholder-val="{{false}}"><svg width="22" height="22" viewBox="0 0 48 48" aria-hidden="true"><path d="M4 34 H43 Q46 37 43 40 H4 Q2 37 4 34 Z" fill="#111111"/><path d="M35 5 L25 30" stroke="#111111" stroke-width="3.6" stroke-linecap="round"/><path d="M22 27 L29.5 30 L27 37 L19.5 34 Z" fill="#111111"/></svg></sc-if><sc-if value="{{t.is_mtb}}" hint-placeholder-val="{{false}}"><svg width="22" height="22" viewBox="0 0 48 48" aria-hidden="true"><g fill="none" stroke="#111111" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="32" r="7"/><circle cx="36" cy="32" r="7"/><path d="M12 32 L19 20 H30 L36 32 M19 20 L24 32 L30 20 M27 15 H33"/></g></svg></sc-if><span>{{t.t}}</span></button></sc-for>
+    </div>
+    <div style="margin-top: 8px; font-size: 10px; color: #4A4538">Tap a sport: we show the rookie crews for it. Hiking, bouldering, road bike and more are coming.</div>
+    <div style="margin-top: 14px; padding: 12px; background: #FFE14D; border: 2.5px solid #111111">
+      <div style="display: flex; align-items: center; gap: 8px"><svg width="18" height="18" viewBox="0 0 24 24" fill="#111111" style="color: #111111; flex-shrink: 0" aria-hidden="true"><rect x="6.5" y="11" width="12.5" height="11" rx="3"/><rect x="6.6" y="4.5" width="2.8" height="9" rx="1.4"/><rect x="10.1" y="2" width="2.8" height="10" rx="1.4"/><rect x="13.6" y="3" width="2.8" height="9" rx="1.4"/><rect x="16.8" y="6" width="2.6" height="8" rx="1.3"/><path d="M7 15.5 3.6 12.6a1.5 1.5 0 0 0-2.1 2.1L6.5 20z"/></svg><b style="font-family: 'Archivo Black', sans-serif; font-weight: 400; font-size: 16px">BUDDY UP</b><span style="margin-left: auto; font-size: 9px; font-weight: 700">GO WITH A STRANGER</span></div>
+      <div style="margin-top: 4px; font-size: 11px; line-height: 1.45">Nobody to go with? We pair you with one other first-timer near you, plus a captain. Same car, same lesson, same level.</div>
+      <sc-if value="{{noBuddy}}" hint-placeholder-val="{{true}}"><button type="button" onClick="{{pairMe}}" style="margin-top: 10px; width: 100%; height: 46px; background: #111111; color: #C8FF3D; border: 2.5px solid #111111; font-family: 'Archivo Black', sans-serif; font-size: 13px; cursor: pointer">PAIR ME UP</button></sc-if>
+      <sc-if value="{{hasBuddy}}" hint-placeholder-val="{{false}}">
+        <div class="pop" style="margin-top: 10px; display: flex; align-items: center; gap: 10px; padding: 10px; background: #FFFFFF; border: 2.5px solid #111111">
+          <span style="width: 38px; height: 38px; flex-shrink: 0; border-radius: 50%; background: #FF2D78; color: #FFFFFF; border: 2px solid #111111; font-family: 'Archivo Black', sans-serif; font-size: 11px; display: flex; align-items: center; justify-content: center">LE</span>
+          <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px"><b style="font-size: 12px">Matched: Lena, from Haarlem</b><span style="font-size: 10px; line-height: 1.4">Also new to wing. Thu 15:00 at IJmuiden. Captain Sam drives you both.</span></span>
+        </div>
+        <div class="pop" style="margin-top: 8px; display: grid; grid-template-columns: 1fr auto; gap: 8px">
+          <a href="B24-Chat.dc.html" style="height: 44px; display: flex; align-items: center; justify-content: center; gap: 6px; background: #FF2D78; color: #FFFFFF; border: 2.5px solid #111111; text-decoration: none; font-family: 'Archivo Black', sans-serif; font-size: 12px"><svg width="15" height="15" viewBox="0 0 24 24" fill="#FFFFFF" style="color: #FFFFFF; flex-shrink: 0" aria-hidden="true"><path d="M2 3h20v14H9.5L4 21.5V17H2z"/></svg>SAY HI TO LENA</a>
+          <button type="button" onClick="{{pairMe}}" style="height: 44px; padding: 0 12px; background: transparent; border: 2px solid #111111; font-family: 'Space Mono', monospace; font-size: 10px; font-weight: 700; cursor: pointer">UNDO</button>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+  <div style="margin: 16px 22px 0 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 10px">
+    <a href="B24-Rent.dc.html" style="height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2.5px dashed #111111; text-decoration: none; color: #111111; font-family: 'Archivo Black', sans-serif; font-size: 12px">GEAR &amp; LESSONS<span style="font-family: 'Space Mono', monospace; font-size: 9px; font-weight: 700; color: #FF2D78">coming soon</span></a>
+    <a href="B24-Market.dc.html" style="height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 2.5px dashed #111111; text-decoration: none; color: #111111; font-family: 'Archivo Black', sans-serif; font-size: 12px">SECOND-HAND<span style="font-family: 'Space Mono', monospace; font-size: 9px; font-weight: 700; color: #FF2D78">coming soon</span></a>
+  </div>
+
+  <nav aria-label="Main" style="position: absolute; left: 0; right: 0; bottom: 0; height: 80px; background: #F3EFE3; border-top: 2.5px solid #111111; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: center; padding-bottom: 10px; box-sizing: border-box">
+<a href="B24-Today.dc.html" aria-current="page" style="display: flex; flex-direction: column; align-items: center; gap: 4px; text-decoration: none; font-size: 10px; font-weight: 700; color: #FF2D78"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3"></circle><circle cx="17" cy="9" r="2.5"></circle><path d="M3 19c0-3 3-5 6-5s6 2 6 5"></path><path d="M15 14c3 0 6 1.5 6 4"></path></svg>CREWS</a>
+<a href="B24-Map.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 4px; text-decoration: none; font-size: 10px; font-weight: 700; color: #111111"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6-7-11a7 7 0 0 1 14 0c0 5-7 11-7 11z"></path><circle cx="12" cy="10" r="2.5"></circle></svg>LIVE MAP</a>
+<a href="B24-Start.dc.html" aria-label="Start a crew" style="justify-self: center; width: 56px; height: 56px; box-sizing: border-box; margin-top: -16px; background: #C8FF3D; border: 2.5px solid #111111; box-shadow: 4px 4px 0 #111111; display: flex; align-items: center; justify-content: center"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></a>
+<a href="B24-Try.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 4px; text-decoration: none; font-size: 10px; font-weight: 700; color: #111111"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l2.9 6.9 7.1.6-5.4 4.7 1.7 7.3L12 17.6 5.7 21.5l1.7-7.3L2 9.5l7.1-.6z"></path></svg>TRY</a>
+<a href="B24-Me.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 4px; text-decoration: none; font-size: 10px; font-weight: 700; color: #111111"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4 4-7 8-7s8 3 8 7"></path></svg>ME</a>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":2440}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { what: "any", where: "ams", when: "week", open: "", acts: { a: "mine" }, radio: false, radioOpen: false, hi: "", t: 0, pick: 0, buddy: false, radioTab: "tapes", tape: "dint", link: "", played: "", linkErr: false }; this.iv = null; }
+  componentDidMount() { this.iv = setInterval(() => this.setState({ t: this.state.t + 1 }), 1000); }
+  componentWillUnmount() { if (this.iv) clearInterval(this.iv); }
+  renderVals() {
+    const st = this.state;
+    const BG = { kite: "#35677D", wing: "#173D57", surf: "#FF2D78", sup: "#8DF5E8", mtb: "#C8FF3D" };
+    const FG = { kite: "#FFFFFF", wing: "#FFFFFF", surf: "#FFFFFF", sup: "#111111", mtb: "#111111" };
+    const FL = (s) => ({ is_kite: s === "kite", is_wing: s === "wing", is_surf: s === "surf", is_sup: s === "sup", is_mtb: s === "mtb" });
+    const WHAT = [["any", "ANYTHING"], ["kite", "KITE"], ["wing", "WING"], ["surf", "SURF"], ["sup", "SUP"], ["mtb", "MTB"], ["new", "SOMETHING NEW"]];
+    const WHERE = [["ams", "AMSTERDAM", false], ["haarlem", "HAARLEM", false], ["s-wijk", "MY STAY · WIJK AAN ZEE", true], ["s-schoorl", "MY STAY · SCHOORL", true]];
+    const WHEN = [["today", "TODAY"], ["tomorrow", "TOMORROW"], ["weekend", "THIS WEEKEND"], ["week", "THIS WEEK"]];
+    const MIN = { ams: { wijk: 35, ijm: 30, zand: 30, schoorl: 45 }, haarlem: { wijk: 20, ijm: 15, zand: 12, schoorl: 35 }, "s-wijk": { wijk: 3, ijm: 10, zand: 25, schoorl: 30 }, "s-schoorl": { wijk: 30, ijm: 35, zand: 45, schoorl: 4 } };
+    const S = [
+      { id: "a", s: "kite", spot: "WIJK AAN ZEE", sp: "wijk", d: "today", day: "TODAY", time: "14:00", verdict: "GO", cond: "21 kts SW · gusts 27 · side-on", plain: "Windy and steady all afternoon. Great for kiting.", crew: "Marta + 4", faces: ["M", "J", "S"], seats: 2, rookie: false, score: 9 },
+      { id: "b", s: "wing", spot: "IJMUIDEN", sp: "ijm", d: "today", day: "TODAY", time: "15:00", verdict: "GOOD", cond: "17 kts W · flat behind the pier", plain: "Light, flat water. Easy first wing day.", crew: "", seats: 0, rookie: true, score: 7 },
+      { id: "c", s: "surf", spot: "ZANDVOORT", sp: "zand", d: "tomorrow", day: "THU", time: "09:00", verdict: "CLEAN", cond: "1.2 m · 9 s · light offshore", plain: "Small, clean waves in the morning. Good for beginners.", crew: "Joost + 3", faces: ["J", "L", "K"], seats: 3, rookie: true, score: 8 },
+      { id: "d", s: "sup", spot: "IJMUIDEN", sp: "ijm", d: "tomorrow", day: "THU", time: "18:00", verdict: "EASY", cond: "glassy · 5 kts · sunset 18:41", plain: "Flat and calm at sunset. Anyone can do this.", crew: "", seats: 0, rookie: true, score: 6 },
+      { id: "e", s: "mtb", spot: "SCHOORL DUNES", sp: "schoorl", d: "weekend", day: "SAT", time: "10:30", verdict: "GO", cond: "dry trails · 12° · blue + red route", plain: "Dry and grippy. Blue route for first-timers.", crew: "Marta + 2", faces: ["M", "D"], seats: 2, rookie: true, score: 8 },
+      { id: "f", s: "kite", spot: "IJMUIDEN", sp: "ijm", d: "weekend", day: "SAT", time: "13:00", verdict: "GO", cond: "19 kts WSW · gusts 25", plain: "Good wind most of the afternoon.", crew: "", seats: 0, rookie: false, score: 7 },
+      { id: "g", s: "wing", spot: "WIJK AAN ZEE", sp: "wijk", d: "weekend", day: "SAT", time: "14:00", verdict: "FIRING", cond: "22 kts SW · steady", plain: "Strong and steady. The best wing day this week.", crew: "Sam + 1", faces: ["S", "N"], seats: 1, rookie: false, score: 9 },
+      { id: "h", s: "surf", spot: "WIJK AAN ZEE", sp: "wijk", d: "weekend", day: "SUN", time: "08:30", verdict: "GOOD", cond: "1.0 m · 8 s · glassy early", plain: "Small and glassy early. Fun on a longboard.", crew: "", seats: 0, rookie: true, score: 6 }
+    ];
+    const VC = { GO: "#C8FF3D", GOOD: "#C8FF3D", FIRING: "#FF2D78", CLEAN: "#C8FF3D", EASY: "#8DF5E8" };
+    // Picked for you: ranked by sweet spot + friends going + level match + seats free. Never the crew you're already in.
+    const P = [
+      { id: "g", kick: "BEST WING DAY THIS WEEK", why: [["wave", "22 kts steady. Your 18–25 kts sweet spot."], ["shaka", "Sam's going. You rode together Sunday."], ["star", "Sam and Nina ride at your level."], ["car", "1 seat left in Sam's car, Sloterdijk 12:30."]] },
+      { id: "c", kick: "TRY SOMETHING NEW", why: [["rookie", "Small, clean waves. A perfect first surf."], ["board", "Joost brings soft-tops and wetsuits."], ["star", "2 more first-timers. Joost captains."], ["car", "3 seats in Joost's van, Haarlem 08:15."]] },
+      { id: "b", kick: "GOOD WINDOW · NO CREW YET", why: [["wave", "17 kts on flat water. An easy wing day."], ["bell", "12 riders watch IJmuiden. We'll ping them."], ["car", "You pick the time. We find the cars."]] },
+      { id: "e", kick: "A DRY DAY AFTER A WINDY WEEK", why: [["shaka", "Marta's going. She drove you twice."], ["bike", "Room for 3 bikes on her rack."], ["star", "Blue route, easy pace. Fries at the end."]] }
+    ];
+    const SOC = { a: ["Marta drove you 2×", "your level"], c: ["", "2 first-timers"], e: ["Marta drove you 2×", "easy pace"], g: ["Sam rode with you", "your level"] };
+    // Hi8 Radio: official embeds only (Mixcloud widget, Spotify embed, SoundCloud widget). Nothing autoplays.
+    const TAPES = [
+      { id: "dint", t: "DEATH IS NOT THE END", nice: "NTS · Death Is Not The End", by: "NTS · 1960s surf rock, garage + early psych · 1 hr 55", url: "https://www.mixcloud.com/NTSRadio/death-is-not-the-end-6th-april-2019/" },
+      { id: "csoul", t: "CAROLINA SOUL", nice: "NTS · Carolina Soul", by: "NTS · rule-breaking rock 45s · 2 hrs", url: "https://www.mixcloud.com/NTSRadio/carolina-soul-rule-breaking-rock-45s-16th-october-2026/" },
+      { id: "nssr", t: "NORTH SEA SURF RADIO", nice: "North Sea Surf Radio", by: "DJ Phantom · Crossing Borders · 1 hr of surf from Amsterdam", url: "https://www.mixcloud.com/DJPhantom_NorthSeaSurfRadio/crossing-borders-on-north-sea-surf-radio-w46-first-broadcast-november-18th-2016/" }
+      // HI8 MIX VOL. 01 (Frankie's own Mixcloud upload) goes first here once the link is in.
+    ];
+    const toEmbed = (u) => { u = (u || "").trim();
+      let m = u.match(/open\.spotify\.com\/(?:intl-[a-z]+\/)?(playlist|album|track|show|episode)\/([A-Za-z0-9]+)/);
+      if (m) return { src: "https://open.spotify.com/embed/" + m[1] + "/" + m[2] + "?theme=0", h: 152, kind: "Spotify" };
+      m = u.match(/mixcloud\.com(\/[^?#\s]+)/);
+      if (m && m[1].indexOf("/widget/") !== 0) { let p = m[1]; if (!p.endsWith("/")) p += "/"; return { src: "https://www.mixcloud.com/widget/iframe/?hide_cover=1&mini=1&feed=" + encodeURIComponent(p), h: 60, kind: "Mixcloud" }; }
+      m = u.match(/soundcloud\.com\/[^?#\s]+/);
+      if (m) return { src: "https://w.soundcloud.com/player/?url=" + encodeURIComponent("https://" + m[0]) + "&color=%23ff2d78&auto_play=false&visual=false", h: 166, kind: "SoundCloud" };
+      return null; };
+    const tp = TAPES.find((x) => x.id === st.tape) || TAPES[0];
+    // The player keeps whatever is on the deck while you switch tabs or fold the panel; it only changes when you pick a tape or play a link.
+    const em = st.played ? toEmbed(st.played) : toEmbed(tp.url);
+    const FACE = ["#FF2D78", "#FFE14D", "#8DF5E8"];
+    const stay = st.where.startsWith("s-"); const lim = stay ? 30 : 60;
+    const whenOk = (d) => st.when === "week" || st.when === d || (st.when === "weekend" && d === "weekend");
+    const whatOk = (r) => st.what === "any" || (st.what === "new" ? r.rookie : r.s === st.what);
+    const base = WHERE.find((w) => w[0] === st.where);
+    let res = S.filter((r) => whenOk(r.d) && whatOk(r) && MIN[st.where][r.sp] <= lim).sort((a, b) => (b.crew ? 1 : 0) - (a.crew ? 1 : 0) || b.score - a.score);
+    const set = (k, v) => () => this.setState({ [k]: v, open: "" });
+    const act = (id, v) => () => { const a = Object.assign({}, st.acts); a[id] = v; this.setState({ acts: a }); };
+    const chipStyle = (on, slot) => "display:inline-flex;align-items:center;vertical-align:middle;margin:2px 0;height:40px;padding:0 10px;border:2.5px solid #111111;box-shadow:" + (st.open === slot ? "none" : "3px 3px 0 #111111") + ";background:" + (st.open === slot ? "#FFE14D" : "#FFFFFF") + ";color:#111111;font-family:'Archivo Black',sans-serif;font-size:15px;line-height:1;text-shadow:none;cursor:pointer";
+    const list = st.open === "what" ? WHAT : st.open === "where" ? WHERE : WHEN;
+    const cur = st.open === "what" ? st.what : st.open === "where" ? st.where : st.when;
+    const nCrew = res.filter((r) => r.crew).length, nWin = res.length - nCrew;
+    const radioLbl = st.radio ? "HI8 RADIO · ON" : "HI8 RADIO";
+    const rem = 4 * 3600 + 18 * 60 - st.t; const cd = Math.floor(rem / 3600) + ":" + String(Math.floor(rem / 60) % 60).padStart(2, "0");
+    const pk = P[st.pick % P.length], ps = S.find((x) => x.id === pk.id), pa = st.acts[pk.id] || "";
+    const soc = (id) => SOC[id] || ["", ""];
+    return {
+      out: String(17 + (st.t % 9 === 0 ? 1 : 0)), countdown: cd, hasNext: true,
+      radioOn: st.radio, radioOff: !st.radio, radioLbl: radioLbl, radioEdge: st.radio ? "#C8FF3D" : "#4A5054", radioOpen: st.radioOpen,
+      toggleRadio: () => this.setState({ radio: !st.radio, radioOpen: true }),
+      foldRadio: () => this.setState({ radioOpen: !st.radioOpen }), radioOpenS: st.radioOpen ? "true" : "false", foldLbl: st.radioOpen ? "HIDE ▴" : "MORE ▾",
+      miniLine: st.radioOpen ? "Tap play in the player. Phones never autoplay." : "On the deck: " + (st.played ? "your " + em.kind + " link" : tp.nice),
+      reel: em ? "spin" : "",
+      nowLine: "On the deck: " + (st.played ? "your " + em.kind + " link" : tp.nice) + ".",
+      rtabs: [["tapes", "TAPES"], ["link", "YOUR LINK"], ["nts", "NTS LIVE"]].map((r, j) => ({ t: r[1], sel: st.radioTab === r[0] ? "true" : "false", pick: () => this.setState({ radioTab: r[0] }),
+        style: "height:36px;border:0;" + (j ? "border-left:2px solid #F3EFE3;" : "") + "font-family:'Archivo Black',sans-serif;font-size:10px;cursor:pointer;color:" + (st.radioTab === r[0] ? "#111111" : "#FFFFFF") + ";background:" + (st.radioTab === r[0] ? "#C8FF3D" : "transparent") })),
+      isTapes: st.radioTab === "tapes", isLink: st.radioTab === "link", isNts: st.radioTab === "nts",
+      tapes: TAPES.map((x) => { const on = !st.played && x.id === tp.id; return { t: x.t, by: x.by, on: on ? "true" : "false", pick: () => this.setState({ tape: x.id, played: "" }),
+        style: "display:flex;align-items:center;gap:10px;padding:8px 10px;cursor:pointer;color:" + (on ? "#111111" : "#FFFFFF") + ";background:" + (on ? "#F3EFE3" : "transparent") + ";border:2px solid " + (on ? "#111111" : "#4A5054"),
+        dot: "width:12px;height:12px;flex-shrink:0;border-radius:50%;border:2px solid " + (on ? "#111111" : "#F3EFE3") + ";background:" + (on ? "#FF2D78" : "transparent") }; }),
+      link: st.link, setLink: (e) => this.setState({ link: e.target.value, linkErr: false }),
+      playLink: () => { const e = toEmbed(st.link); if (e) this.setState({ played: st.link.trim(), linkErr: false }); else this.setState({ linkErr: true }); },
+      linkMsg: st.linkErr ? "That isn't a Mixcloud, Spotify or SoundCloud link. Copy the share link from the app and try again." : "Spotify plays 30-second previews unless you're logged in to Premium. Mixcloud and SoundCloud play the whole mix.",
+      linkMsgC: st.linkErr ? "#FFC2D6" : "#E7E2D4",
+      hasEmbed: !!em, embed: em ? em.src : "", embedH: String(em ? em.h : 60), embedTitle: em ? em.kind + " player" : "", srcUrl: st.radioTab === "tapes" ? tp.url : st.played || "https://www.mixcloud.com/",
+      pk: Object.assign({}, FL(ps.s), { n: (st.pick % P.length + 1) + " OF " + P.length, kick: pk.kick, title: ps.spot, day: ps.day, time: ps.time, bg: BG[ps.s], fg: FG[ps.s], cond: ps.cond, verdict: ps.verdict, vcol: VC[ps.verdict] || "#FFE14D",
+        why: pk.why.map((w) => ({ t: w[1], is_wave: w[0] === "wave", is_shaka: w[0] === "shaka", is_star: w[0] === "star", is_car: w[0] === "car", is_rookie: w[0] === "rookie", is_board: w[0] === "board", is_bell: w[0] === "bell", is_bike: w[0] === "bike" })) }),
+      pkAnim: st.pick % 2 ? "popb" : "pop", pkIdle: !pa, pkDone: !!pa,
+      pkLbl: ps.crew ? "JOIN " + ps.crew.split(" ")[0].toUpperCase() + "'S CREW" : "START IT", pkBg: ps.crew ? "#FF2D78" : "#C8FF3D", pkFg: ps.crew ? "#FFFFFF" : "#111111",
+      pkGo: act(pk.id, ps.crew ? "join" : "start"), pkUndo: act(pk.id, ""), pkNext: () => this.setState({ pick: st.pick + 1 }),
+      pkHref: pa === "start" ? "B24-Invite.dc.html" : "B24-Ride.dc.html", pkDoneLbl: pa === "start" ? "CREW IS LIVE · SEND THE LINK →" : "YOU'RE IN · GRAB A SEAT →",
+      noBuddy: !st.buddy, hasBuddy: st.buddy, pairMe: () => this.setState({ buddy: !st.buddy }),
+      whatLbl: WHAT.find((w) => w[0] === st.what)[1], whereLbl: base[1].replace("MY STAY · ", ""), whenLbl: WHEN.find((w) => w[0] === st.when)[1],
+      whatStyle: chipStyle(true, "what"), whereStyle: chipStyle(true, "where"), whenStyle: chipStyle(true, "when"),
+      wOpen: st.open === "what" ? "true" : "false", pOpen: st.open === "where" ? "true" : "false", tOpen: st.open === "when" ? "true" : "false",
+      openWhat: () => this.setState({ open: st.open === "what" ? "" : "what" }), openWhere: () => this.setState({ open: st.open === "where" ? "" : "where" }), openWhen: () => this.setState({ open: st.open === "when" ? "" : "when" }),
+      anyOpen: !!st.open, optAria: st.open,
+      opts: list.map((o) => ({ t: o[1], pressed: cur === o[0] ? "true" : "false", pick: () => this.setState({ [st.open]: o[0], open: "", all: false }), style: "background:" + (cur === o[0] ? "#111111;color:#C8FF3D" : "#FFFFFF;color:#111111") })),
+      travel: stay, travelLine: "Everything within 30 min of where you're staying, conditions in plain words. Join a local crew or start one for your trip.",
+      surprise: () => this.setState({ pick: st.pick + 1 }),
+      resTitle: st.what === "new" ? "TRY SOMETHING NEW" : "OPEN CREWS + GOOD WINDOWS",
+      resCount: nCrew + " CREWS · " + nWin + " WINDOWS",
+      resSub: stay ? "Near your stay. Tap JOIN to hop in, START IT to make the plan." : "Join a crew that's going, or start one on a good window. One tap either way.",
+      noRes: res.length === 0,
+      more: res.length > 5 && !st.all, moreLbl: "SHOW " + (res.length - 5) + " MORE", showAll: () => this.setState({ all: true }),
+      res: res.slice(0, st.all ? 99 : 5).map((r) => { const a = st.acts[r.id] || ""; const isCrew = !!r.crew; const m = MIN[st.where][r.sp];
+        return Object.assign({}, FL(r.s), { day: r.day, time: r.time, spot: r.spot, sport: r.s.toUpperCase(), verdict: r.verdict, vcol: VC[r.verdict] || "#FFE14D",
+          bg: BG[r.s], fg: FG[r.s], dist: m <= 5 ? "on your doorstep" : m + " min from " + (stay ? "your stay" : base[1].toLowerCase().replace("amsterdam", "A'dam").replace("haarlem", "Haarlem")),
+          cond: stay ? r.plain : r.cond, isCrew: isCrew, isWin: !isCrew, crew: r.crew + " going", rookie: r.rookie,
+          faces: (r.faces || []).map((f, i) => ({ i: f, bg: FACE[i % 3], fg: "#111111" })),
+          ride: stay ? (m <= 5 ? "walk or cycle there" : isCrew && r.seats ? r.seats + " free seat" + (r.seats > 1 ? "s" : "") + " · pickup near your stay" : "start it, locals can give you a lift") : isCrew ? (r.seats ? r.seats + " free seat" + (r.seats > 1 ? "s" : "") + " in cars from " + (st.where === "haarlem" ? "Haarlem" : "A'dam") : "cars full · own way works") : "you pick the time, we find the cars",
+          btn: isCrew ? "JOIN" : "START IT", btnBg: isCrew ? "#FF2D78" : "#C8FF3D", btnFg: isCrew ? "#FFFFFF" : "#111111",
+          act: act(r.id, isCrew ? "join" : "start"), undo: act(r.id, ""), idle: !a, joined: a === "join", started: a === "start", mine: a === "mine",
+          hasPal: !!soc(r.id)[0], pal: soc(r.id)[0], hasLvl: !!soc(r.id)[1], lvl: soc(r.id)[1], hasTags: !!(soc(r.id)[0] || soc(r.id)[1]),
+          startLine: r.spot.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase()) + " · " + r.day.toLowerCase() + " " + r.time + ". We just pinged 12 riders who watch this spot. Send the link to your mates.",
+          shadow: st.hi === r.id ? "6px 6px 0 #FF2D78" : "6px 6px 0 #111111" }); }),
+      tries: ["kite", "wing", "surf", "sup", "mtb"].map((k) => Object.assign({}, FL(k), { t: k.toUpperCase(), bg: BG[k], fg: FG[k], pick: () => this.setState({ what: k, open: "" }) }))
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Hi8ctane — Onboarding</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&amp;family=Anton&amp;family=Space+Mono:wght@400;700&amp;family=Bowlby+One&amp;family=Yellowtail&amp;family=Permanent+Marker&amp;family=Special+Elite&amp;family=VT323&amp;family=Shrikhand&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#111111}a:hover{color:#FF2D78}
+.ht{background-color:#33637A;background-image:radial-gradient(rgba(255,255,255,.16) 1px,transparent 1.3px),linear-gradient(135deg,#5A94AB 0%,#3A6C83 48%,#163A51 100%);background-size:6px 6px,100% 100%}
+input::placeholder{color:#77705F}
+input:focus{outline:3px solid #FF2D78;outline-offset:1px}
+@keyframes slidein{from{transform:translateX(24px);opacity:0}to{transform:none;opacity:1}}
+.slidein{animation:slidein .3s ease-out both}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; background: #F3EFE3; color: #111111; overflow: hidden; font-family: 'Space Mono', monospace">
+
+  <div class="ht" style="position: absolute; left: 0; right: 0; top: 0; height: 150px; border-bottom: 2.5px solid #111111; padding: 22px 18px 0; box-sizing: border-box; color: #FFFFFF">
+    <div style="display: flex; gap: 6px">
+      <sc-for list="{{bars}}" as="b" hint-placeholder-count="3">
+        <span style="width: 32px; height: 10px; border: 2px solid #111111; background: {{b.bg}}"></span>
+      </sc-for>
+    </div>
+    <div style="margin-top: 14px; font-family: 'Permanent Marker', cursive; font-size: 22px; color: #C8FF3D">Step {{step}} of 3</div>
+    <h1 style="margin: 2px 0 0; font-family: 'Archivo Black', sans-serif; font-size: 25px; line-height: 1.1">{{question}}</h1>
+  </div>
+
+  <sc-if value="{{is1}}" hint-placeholder-val="{{true}}">
+    <div class="slidein" style="position: absolute; left: 18px; right: 18px; top: 176px; display: flex; flex-direction: column; gap: 10px">
+      <label for="rn" style="font-size: 10px; font-weight: 700; letter-spacing: 0.1em">RIDER NAME</label>
+      <input id="rn" type="text" value="{{name}}" onChange="{{setName}}" maxlength="20" placeholder="Frankie" style="height: 54px; box-sizing: border-box; padding: 0 14px; border: 2.5px solid #111111; background: #FFFFFF; font-family: 'Archivo Black', sans-serif; font-size: 20px; color: #111111">
+      <span style="font-size: 11px; line-height: 1.45">2–20 characters. This is what other riders see. Never your email.</span>
+      <div style="margin-top: 8px; display: flex; align-items: center; gap: 8px; padding: 12px; background: #FFFFFF; border: 2.5px solid #111111; font-size: 12px">
+        Preview on a crew card:
+        <span style="font-family: 'Archivo Black', sans-serif; font-size: 14px">{{nameShown}}</span>
+        <span style="display: inline-flex; align-items: center; gap: 4px; font-size: 9px; font-weight: 700"><svg width="22" height="22" viewBox="0 0 48 48" aria-hidden="true" style="flex-shrink: 0"><rect x="2" y="2" width="44" height="44" rx="9" fill="#FFE14D" stroke="#111111" stroke-width="3"/><rect x="5.5" y="5.5" width="37" height="37" rx="6.5" fill="none" stroke="#111111" stroke-width="1.6"/><circle cx="9" cy="9" r="1.5" fill="#111111"/><circle cx="39" cy="9" r="1.5" fill="#111111"/><circle cx="9" cy="39" r="1.5" fill="#111111"/><circle cx="39" cy="39" r="1.5" fill="#111111"/><text x="24" y="33" text-anchor="middle" font-family="Archivo Black, sans-serif" font-size="24" fill="#111111">38</text></svg>FOUNDING</span>
+      </div>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{is2}}" hint-placeholder-val="{{false}}">
+    <div class="slidein" style="position: absolute; left: 18px; right: 18px; top: 176px; display: flex; flex-direction: column; gap: 10px">
+      <sc-for list="{{bases}}" as="b" hint-placeholder-count="4">
+        <button type="button" onClick="{{b.pick}}" aria-pressed="{{b.pressed}}" style="{{b.style}}">{{b.label}}</button>
+      </sc-for>
+      <span style="font-size: 11px; line-height: 1.45">We show crews near you first. You can still see every spot.</span>
+      <span style="margin-top: 10px; font-family: 'Archivo Black', sans-serif; font-size: 14px">HOW DO YOU USUALLY GET THERE?</span>
+      <div role="group" aria-label="Ride" style="display: flex; border: 2.5px solid #111111">
+        <sc-for list="{{rides}}" as="x" hint-placeholder-count="3"><button type="button" onClick="{{x.pick}}" aria-pressed="{{x.pressed}}" style="{{x.style}}">{{x.t}}</button></sc-for>
+      </div>
+      <span style="font-size: 11px; line-height: 1.45">{{rideHint}}</span>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{is3}}" hint-placeholder-val="{{false}}">
+    <div class="slidein" style="position: absolute; left: 18px; right: 18px; top: 166px; display: flex; flex-direction: column; gap: 10px">
+      <sc-for list="{{sports}}" as="s" hint-placeholder-count="5">
+        <div style="border: 2.5px solid #111111; background: #FFFFFF; box-shadow: 4px 4px 0 #111111">
+          <button type="button" onClick="{{s.toggle}}" aria-pressed="{{s.pressed}}" style="width: 100%; height: 44px; display: flex; align-items: center; gap: 10px; padding: 0 12px; border: 0; border-bottom: {{s.bb}}; background: {{s.color}}; color: {{s.fg}}; font-family: 'Archivo Black', sans-serif; font-size: 15px; cursor: pointer; text-align: left">
+            {{s.label}}
+            <span style="margin-left: auto; width: 24px; height: 24px; border: 2px solid #111111; background: {{s.boxBg}}; color: #111111; display: flex; align-items: center; justify-content: center; font-size: 14px"><sc-if value="{{s.on}}" hint-placeholder-val="{{true}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="#111111" style="color: #111111; flex-shrink: 0" aria-hidden="true"><path d="M2.5 12.5 6 9l3.8 3.8L18 4.6l3.5 3.5L9.8 19.8z"/></svg></sc-if></span>
+          </button>
+          <sc-if value="{{s.on}}" hint-placeholder-val="{{true}}"><div role="group" aria-label="{{s.label}} level" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; padding: 8px">
+            <sc-for list="{{s.levels}}" as="l" hint-placeholder-count="3">
+              <button type="button" onClick="{{l.pick}}" aria-pressed="{{l.pressed}}" style="{{l.style}}">{{l.label}}</button>
+            </sc-for>
+          </div></sc-if>
+        </div>
+      </sc-for>
+      <span style="font-size: 11px; line-height: 1.45">Pick all you ride. New to one? Rookie crews have a captain.</span>
+      <sc-if value="{{fewSports}}" hint-placeholder-val="{{true}}">
+      <div style="display: flex; align-items: center; gap: 12px; padding: 12px; background: #0E4E5C; color: #FFFFFF; border: 2.5px solid #111111; box-shadow: 5px 5px 0 #FF2D78">
+        <svg width="52" height="52" viewBox="0 0 48 48" aria-hidden="true" style="flex-shrink: 0"><rect x="2" y="2" width="44" height="44" rx="9" fill="#FFE14D" stroke="#111111" stroke-width="3"/><rect x="5.5" y="5.5" width="37" height="37" rx="6.5" fill="none" stroke="#111111" stroke-width="1.6"/><circle cx="9" cy="9" r="1.5" fill="#111111"/><circle cx="39" cy="9" r="1.5" fill="#111111"/><circle cx="9" cy="39" r="1.5" fill="#111111"/><circle cx="39" cy="39" r="1.5" fill="#111111"/><text x="24" y="33" text-anchor="middle" font-family="Archivo Black, sans-serif" font-size="24" fill="#111111">38</text></svg>
+        <span style="font-size: 12px; line-height: 1.4">You're <b>Founding Crew #38</b>. The badge stays on your profile for good.</span>
+      </div>
+      </sc-if>
+    </div>
+  </sc-if>
+
+  <div style="position: absolute; left: 18px; right: 18px; bottom: 14px; display: flex; flex-direction: column; align-items: center; gap: 6px">
+    <sc-if value="{{notLast}}" hint-placeholder-val="{{true}}">
+      <button type="button" onClick="{{next}}" style="width: 100%; height: 56px; background: #C8FF3D; border: 2.5px solid #111111; box-shadow: 4px 4px 0 #111111; font-family: 'Archivo Black', sans-serif; font-size: 18px; letter-spacing: 0.06em; cursor: pointer">NEXT</button>
+    </sc-if>
+    <sc-if value="{{is3}}" hint-placeholder-val="{{false}}">
+      <a href="B24-Today.dc.html" style="width: 100%; height: 56px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; background: #FF2D78; border: 2.5px solid #111111; box-shadow: 4px 4px 0 #111111; text-decoration: none; font-family: 'Archivo Black', sans-serif; font-size: 18px; letter-spacing: 0.06em; color: #FFFFFF">LET'S RIDE</a>
+    </sc-if>
+    <sc-if value="{{isFirst}}" hint-placeholder-val="{{true}}"><a href="B24-Join.dc.html" style="height: 44px; padding: 0 12px; display: flex; align-items: center; font-family: 'Space Mono', monospace; font-size: 12px; font-weight: 700; color: #111111">Back</a></sc-if>
+    <sc-if value="{{notFirst}}" hint-placeholder-val="{{false}}">
+      <button type="button" onClick="{{back}}" style="height: 44px; padding: 0 12px; background: none; border: 0; font-family: 'Space Mono', monospace; font-size: 12px; font-weight: 700; text-decoration: underline; cursor: pointer">Back</button>
+    </sc-if>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { step: 1, name: "", base: "ams", ride: "ride", on: { kite: true }, lvl: { kite: "mid", wing: "new", surf: "new", sup: "new", mtb: "mid" } };
+  }
+  renderVals() {
+    const st = this.state;
+    const qs = { 1: "What should riders call you?", 2: "Home base?", 3: "What do you ride?" };
+    const bars = [1, 2, 3].map((n) => ({ bg: n <= st.step ? "#FF2D78" : "#F3EFE3" }));
+    const bases = [["ams", "Amsterdam"], ["haarlem", "Haarlem / IJmuiden"], ["alkmaar", "Alkmaar / Schoorl"], ["other", "Other"]].map((p) => {
+      const on = st.base === p[0];
+      return {
+        label: p[1],
+        pressed: on ? "true" : "false",
+        pick: () => this.setState({ base: p[0] }),
+        style: (on ? "background:#111111;color:#C8FF3D;" : "background:#FFFFFF;color:#111111;") + "height:52px;padding:0 16px;border:2.5px solid #111111;text-align:left;font-family:'Space Mono',monospace;font-size:14px;font-weight:700;cursor:pointer"
+      };
+    });
+    const sports = [["kite", "KITESURF", "#35677D"], ["wing", "WING", "#173D57"], ["surf", "SURF", "#FF2D78"], ["sup", "SUP", "#8DF5E8"], ["mtb", "MTB", "#C8FF3D"]].map((p) => {
+      const on = !!st.on[p[0]];
+      return {
+        label: p[1],
+        color: p[2], fg: (p[0] === "sup" || p[0] === "mtb") ? "#111111" : "#FFFFFF", on: on, bb: on ? "2.5px solid #111111" : "0",
+        pressed: on ? "true" : "false",
+        boxBg: on ? "#C8FF3D" : "#FFFFFF",
+        tick: on ? "✓" : "",
+        toggle: () => this.setState({ on: Object.assign({}, st.on, { [p[0]]: !on }) }),
+        levels: [["new", "New to it"], ["mid", "Getting there"], ["conf", "Confident"]].map((l) => {
+          const sel = on && st.lvl[p[0]] === l[0];
+          return {
+            label: l[1],
+            pressed: sel ? "true" : "false",
+            pick: () => this.setState({ on: Object.assign({}, st.on, { [p[0]]: true }), lvl: Object.assign({}, st.lvl, { [p[0]]: l[0] }) }),
+            style: (sel ? "background:#FF2D78;color:#FFFFFF;" : "background:#FFFFFF;color:#111111;") + "height:44px;border:2px solid #111111;font-family:'Space Mono',monospace;font-size:11px;font-weight:700;cursor:pointer"
+          };
+        })
+      };
+    });
+    return {
+      step: String(st.step),
+      question: qs[st.step],
+      bars: bars,
+      is1: st.step === 1,
+      is2: st.step === 2,
+      is3: st.step === 3,
+      notLast: st.step < 3,
+      notFirst: st.step > 1, isFirst: st.step === 1,
+      name: st.name,
+      nameShown: st.name.trim() || "Frankie",
+      setName: (e) => this.setState({ name: e.target.value }),
+      bases: bases,
+      rides: [["ride", "NEED A RIDE"], ["drive", "I DRIVE"], ["meet", "MEET THERE"]].map((x, i) => ({ t: x[1], pressed: st.ride === x[0] ? "true" : "false", pick: () => this.setState({ ride: x[0] }),
+        style: "flex:1;height:48px;border:0;" + (i ? "border-left:2.5px solid #111111;" : "") + "font-family:'Archivo Black',sans-serif;font-size:11px;cursor:pointer;color:#111111;background:" + (st.ride === x[0] ? "#C8FF3D" : "#FFFFFF") })),
+      rideHint: { ride: "We'll show you free seats from your town first.", drive: "Riders near you can ask for a seat. You split fuel and earn Lift Karma.", meet: "We'll show you the meeting point and time." }[st.ride],
+      sports: sports, fewSports: Object.values(st.on).filter(Boolean).length <= 2,
+      next: () => this.setState({ step: Math.min(3, st.step + 1) }),
+      back: () => this.setState({ step: Math.max(1, st.step - 1) })
+    };
+  }
+}
+</script>
+</body>
+</html>
