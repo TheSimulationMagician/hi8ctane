@@ -165,6 +165,22 @@
     done();
   }
   function sameJSON(a, b) { return JSON.stringify(a) === JSON.stringify(b); }
+  // gmial.com, hotmal.com, gmail.con: one letter off a common email domain
+  var DOMAINS = ['gmail.com', 'hotmail.com', 'outlook.com', 'live.com', 'yahoo.com', 'icloud.com', 'me.com', 'protonmail.com', 'proton.me',
+    'hotmail.nl', 'live.nl', 'outlook.nl', 'ziggo.nl', 'kpnmail.nl', 'planet.nl', 'xs4all.nl', 'gmx.de', 'web.de', 't-online.de', 'hotmail.es', 'yahoo.es', 'sapo.pt'];
+  function oneOff(a, b) { // optimal string alignment distance <= 1
+    if (a === b || Math.abs(a.length - b.length) > 1) return false;
+    var i = 0;
+    while (i < a.length && i < b.length && a[i] === b[i]) i++;
+    if (a.length === b.length) return a.slice(i + 1) === b.slice(i + 1) || (a[i] === b[i + 1] && a[i + 1] === b[i] && a.slice(i + 2) === b.slice(i + 2));
+    return a.length > b.length ? a.slice(i + 1) === b.slice(i) : a.slice(i) === b.slice(i + 1);
+  }
+  function emailTypo(email) {
+    var at = email.lastIndexOf('@'), d = email.slice(at + 1).toLowerCase();
+    if (at < 1 || DOMAINS.indexOf(d) >= 0) return null;
+    for (var i = 0; i < DOMAINS.length; i++) if (oneOff(d, DOMAINS[i])) return email.slice(0, at + 1) + DOMAINS[i];
+    return null;
+  }
 
   // where someone first came from (an ad, an influencer's link with ?ref=, Instagram), kept for their sign-up
   (function firstTouch() {
@@ -205,17 +221,19 @@
         if (pick.city === 'barcelona') this.state.hub = 'bcn';
         else if (AMS_HUBS[pick.hub]) this.state.hub = pick.hub;
         if (pick.sport && SP.indexOf(pick.sport) >= 0) this.state.sp = pick.sport;
-        this.hi8Was = { hub: this.state.hub, sp: this.state.sp };
+        if ('max' in this.state && [30, 60, 90].indexOf(pick.max) >= 0) this.state.max = pick.max; // the web page only
+        this.hi8Was = { hub: this.state.hub, sp: this.state.sp, max: this.state.max };
       }
       componentDidUpdate() {
         if (super.componentDidUpdate) super.componentDidUpdate();
-        var st = this.state, now = { hub: st.hub, sp: st.sp };
+        var st = this.state, now = { hub: st.hub, sp: st.sp, max: st.max };
         if (sameJSON(now, this.hi8Was)) return;
         this.hi8Was = now;
         store.set('pick', {
           city: st.hub === 'bcn' ? 'barcelona' : 'amsterdam',
           hub: AMS_HUBS[st.hub] ? st.hub : null,
-          sport: SP.indexOf(st.sp) >= 0 ? st.sp : null
+          sport: SP.indexOf(st.sp) >= 0 ? st.sp : null,
+          max: [30, 60, 90].indexOf(st.max) >= 0 ? st.max : (store.get('pick', null) || {}).max || null
         });
       }
     };
@@ -278,12 +296,26 @@
         else if (cc) want = 'Founding plates in ' + name + " are gone: you'll be on the list";
         else want = "You'll get a founding plate in " + name;
         if (el.textContent !== want) el.textContent = want;
+        // the yellow plate in the header shows the same number
+        if (!this.hi8Badge || !this.hi8Badge.isConnected) {
+          var ts = root().querySelectorAll('svg text');
+          for (var i = 0; i < ts.length; i++) if (ts[i].textContent === '38') { this.hi8Badge = ts[i]; break; }
+        }
+        var n = mine || (cc && cc.next_plate) || '';
+        if (this.hi8Badge && this.hi8Badge.textContent !== String(n)) this.hi8Badge.textContent = String(n);
       }
       hi8Submit(btn) {
         if (this.hi8Busy) return;
         var self = this, inp = document.getElementById('em'), email = inp ? inp.value.trim() : '';
+        if (inp) inp.setCustomValidity('');
         if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
           nativeHint(inp, email ? "That email doesn't look right." : 'Type your email first.');
+          return;
+        }
+        var fix = emailTypo(email);
+        if (fix && this.hi8Warned !== email) {
+          this.hi8Warned = email; // asked once: pressing again keeps it as typed
+          nativeHint(inp, 'Did you mean ' + fix + '? Fix it, or press again to keep it.');
           return;
         }
         this.hi8Busy = true;
@@ -354,7 +386,7 @@
           on: on,
           lvl: Object.assign({}, this.state.lvl, p.levels || {}),
           hub: AMS_HUBS[p.hub] ? p.hub : (AMS_HUBS[pick.hub] ? pick.hub : this.state.hub),
-          max: p.max || this.state.max,
+          max: p.max || ([30, 60, 90].indexOf(pick.max) >= 0 ? pick.max : this.state.max),
           mode: p.mode || this.state.mode
         });
         this.hi8Loc = null;

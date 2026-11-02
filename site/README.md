@@ -14,12 +14,12 @@ What goes live at hi8ctane.com: the 2.7 website and app screens, exactly as desi
 
 | Screen | What gets saved |
 | --- | --- |
-| Get In | Email and city; the real next founding plate shows on the sticker. Enter submits. If Supabase can't be reached, the sign-up waits in the browser and goes out on the next page |
+| Get In | Email and city; the real next founding plate shows on the sticker and the header plate. Enter submits; "did you mean gmail.com?" catches typos. If Supabase can't be reached, the sign-up waits in the browser and goes out on the next page |
 | Onboarding | Rider name, sports and levels (on NEXT), hub, how far and getting there (before leaving). Starts blank, with the hub and sport picked on the landing already on. "Use my location" finds the real nearest hub |
 | Founding Night | The RSVP (session, hub, waiver time, photo consent, which now starts unticked). Without an account it goes through Get In and straight back. Real counts, a real calendar file, a real share link |
 | A new city | "I'm in" (with that city's founding plate) and "I'll captain" (sport and days). Real counts; the share link works |
 | Schools + rental shops | The form, as well as the email. Asks for the name and contact before opening the email |
-| Landing, web page | Remember the hub and sport picked, for onboarding |
+| Landing, web page | Remember the hub, sport and how far, for onboarding |
 
 The rest of the app screens (home, crews, chat, map) are still sample data.
 
@@ -44,6 +44,6 @@ The link and Google sign-in land on onboarding, where `live.js` swaps the sign-i
 
 The tables are locked (row-level security, no policies, no table rights for the public key). The browser can only call the `hi8_*` functions, which check every value, never return names or emails, and are rate-limited (20 sign-ups per visitor per 10 minutes, counted by a salted hash of the IP). Signing up gives the browser a random key that only changes its own sign-up. Details in the migration.
 
-Tests: `test/live/` (62 end-to-end checks against Postgres + PostgREST, and a pixel-for-pixel comparison of every screen).
+Tests: `test/live/` (66 end-to-end checks against Postgres + PostgREST, and a pixel-for-pixel comparison of every screen).
 
 The same screens are on the design canvas as the page "2.7.1 · live site: schools + rental shops".
