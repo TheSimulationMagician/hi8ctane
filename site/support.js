@@ -7,6 +7,11 @@
  *   - {{name}} / {{item.field}} fill text and attributes, <sc-if value> shows or hides, <sc-for list as> repeats
  *   - onClick / onChange / on… attributes call the screen's handlers; setState re-renders in place
  *
+ *   - a screen whose content grows past its designed height (six sports picked, the captain form open)
+ *     grows with it instead of being cut off; when the content fits, nothing changes
+ *   - window.DC_EXTEND (see live.js) can extend a screen's Component without touching the screen file;
+ *     componentDidUpdate() runs after every re-render
+ *
  * Plain JavaScript, no dependencies, no network calls. Written for Hi8ctane; free to change.
  */
 (function () {
@@ -27,7 +32,7 @@
     head.appendChild(vm);
   }
 
-  var comp = null, host = null, tpl = [];
+  var comp = null, host = null, tpl = [], mounted = false;
   var queue = [], callbacks = [], scheduled = false, rendering = false;
 
   // ---- the base class the screens extend (React-like class component) ----
@@ -257,10 +262,24 @@
       var fresh = document.createElement('div');
       buildChildren(tpl, [vals], fresh);
       morphChildren(host, fresh);
+      grow();
     } catch (e) {
       if (window.console) console.error('[hi8 player]', e);
     } finally {
       rendering = false;
+    }
+    if (mounted && comp && typeof comp.componentDidUpdate === 'function') {
+      try { comp.componentDidUpdate(); } catch (e2) { if (window.console) console.error('[hi8 player]', e2); }
+    }
+  }
+
+  // the frame keeps its designed height; only when the content needs more does it grow to fit
+  function grow() {
+    var f = host && host.firstElementChild;
+    if (!f || !f.style.height || f.style.height === 'auto') return;
+    if (f.scrollHeight > f.clientHeight + 1) {
+      f.style.minHeight = f.style.height;
+      f.style.height = 'auto';
     }
   }
 
@@ -311,10 +330,16 @@
         if (window.console) console.error('[hi8 player]', e);
       }
     }
+    // extensions (live.js) get the screen's Component and its name, and may return a subclass
+    var ext = window.DC_EXTEND || [], nm = host.getAttribute('data-sc-name');
+    for (var e = 0; e < ext.length; e++) {
+      try { C = ext[e](C || DCLogic, nm) || C; } catch (er) { if (window.console) console.error('[hi8 player]', er); }
+    }
     comp = C ? new C(props) : new DCLogic(props);
     render();
     fit();
     window.addEventListener('resize', fit);
+    mounted = true;
     if (typeof comp.componentDidMount === 'function') comp.componentDidMount();
     window.addEventListener('pagehide', function () {
       if (comp && typeof comp.componentWillUnmount === 'function') comp.componentWillUnmount();
