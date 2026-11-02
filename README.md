@@ -5,8 +5,9 @@ Same-day crews for kite, wing, surf, SUP, MTB and MX. Everything for hi8ctane.co
 | Folder | What it is | How it runs |
 | --- | --- | --- |
 | `/` (root: `public/`, `api/`, `supabase/`) | **The day-zero site** that goes live at hi8ctane.com: landing, the week ahead, founding plates, city waitlists, Founding Night RSVP | Vercel, from this repo; deploy steps below |
-| `design/2.6/` | The 2.6 website and app, clickable exactly as designed (sample data) | Any static host with `design/2.6` as root; GitHub Pages via `.github/workflows/pages.yml` |
-| `design/2.7/` | The newest round (matching, safety, Founding Night, new cities), clickable exactly as designed | Any static host with `design/2.7` as root |
+| `site/` | **The live site, version 1**: the 2.7 website and app screens exactly as designed, plus the partner page for schools and rental shops | GitHub Pages via `.github/workflows/pages.yml`, or any static host with `site` as root |
+| `design/2.6/` | The 2.6 website and app, clickable exactly as designed (sample data) | Any static host with `design/2.6` as root |
+| `design/2.7/` | The 2.7 round as on the canvas (matching, safety, Founding Night, new cities), clickable exactly as designed | Any static host with `design/2.7` as root |
 | `dev-packs/2.4/`, `dev-packs/2.5/` | The app's database schema, migrations, Plan B booking rules and tests, analytics, payments notes | Reference for building the app |
 
 Suggested hosting: hi8ctane.com → the day-zero site (Vercel project, repo root). demo.hi8ctane.com → `design/2.6` or `design/2.7` (second Vercel project, Root Directory set to that folder, framework "Other", no build command). The domain stays at Squarespace; add the DNS records Vercel shows under Squarespace → Domains → hi8ctane.com → DNS.

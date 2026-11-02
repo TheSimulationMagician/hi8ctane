@@ -1,16 +1,15 @@
-# Publishes Hi8ctane 2.6 to GitHub Pages, running exactly as designed:
-#   index.html opens the web page (or the phone app on phones), screens.html lists every screen,
-#   prototype/ holds the screen files and the player (support.js) that runs them.
-# It runs when anything in design/2.6 or this file changes on main, and from the Actions tab ("Run workflow").
+# Publishes the live site (site/: the 2.7 website and app screens plus the schools partner page) to GitHub Pages.
+#   index.html opens the web page (or the phone site on phones); support.js runs the screens exactly as designed.
+# It runs when anything in site/ or this file changes on main, and from the Actions tab ("Run workflow").
 # One-time setup: Settings → Pages → Build and deployment → Source: "GitHub Actions".
 
-name: Deploy 2.6 to GitHub Pages
+name: Deploy the live site to GitHub Pages
 
 on:
   push:
     branches: [main]
     paths:
-      - "design/2.6/**"
+      - "site/**"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 
@@ -35,10 +34,10 @@ jobs:
       - name: Set up Pages
         uses: actions/configure-pages@v5
 
-      - name: Upload the 2.6 folder as the site
+      - name: Upload the live site
         uses: actions/upload-pages-artifact@v4
         with:
-          path: design/2.6
+          path: site
 
   deploy:
     needs: build
