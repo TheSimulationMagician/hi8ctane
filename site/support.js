@@ -346,6 +346,19 @@
     });
   }
 
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
-  else boot();
+  // window.DC_READY (hi8.js): wait for live data such as the forecast before the first draw, at most 7 s
+  function start() {
+    var r = window.DC_READY;
+    if (!r || typeof r.then !== 'function') { boot(); return; }
+    var done = false, wait = document.createElement('div');
+    wait.id = 'dc-wait';
+    wait.textContent = 'LOADING THE FORECAST…';
+    wait.setAttribute('style', 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;color:#C8FF3D;font:700 12px/1 ui-monospace,Menlo,monospace;letter-spacing:.08em');
+    document.body.appendChild(wait);
+    var go = function () { if (done) return; done = true; if (wait.parentNode) wait.parentNode.removeChild(wait); boot(); };
+    r.then(go, go);
+    setTimeout(go, 7000);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+  else start();
 })();

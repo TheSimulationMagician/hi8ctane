@@ -17,5 +17,8 @@ window.HI8_CONFIG = {
   emailLink: false,
   // Switch on once Google is set up in Authentication > Sign In / Providers:
   // "CONTINUE WITH GOOGLE" then signs in with Google.
-  google: false
+  google: false,
+
+  // Open-Meteo's free API is for non-commercial use. With a paid plan (open-meteo.com/en/pricing), put its key here.
+  meteoKey: ""
 };
