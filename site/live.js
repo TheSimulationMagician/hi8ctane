@@ -332,8 +332,10 @@
           }
           return null;
         }, function (e) {
-          if (!unreachable(e) && e.message !== 'timeout') throw e;
-          later('hi8_join', args); // no connection: keep it and carry on, it goes out on the next page
+          // only a bad email or too many tries stop them; anything else (no connection, Supabase down or
+          // not set up yet) keeps the sign-up in this browser and sends it again on the next page
+          if (e.status === 400 || e.status === 429) throw e;
+          later('hi8_join', args);
           return null;
         }).then(function () {
           location.href = nextAfterJoin();

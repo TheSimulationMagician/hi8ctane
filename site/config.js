@@ -8,9 +8,9 @@
  */
 window.HI8_CONFIG = {
   // e.g. "https://abcdefghijklmnop.supabase.co"
-  supabaseUrl: "",
+  supabaseUrl: "https://ttpryqrjkhlthftdkhju.supabase.co",
   // e.g. "sb_publishable_…" (an older project's "anon public" key works too)
-  publishableKey: "",
+  publishableKey: "sb_publishable_mlHRnI1k_geaB4XQrUxrQg_2oh9drv6",
 
   // Switch on once Supabase Auth can send email (Authentication > SMTP, e.g. with Resend):
   // "EMAIL ME A LINK" then really emails a one-tap sign-in link.
