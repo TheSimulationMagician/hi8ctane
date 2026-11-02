@@ -1,0 +1,3 @@
+/* Day zero loads the fonts from Google Fonts. Before the app launches, run `npm run fonts` once:
+   it downloads the files into public/fonts/ and rewrites this file, so no visitor's IP goes to Google. */
+@import url('https://fonts.googleapis.com/css2?family=Anton&family=Archivo+Black&family=Bowlby+One&family=Permanent+Marker&family=Shrikhand&family=Space+Mono:wght@400;700&family=Special+Elite&display=swap');
