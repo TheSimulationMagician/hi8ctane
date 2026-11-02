@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Hi8ctane 1.3 — Getting there: meeting point and car plan</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&amp;family=Anton&amp;family=Space+Mono:wght@400;700&amp;family=Bowlby+One&amp;family=Yellowtail&amp;family=Permanent+Marker&amp;family=Special+Elite&amp;family=VT323&amp;family=Shrikhand&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#111111}a:hover{color:#FF2D78}
+.halftone{background-color:#33637A;background-image:radial-gradient(rgba(255,255,255,.16) 1px,transparent 1.3px),linear-gradient(160deg,#5A94AB 0%,#3A6C83 40%,#163A51 100%);background-size:6px 6px,100% 100%}
+.paper{background-color:#FFFFFF;color:#111111}
+.sand{background-color:#33637A;background-image:radial-gradient(rgba(255,255,255,.16) 1px,transparent 1.3px),linear-gradient(160deg,#5A94AB 0%,#3A6C83 40%,#163A51 100%);background-size:6px 6px,100% 100%}
+.checker{background:conic-gradient(#111111 25%,#F3EFE3 0 50%,#111111 0 75%,#F3EFE3 0) 0 0/14px 14px}
+.hi8{background:linear-gradient(170deg,#FFC27A 0%,#F7953F 45%,#EC6F37 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.barcode{background:repeating-linear-gradient(90deg,#111111 0 2px,transparent 2px 4px,#111111 4px 5px,transparent 5px 8px,#111111 8px 11px,transparent 11px 12px)}
+@keyframes blink{50%{opacity:.25}}
+.blink{animation:blink 1.2s steps(2) infinite}
+@keyframes pop{0%{transform:scale(.9);opacity:0}100%{transform:none;opacity:1}}
+.pop{animation:pop .3s ease-out both}
+@keyframes stampin{0%{transform:rotate(-30deg) scale(2.4);opacity:0}60%{transform:rotate(-4deg) scale(.94);opacity:1}100%{transform:rotate(-8deg) scale(1);opacity:1}}
+.stampin{animation:stampin .55s cubic-bezier(.2,1.4,.4,1) both}
+@keyframes up{from{transform:translateY(100%)}to{transform:none}}
+.up{animation:up .32s cubic-bezier(.2,1,.3,1) both}
+@keyframes marq{to{transform:translateX(-50%)}}
+.marq{animation:marq 20s linear infinite}
+input::placeholder{color:#6B6A5E}
+input:focus-visible,button:focus-visible,a:focus-visible{outline:3px solid #FF2D78;outline-offset:2px}
+.ttl{display:inline-block;align-self:flex-start;transform:skewX(-10deg);background:#111111;color:#F3EFE3;padding:2px 10px;box-shadow:3px 3px 0 #FF2D78}
+@keyframes dash{to{stroke-dashoffset:-40}}
+.route{stroke-dasharray:8 6;animation:dash 1.6s linear infinite}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 1320px; background: #F3EFE3; color: #111111; overflow: hidden; font-family: 'Space Mono', monospace">
+
+  <div style="position: absolute; left: 0; right: 0; top: 0; height: 52px; background: #111111; display: flex; align-items: center; justify-content: space-between; padding: 0 6px; box-sizing: border-box">
+    <a href="B24-Crew.dc.html" aria-label="Back to the crew" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F3EFE3" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>
+    </a>
+    <span style="font-family: 'Archivo Black', sans-serif; font-size: 14px; color: #C8FF3D">GETTING THERE</span>
+    <span style="width: 44px"></span>
+  </div>
+
+  <div class="halftone" style="position: absolute; left: 0; right: 0; top: 52px; height: 250px; border-bottom: 3px solid #111111; overflow: hidden">
+    <svg width="390" height="250" viewBox="0 0 390 250" role="img" aria-label="Map: two cars driving from Amsterdam and Haarlem to Wijk aan Zee">
+      <rect width="390" height="250" fill="#35677D"></rect>
+      <path d="M70 0 C62 60 58 120 52 180 C50 205 48 230 46 250 L390 250 L390 0 Z" fill="#E7E2D4" stroke="#111111" stroke-width="2.5"></path>
+      <path d="M300 0 C292 40 300 70 330 90 C360 110 372 140 390 150 L390 0 Z" fill="#35677D" stroke="#111111" stroke-width="2"></path>
+      <path d="M90 92 C140 98 190 104 260 108" fill="none" stroke="#35677D" stroke-width="5"></path>
+      <text x="16" y="140" font-family="Bowlby One, sans-serif" font-size="12" fill="#1E6E76" transform="rotate(-90 16 140)">NOORDZEE</text>
+      <path class="route" d="M262 186 L236 160 L276 132 L240 124 C190 110 130 90 74 62" fill="none" stroke="#FF2D78" stroke-width="4" stroke-linecap="round"></path>
+      <path class="route" d="M104 150 C96 120 86 92 74 62" fill="none" stroke="#C8FF3D" stroke-width="4" stroke-linecap="round"></path>
+      <g font-family="Space Mono, monospace" font-size="9" font-weight="700" fill="#111111">
+        <circle cx="262" cy="186" r="5" fill="#F3EFE3" stroke="#111111" stroke-width="2"></circle><text x="270" y="194">ZUID</text>
+        <circle cx="236" cy="160" r="6" fill="#FF2D78" stroke="#111111" stroke-width="2"></circle><text x="176" y="170">LELYLAAN</text>
+        <circle cx="276" cy="132" r="5" fill="#F3EFE3" stroke="#111111" stroke-width="2"></circle><text x="284" y="136">CENTRAAL</text>
+        <circle cx="240" cy="124" r="5" fill="#F3EFE3" stroke="#111111" stroke-width="2"></circle><text x="196" y="118">SLOTERDIJK</text>
+        <circle cx="104" cy="150" r="5" fill="#F3EFE3" stroke="#111111" stroke-width="2"></circle><text x="112" y="160">HAARLEM</text>
+      </g>
+      <g transform="translate(74 62)">
+        <circle r="12" fill="#FFE14D" stroke="#111111" stroke-width="2.5"></circle>
+        <path d="M-4 -3 L5 -6 L1 4 Z" fill="#111111"></path>
+      </g>
+      <rect x="88" y="44" width="104" height="22" fill="#111111"></rect>
+      <text x="96" y="59" font-family="Bowlby One, sans-serif" font-size="11" fill="#FFE14D">WIJK AAN ZEE</text>
+      <rect width="390" height="24" fill="#111111"></rect>
+      <text x="12" y="16" font-family="Bowlby One, sans-serif" font-size="11" fill="#FFE14D">SAT 24 OCT · 2 CARS · 6 RIDING</text>
+      <text x="378" y="16" text-anchor="end" font-family="Space Mono, monospace" font-size="9" font-weight="700" fill="#C8FF3D">PLAN LOCKED 20:04</text>
+    </svg>
+  </div>
+
+  <div role="group" aria-label="View as" style="position: absolute; left: 20px; right: 26px; top: 318px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border: 2.5px solid #111111">
+    <button type="button" onClick="{{asRider}}" aria-pressed="{{riderPressed}}" style="{{riderStyle}}">VIEW AS KIM · RIDER</button>
+    <button type="button" onClick="{{asDriver}}" aria-pressed="{{driverPressed}}" style="{{driverStyle}}">AS FRANKIE · DRIVER</button>
+  </div>
+
+  <div class="pop" style="position: absolute; left: 20px; right: 26px; top: 376px; background: #111111; color: #F3EFE3; border: 2.5px solid #111111; box-shadow: 5px 5px 0 #FF2D78; padding: 12px 14px; display: flex; flex-direction: column; gap: 4px">
+    <span style="font-size: 10px; font-weight: 700; color: #FF2D78">{{youTag}}</span>
+    <span style="font-family: 'Archivo Black', sans-serif; font-size: 18px; line-height: 1.15">{{you1}}</span>
+    <span style="font-size: 11px; line-height: 1.45; color: #D8E4EA">{{you2}}</span>
+  </div>
+
+  <div class="paper" style="position: absolute; left: 20px; right: 26px; top: 532px; border: 2.5px solid #111111; box-shadow: 4px 4px 0 #111111; padding: 12px; display: flex; align-items: center; gap: 12px">
+    <span style="flex-shrink: 0; width: 58px; height: 52px; background: #FF2D78; border: 2.5px solid #111111; display: flex; align-items: center; justify-content: center; font-family: 'Archivo Black', sans-serif; font-size: 15px">13:45</span>
+    <span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+      <span style="font-family: 'Archivo Black', sans-serif; font-size: 13px">Beach entrance, lifeguard post</span>
+      <span style="font-size: 10px">Pinned by Frankie · park at the beach lot</span>
+    </span>
+    <a href="https://maps.google.com/?q=Wijk+aan+Zee+strand" aria-label="Open in Maps" style="flex-shrink: 0; width: 52px; height: 48px; display: flex; align-items: center; justify-content: center; background: #C8FF3D; border: 2.5px solid #111111; text-decoration: none; font-family: 'Archivo Black', sans-serif; font-size: 11px; color: #111111">MAP</a>
+  </div>
+
+  <div style="position: absolute; left: 20px; right: 26px; top: 636px; display: flex; flex-direction: column; gap: 12px">
+    <sc-for list="{{cars}}" as="c" hint-placeholder-count="2">
+      <div style="background: #111111; color: #F3EFE3; border: 2.5px solid #111111; box-shadow: 4px 4px 0 {{c.accent}}">
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; border-bottom: 1.5px solid #2B3A40">
+          <span style="font-family: 'Archivo Black', sans-serif; font-size: 14px">{{c.title}}</span>
+          <span style="display: flex; align-items: center; gap: 6px; font-size: 10px; font-weight: 700"><a href="B24-Karma.dc.html" style="background: #FFE14D; color: #111111; padding: 1px 5px; text-decoration: none">{{c.karma}}</a><span style="color: #C8FF3D">{{c.seats}}</span></span>
+        </div>
+        <div style="padding: 8px 12px 2px; display: flex; flex-direction: column">
+          <sc-for list="{{c.stops}}" as="s" hint-placeholder-count="4">
+            <div style="display: grid; grid-template-columns: 44px 16px 1fr; gap: 8px; align-items: start; padding-bottom: 8px; font-size: 11px; line-height: 1.35">
+              <span style="font-weight: 700; color: #FFE14D">{{s.time}}</span>
+              <span style="width: 12px; height: 12px; margin-top: 1px; border-radius: 50%; border: 2px solid {{s.ring}}; background: {{s.fill}}"></span>
+              <span><b style="color: {{s.nameColor}}">{{s.name}}</b><span style="display: block; color: #D8E4EA">{{s.who}}</span></span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="padding: 0 12px 12px"><a href="https://www.google.com/maps/dir/?api=1&amp;origin=Station+Amsterdam+Zuid&amp;destination=Wijk+aan+Zee+strand&amp;travelmode=driving" style="height: 40px; display: flex; align-items: center; justify-content: center; background: #C8FF3D; color: #111111; border: 2.5px solid #111111; text-decoration: none; font-family: 'Archivo Black', sans-serif; font-size: 11px">ROUTE IN GOOGLE MAPS</a></div>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="position: absolute; left: 20px; right: 26px; top: 1186px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 2.5px solid #111111; background: #F3EFE3; color: #111111">
+    <div style="padding: 8px; display: flex; flex-direction: column; gap: 1px; border-right: 1.5px solid rgba(14,26,31,.2)"><span class="ttl" style="font-family: \'Bowlby One\', sans-serif; font-size: 17px">5</span><span style="font-size: 9px; font-weight: 700">SEATS OFFERED</span></div>
+    <div style="padding: 8px; display: flex; flex-direction: column; gap: 1px; border-right: 1.5px solid rgba(14,26,31,.2)"><span class="ttl" style="font-family: \'Bowlby One\', sans-serif; font-size: 17px">4</span><span style="font-size: 9px; font-weight: 700">RIDERS PLACED</span></div>
+    <div style="padding: 8px; display: flex; flex-direction: column; gap: 1px"><span style="font-family: 'Archivo Black', sans-serif; font-size: 18px; color: #FF2D78">1</span><span style="font-size: 9px; font-weight: 700">SEAT FREE</span></div>
+  </div>
+  <div style="position: absolute; left: 20px; right: 20px; top: 1258px; font-size: 10px; line-height: 1.5; color: #111111">Times are estimates; the Google Maps button has the real route with traffic. No car and no seat? Plan train + bus on 9292.nl.</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1320}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { view: "rider" };
+  }
+  renderVals() {
+    const st = this.state;
+    const rider = st.view === "rider";
+    const tab = (on) => (on ? "background:#111111;color:#C8FF3D;" : "background:#F3EFE3;color:#111111;") + "height:44px;border:0;font-family:'Space Mono',monospace;font-size:10px;font-weight:700;cursor:pointer";
+    const stop = (time, name, who, kind) => ({
+      time: time, name: name, who: who,
+      ring: kind === "end" ? "#FF2D78" : kind === "you" ? "#FF2D78" : "#F3EFE3",
+      fill: kind === "end" || kind === "you" ? "#FF2D78" : "#111111",
+      nameColor: kind === "you" ? "#FF2D78" : "#F3EFE3"
+    });
+    const cars = [
+      {
+        title: "FRANKIE'S CAR", karma: "★ 128 KARMA", seats: "FULL · ROOF RACK", accent: "#FF2D78",
+        stops: [
+          stop("12:40", "Amsterdam Zuid", "Frankie leaves", ""),
+          stop("12:50", "Amsterdam Lelylaan", rider ? "pick up Kim (you)" : "pick up Kim", rider ? "you" : ""),
+          stop("13:00", "Amsterdam Centraal", "pick up Sam", ""),
+          stop("13:10", "Amsterdam Sloterdijk", "pick up Marta", ""),
+          stop("13:40", "Wijk aan Zee", "~43 km · park, rig, ride", "end")
+        ]
+      },
+      {
+        title: "JOOST'S CAR", karma: "★ 211 KARMA", seats: "1 SEAT FREE", accent: "#C8FF3D",
+        stops: [
+          stop("12:55", "Haarlem", "Joost leaves with Lena", ""),
+          stop("13:40", "Wijk aan Zee", "~16 km", "end")
+        ]
+      }
+    ];
+    return {
+      riderPressed: rider ? "true" : "false",
+      driverPressed: rider ? "false" : "true",
+      riderStyle: tab(rider),
+      driverStyle: tab(!rider),
+      asRider: () => this.setState({ view: "rider" }),
+      asDriver: () => this.setState({ view: "driver" }),
+      youTag: rider ? "YOUR RIDE" : "YOU'RE DRIVING · +9 KARMA",
+      you1: rider ? "Frankie picks you up · Lelylaan 12:50" : "Leave Amsterdam Zuid at 12:40",
+      you2: rider ? "Be there 5 minutes early, south exit. Board bag fits on the roof rack. Running late? Tap it in the chat." : "3 pickups: Kim at Lelylaan 12:50, Sam at Centraal 13:00, Marta at Sloterdijk 13:10. Shortest order, +14 min vs driving alone.",
+      cars: cars
+    };
+  }
+}
+</script>
+</body>
+</html>

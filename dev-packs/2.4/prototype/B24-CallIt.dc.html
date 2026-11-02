@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Hi8ctane 1.3 — Host: call it, IT'S ON or IT'S OFF</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&amp;family=Anton&amp;family=Space+Mono:wght@400;700&amp;family=Bowlby+One&amp;family=Yellowtail&amp;family=Permanent+Marker&amp;family=Special+Elite&amp;family=VT323&amp;family=Shrikhand&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#111111}a:hover{color:#FF2D78}
+.halftone{background-color:#33637A;background-image:radial-gradient(rgba(255,255,255,.16) 1px,transparent 1.3px),linear-gradient(160deg,#5A94AB 0%,#3A6C83 40%,#163A51 100%);background-size:6px 6px,100% 100%}
+.paper{background-color:#FFFFFF;color:#111111}
+.sand{background-color:#33637A;background-image:radial-gradient(rgba(255,255,255,.16) 1px,transparent 1.3px),linear-gradient(160deg,#5A94AB 0%,#3A6C83 40%,#163A51 100%);background-size:6px 6px,100% 100%}
+.checker{background:conic-gradient(#111111 25%,#F3EFE3 0 50%,#111111 0 75%,#F3EFE3 0) 0 0/14px 14px}
+.hi8{background:linear-gradient(170deg,#FFC27A 0%,#F7953F 45%,#EC6F37 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.barcode{background:repeating-linear-gradient(90deg,#111111 0 2px,transparent 2px 4px,#111111 4px 5px,transparent 5px 8px,#111111 8px 11px,transparent 11px 12px)}
+@keyframes blink{50%{opacity:.25}}
+.blink{animation:blink 1.2s steps(2) infinite}
+@keyframes pop{0%{transform:scale(.9);opacity:0}100%{transform:none;opacity:1}}
+.pop{animation:pop .3s ease-out both}
+@keyframes stampin{0%{transform:rotate(-30deg) scale(2.4);opacity:0}60%{transform:rotate(-4deg) scale(.94);opacity:1}100%{transform:rotate(-8deg) scale(1);opacity:1}}
+.stampin{animation:stampin .55s cubic-bezier(.2,1.4,.4,1) both}
+@keyframes up{from{transform:translateY(100%)}to{transform:none}}
+.up{animation:up .32s cubic-bezier(.2,1,.3,1) both}
+@keyframes marq{to{transform:translateX(-50%)}}
+.marq{animation:marq 20s linear infinite}
+input::placeholder{color:#6B6A5E}
+input:focus-visible,button:focus-visible,a:focus-visible{outline:3px solid #FF2D78;outline-offset:2px}
+.ttl{display:inline-block;align-self:flex-start;transform:skewX(-10deg);background:#111111;color:#F3EFE3;padding:2px 10px;box-shadow:3px 3px 0 #FF2D78}
+.star{clip-path:polygon(50% 0%,59% 13%,74% 6%,76% 22%,92% 21%,86% 36%,100% 43%,89% 54%,98% 68%,82% 72%,82% 88%,67% 84%,59% 98%,50% 87%,41% 98%,33% 84%,18% 88%,18% 72%,2% 68%,11% 54%,0% 43%,14% 36%,8% 21%,24% 22%,26% 6%,41% 13%)}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 1140px; background: #F3EFE3; color: #111111; overflow: hidden; font-family: 'Space Mono', monospace">
+
+  <div style="position: absolute; left: 0; right: 0; top: 0; height: 52px; background: #111111; display: flex; align-items: center; justify-content: space-between; padding: 0 14px 0 6px; box-sizing: border-box">
+    <a href="B24-Crew.dc.html" aria-label="Back to the crew" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#F3EFE3" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>
+    </a>
+    <span style="font-family: 'Archivo Black', sans-serif; font-size: 14px; color: #C8FF3D">HOST · CALL IT</span>
+    <span style="font-size: 10px; font-weight: 700; color: #FFE14D">FRI 20:00</span>
+  </div>
+
+  <div style="position: absolute; left: 20px; right: 20px; top: 68px">
+    <div style="font-family: 'Yellowtail', cursive; font-size: 29px; line-height: 1.1; color: #FF2D78; text-shadow: 2px 2px 0 #111111">Time to call it, Frankie.</div>
+    <div style="font-size: 12px; margin-top: 6px; line-height: 1.45">Session 002 is tomorrow. One tap tells all 7 riders, locks the car plan and posts it in the chat.</div>
+  </div>
+
+  <div class="paper" style="position: absolute; left: 20px; right: 26px; top: 196px; border: 2.5px solid #111111; box-shadow: 6px 6px 0 #111111; color: #111111">
+    <div style="height: 34px; background: #111111; display: flex; align-items: center; justify-content: space-between; padding: 0 12px">
+      <span style="font-family: 'Archivo Black', sans-serif; font-size: 12px; color: #C8FF3D">LATEST FORECAST · 14:00–17:00</span>
+      <span style="font-size: 10px; font-weight: 700; color: #FFE14D">KNMI 18:00 RUN</span>
+    </div>
+    <div style="display: flex; align-items: center; gap: 14px; padding: 12px 14px">
+      <span style="display: flex; align-items: flex-end; gap: 4px"><span style="font-family: 'Archivo Black', sans-serif; font-size: 50px; line-height: 0.9">21</span><span style="font-size: 10px; font-weight: 700; line-height: 1.3">KTS<br><span style="color: #FF2D78">G27 SW</span></span></span>
+      <span style="display: flex; flex-direction: column; gap: 4px; font-size: 11px; line-height: 1.4">
+        <span style="align-self: flex-start; background: #C8FF3D; border: 2px solid #111111; padding: 1px 6px; font-family: 'Archivo Black', sans-serif; font-size: 11px; color: #111111">HI8 SAYS: GO</span>
+        <span>+2 kts since you posted · water 15° · low tide 15:40</span>
+      </span>
+    </div>
+  </div>
+
+  <sc-if value="{{open}}" hint-placeholder-val="{{true}}">
+    <div style="position: absolute; left: 20px; right: 26px; top: 368px; display: flex; flex-direction: column; gap: 12px">
+      <button type="button" onClick="{{callOn}}" style="height: 96px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; background: #C8FF3D; color: #111111; border: 3px solid #111111; box-shadow: 6px 6px 0 #111111; cursor: pointer">
+        <span style="font-family: 'Archivo Black', sans-serif; font-size: 34px; line-height: 1">IT'S ON</span>
+        <span style="font-size: 11px; font-weight: 700">lock pickups · tell everyone</span>
+      </button>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px">
+        <button type="button" onClick="{{callOff}}" style="height: 72px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; background: #FF2D78; color: #111111; border: 3px solid #111111; box-shadow: 5px 5px 0 #111111; cursor: pointer">
+          <span style="font-family: 'Archivo Black', sans-serif; font-size: 22px; line-height: 1">IT'S OFF</span>
+          <span style="font-size: 10px; font-weight: 700">too light / too wild</span>
+        </button>
+        <button type="button" onClick="{{callMove}}" style="height: 72px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; background: #FFE14D; color: #111111; border: 3px solid #111111; box-shadow: 5px 5px 0 #111111; cursor: pointer">
+          <span style="font-family: 'Archivo Black', sans-serif; font-size: 18px; line-height: 1">MOVE IT</span>
+          <span style="font-size: 10px; font-weight: 700">to Sun 13:00 · 19 kts</span>
+        </button>
+      </div>
+      <span style="font-size: 10px; line-height: 1.5; color: #111111">No call by 21:00? Hi8 nudges you once. Riders never get left guessing.</span>
+    </div>
+  </sc-if>
+
+  <sc-if value="{{called}}" hint-placeholder-val="{{false}}">
+    <div style="position: absolute; left: 20px; right: 26px; top: 380px; display: flex; flex-direction: column; gap: 12px">
+      <div class="pop" style="position: relative; background: #111111; border: 3px solid #111111; box-shadow: 6px 6px 0 {{callColor}}; padding: 14px; display: flex; flex-direction: column; gap: 6px">
+        <span style="font-size: 10px; font-weight: 700; color: {{callColor}}">SENT TO 7 · PUSH + CREW CHAT · 20:04</span>
+        <span style="padding-right: 64px; font-size: 12px; font-weight: 700; line-height: 1.5">{{msg}}</span>
+        <div class="stampin" style="position: absolute; right: -14px; top: -40px; width: 96px; height: 96px">
+          <div class="star" style="position: absolute; inset: 0; background: #111111"></div>
+          <div class="star" style="position: absolute; inset: 5px; background: {{callColor}}; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #111111; font-family: 'Archivo Black', sans-serif; line-height: 1; text-align: center">
+            <span style="font-size: 14px">{{stampTop}}</span><span style="font-size: 20px">{{stampBig}}</span>
+          </div>
+        </div>
+      </div>
+      <button type="button" onClick="{{undo}}" style="height: 44px; background: none; border: 0; color: #F3EFE3; text-decoration: underline; font-family: 'Space Mono', monospace; font-size: 11px; cursor: pointer">Wrong call? Change it (riders get one update)</button>
+    </div>
+  </sc-if>
+
+  <div class="paper" style="position: absolute; left: 20px; right: 26px; top: 704px; border: 2.5px solid #111111; box-shadow: 5px 5px 0 #111111; color: #111111">
+    <div style="display: flex; justify-content: space-between; align-items: baseline; padding: 10px 12px; border-bottom: 2px solid #111111">
+      <span style="font-family: 'Archivo Black', sans-serif; font-size: 14px">THE CREW</span>
+      <span style="font-size: 10px; font-weight: 700; color: #FF2D78">{{replyLine}}</span>
+    </div>
+    <sc-for list="{{crew}}" as="c" hint-placeholder-count="7">
+      <div style="display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 12px; border-bottom: 1.5px solid rgba(14,26,31,.12)">
+        <span style="width: 28px; height: 28px; box-sizing: border-box; border-radius: 50%; border: 2px solid #111111; background: {{c.bg}}; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center">{{c.i}}</span>
+        <span style="flex: 1; min-width: 0; font-size: 12px; font-weight: 700">{{c.name}} <span style="font-weight: 400; font-size: 10px">{{c.ride}}</span></span>
+        <span style="width: 96px; text-align: center; background: {{c.tagBg}}; border: 1.5px solid #111111; padding: 1px 0; font-size: 9px; font-weight: 700">{{c.tag}}</span>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1140}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { call: null, t: 0 };
+    this.iv = null;
+  }
+  componentDidMount() {
+    this.iv = setInterval(() => this.setState({ t: this.state.t + 1 }), 700);
+  }
+  componentWillUnmount() {
+    if (this.iv) clearInterval(this.iv);
+  }
+  renderVals() {
+    const st = this.state;
+    const people = [
+      { i: "MA", bg: "#C8FF3D", name: "Marta", ride: "Frankie · Sloterdijk 13:10" },
+      { i: "SA", bg: "#FFE14D", name: "Sam", ride: "Frankie · Centraal 13:00" },
+      { i: "KI", bg: "#FF2D78", name: "Kim", ride: "Frankie · Lelylaan 12:50" },
+      { i: "JO", bg: "#8DF5E8", name: "Joost", ride: "drives · Haarlem 12:55" },
+      { i: "LE", bg: "#8DF5E8", name: "Lena", ride: "Joost · Haarlem" },
+      { i: "TI", bg: "#FFE14D", name: "Tim", ride: "own way" },
+      { i: "AN", bg: "#F3EFE3", name: "Ana", ride: "own way" }
+    ];
+    const answered = st.call ? Math.min(people.length, Math.floor(st.t / 2)) : 0;
+    const crew = people.map((p, i) => {
+      let tag = "WAITING", tagBg = "#E7E2D4";
+      if (st.call && i < answered) {
+        if (st.call === "off") { tag = "SEEN"; tagBg = "#E7E2D4"; }
+        else if (i === 5 && st.call === "move") { tag = "CAN'T SUNDAY"; tagBg = "#FF2D78"; }
+        else { tag = "STILL IN"; tagBg = "#C8FF3D"; }
+      } else if (st.call) { tag = "DELIVERED"; tagBg = "#F3EFE3"; }
+      return Object.assign({}, p, { tag: tag, tagBg: tagBg });
+    });
+    const msgs = {
+      on: "IT'S ON. Session 002 · Wijk aan Zee · meet 13:45. 21 kts G27 SW. Pickups are locked: tap to see yours.",
+      off: "IT'S OFF. Wind drops to 9 kts by 14:00. Nobody drives for nothing. Next window: Sun 13:00, want in?",
+      move: "MOVED → Sun 25 Oct, meet 12:45, ride 13:00. 19 kts SW. Same crew, same cars: tap STILL IN."
+    };
+    const colors = { on: "#C8FF3D", off: "#FF2D78", move: "#FFE14D" };
+    const stamps = { on: ["IT'S", "ON!"], off: ["IT'S", "OFF"], move: ["MOVED", "SUN"] };
+    const c = st.call || "on";
+    return {
+      open: !st.call,
+      called: Boolean(st.call),
+      callOn: () => this.setState({ call: "on", t: 0 }),
+      callOff: () => this.setState({ call: "off", t: 0 }),
+      callMove: () => this.setState({ call: "move", t: 0 }),
+      undo: () => this.setState({ call: null, t: 0 }),
+      msg: msgs[c],
+      callColor: colors[c],
+      stampTop: stamps[c][0],
+      stampBig: stamps[c][1],
+      crew: crew,
+      replyLine: st.call ? answered + "/7 REPLIED" : "7 WAITING FOR YOUR CALL"
+    };
+  }
+}
+</script>
+</body>
+</html>

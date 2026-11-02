@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Hi8ctane — Live map (2.4)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&amp;family=Anton&amp;family=Space+Mono:wght@400;700&amp;family=Bowlby+One&amp;family=Yellowtail&amp;family=Permanent+Marker&amp;family=Special+Elite&amp;family=VT323&amp;family=Shrikhand&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#111111}a:hover{color:#FF2D78}
+.ht{background-color:#33637A;background-image:radial-gradient(rgba(255,255,255,.16) 1px,transparent 1.3px),linear-gradient(135deg,#5A94AB 0%,#3A6C83 48%,#163A51 100%);background-size:6px 6px,100% 100%}
+.htd{background-color:#173D57;background-image:radial-gradient(rgba(255,255,255,.12) 1px,transparent 1.3px);background-size:6px 6px}
+.htb{background-color:#35677D;background-image:radial-gradient(rgba(255,255,255,.14) 1px,transparent 1.3px);background-size:6px 6px}
+.htl{background-color:#62CDD6;background-image:radial-gradient(rgba(255,255,255,.38) 1.1px,transparent 1.5px);background-size:6px 6px}
+.htl2{background-color:#A8E6EA;background-image:radial-gradient(rgba(14,122,140,.22) 1px,transparent 1.4px);background-size:5px 5px}
+@keyframes wig{0%,100%{transform:rotate(-3deg)}50%{transform:rotate(3deg)}}
+.wig{animation:wig .18s linear 6}
+.sea{background-color:#DCEBEF;background-image:radial-gradient(rgba(17,17,17,.14) 1px,transparent 1.4px);background-size:7px 7px}
+@keyframes blink{50%{opacity:.25}}
+.blink{animation:blink 1.2s steps(2) infinite}
+@keyframes pop{0%{transform:scale(.94);opacity:0}100%{transform:none;opacity:1}}
+.pop{animation:pop .25s ease-out both}
+@keyframes ping{0%{transform:scale(.6);opacity:.9}100%{transform:scale(2.4);opacity:0}}
+.ping{animation:ping 1.8s ease-out infinite}
+@keyframes bob{0%,100%{transform:translate(0,0)}50%{transform:translate(2px,-3px)}}
+.bob{animation:bob 2.6s ease-in-out infinite}
+@keyframes marq{to{transform:translateX(-50%)}}
+.marq{animation:marq 20s linear infinite}
+button:focus-visible,a:focus-visible{outline:3px solid #FF2D78;outline-offset:2px}
+input[type=range]{-webkit-appearance:none;appearance:none;height:8px;border-radius:4px;background:linear-gradient(90deg,#FF2D78 var(--p),#E4E0D6 var(--p));outline:none}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:26px;height:26px;border-radius:50%;background:#FF2D78;border:2.5px solid #111111;cursor:grab}
+input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:#FF2D78;border:2.5px solid #111111;cursor:grab}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 1540px; background: #F3EFE3; color: #111111; overflow: hidden; font-family: 'Space Mono', monospace">
+
+  <div class="ht" style="height: 60px; border-bottom: 2.5px solid #111111; display: flex; align-items: center; justify-content: space-between; padding: 0 14px">
+    <a href="B24-Landing.dc.html" style="display: flex; text-decoration: none"><span role="img" aria-label="Hi8ctane" style="display: inline-flex; align-items: center; white-space: nowrap"><span style="display: inline-block; padding: 1px 2px 1px; margin: 0 -1px; background: #FFFFFF; color: #111111; font-family: 'Archivo Black', sans-serif; font-size: 15px; line-height: 1; transform: rotate(-6deg); box-shadow: 1px 1px 0 rgba(0,0,0,.4); clip-path: polygon(0 4%, 96% 0, 100% 92%, 3% 100%)">H</span><span style="display: inline-block; padding: 1px 2px 1px; margin: 0 -1px; background: #FFE14D; color: #111111; font-family: 'Anton', sans-serif; font-size: 15px; line-height: 1; transform: rotate(4deg); box-shadow: 1px 1px 0 rgba(0,0,0,.4); clip-path: polygon(0 4%, 96% 0, 100% 92%, 3% 100%)">I</span><span style="display: inline-block; padding: 1px 2px 1px; margin: 0 -1px; background: #FF2D78; color: #FFFFFF; font-family: 'Bowlby One', sans-serif; font-size: 20px; line-height: 1; transform: rotate(-3deg); box-shadow: 1px 1px 0 rgba(0,0,0,.4); clip-path: polygon(0 4%, 96% 0, 100% 92%, 3% 100%)">8</span><span style="display: inline-block; padding: 1px 2px 1px; margin: 0 -1px; background: #35677D; color: #FFFFFF; font-family: 'Special Elite', sans-serif; font-size: 15px; line-height: 1; transform: rotate(5deg); box-shadow: 1px 1px 0 rgba(0,0,0,.4); clip-path: polygon(0 4%, 96% 0, 100% 92%, 3% 100%)">c</span><span style="display: inline-block; padding: 1px 2px 1px; margin: 0 -1px; background: #FFFFFF; color: #111111; font-family: 'Shrikhand', sans-serif; font-size: 15px; line-height: 1; transform: rotate(-4deg); box-shadow: 1px 1px 0 rgba(0,0,0,.4); clip-path: polygon(0 4%, 96% 0, 100% 92%, 3% 100%)">T</span><span style="display: inline-block; padding: 1px 2px 1px; margin: 0 -1px; background: #C8FF3D; color: #111111; font-family: 'Archivo Black', sans-serif; font-size: 15px; line-height: 1; transform: rotate(3deg); box-shadow: 1px 1px 0 rgba(0,0,0,.4); clip-path: polygon(0 4%, 96% 0, 100% 92%, 3% 100%)">A</span><span style="display: inline-block; padding: 1px 2px 1px; margin: 0 -1px; background: #111111; color: #C8FF3D; font-family: 'Anton', sans-serif; font-size: 15px; line-height: 1; transform: rotate(-5deg); box-shadow: 1px 1px 0 rgba(0,0,0,.4); clip-path: polygon(0 4%, 96% 0, 100% 92%, 3% 100%)">N</span><span style="display: inline-block; padding: 1px 2px 1px; margin: 0 -1px; background: #8DF5E8; color: #111111; font-family: 'Permanent Marker', sans-serif; font-size: 15px; line-height: 1; transform: rotate(6deg); box-shadow: 1px 1px 0 rgba(0,0,0,.4); clip-path: polygon(0 4%, 96% 0, 100% 92%, 3% 100%)">E</span></span></a>
+    <span style="display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; color: #FFFFFF"><span class="blink" style="width: 8px; height: 8px; border-radius: 50%; background: #FF2D78"></span>{{liveLbl}}</span>
+  </div>
+
+  <div style="padding: 18px 16px 0; display: flex; align-items: flex-end; justify-content: space-between">
+    <span style="font-family: 'Archivo Black', sans-serif; font-size: 28px; line-height: 1">THE LINEUP</span>
+    <span style="font-size: 11px; font-weight: 700">{{outLbl}}</span>
+  </div>
+  <div style="padding: 4px 16px 0; font-size: 11px">Pick a day, drag the hour, tap a spot.</div>
+
+  <div role="group" aria-label="Day" style="margin: 12px 16px 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px">
+    <sc-for list="{{days}}" as="d" hint-placeholder-count="4"><button type="button" onClick="{{d.pick}}" aria-pressed="{{d.pressed}}" style="{{d.style}}">{{d.label}}</button></sc-for>
+  </div>
+
+  <div style="margin: 10px 16px 0; height: 58px; box-sizing: border-box; padding: 0 14px; background: #FFFFFF; border: 2.5px solid #111111; display: flex; align-items: center; gap: 12px">
+    <span style="font-family: 'Anton', sans-serif; font-size: 24px; width: 62px">{{hourLbl}}</span>
+    <input type="range" min="0" max="11" step="1" value="{{hr}}" onChange="{{setHr}}" aria-label="Hour of the day" style="flex: 1; --p: {{pct}}%">
+    <span style="font-size: 10px; width: 54px; line-height: 1.2">{{hourNote}}</span>
+  </div>
+
+  <div class="rail" role="group" aria-label="Sport" style="margin: 10px 16px 0; display: flex; gap: 6px; flex-wrap: wrap">
+    <sc-for list="{{chips}}" as="c" hint-placeholder-count="6"><button type="button" onClick="{{c.pick}}" aria-pressed="{{c.pressed}}" style="{{c.style}}">{{c.label}}</button></sc-for>
+  </div>
+
+  <div style="position: relative; margin: 14px 13px 0; width: 364px; height: 483px; border: 2.5px solid #111111; box-shadow: 5px 5px 0 #111111; overflow: hidden">
+    <svg width="364" height="483" viewBox="0 0 364 483" aria-hidden="true" style="position: absolute; inset: 0"><defs><pattern id="sd18" width="8" height="8" patternUnits="userSpaceOnUse"><circle cx="2" cy="2" r="1" fill="#111111" fill-opacity=".14"></circle></pattern></defs><rect width="364" height="483" fill="#D3E6EC"></rect><rect width="364" height="483" fill="url(#sd18)"></rect><path d="M206.8 -30.2 C205.5 -24.3 201.7 -5.9 198.8 5.0 C196.0 15.9 192.4 25.2 189.6 35.2 C186.9 45.3 184.1 57.5 182.3 65.4 C180.5 73.3 178.9 74.1 178.6 82.5 C178.3 90.9 180.5 104.3 180.5 115.7 C180.5 127.1 179.1 143.0 178.6 150.9 C178.1 158.8 178.4 154.6 177.4 163.0 C176.4 171.4 174.0 190.7 172.5 201.2 C171.0 211.8 169.7 216.3 168.2 226.4 C166.8 236.4 165.5 251.5 164.0 261.6 C162.4 271.6 161.0 279.4 159.1 286.7 C157.1 294.1 154.8 299.8 152.3 305.8 C149.9 311.9 146.4 316.9 144.4 323.0 C142.3 329.0 142.2 333.9 140.1 342.1 C138.0 350.3 135.0 361.3 131.5 372.2 C128.1 383.1 123.1 395.7 119.3 407.5 C115.5 419.2 113.3 428.4 108.9 442.7 C104.5 456.9 95.6 484.6 93.0 493.0 L384 503 L384 -20 Z" fill="#F3EEE3" stroke="#111111" stroke-width="2.5"></path><path d="M156.0 314.9 C158.0 315.2 160.6 316.2 168.2 316.9 C175.9 317.7 189.6 316.1 201.9 319.4 C214.1 322.8 227.4 330.7 241.6 337.0 C255.9 343.3 273.8 350.5 287.5 357.2 C301.3 363.9 314.0 370.6 324.2 377.3 C334.4 384.0 338.5 393.2 348.7 397.4 C358.9 401.6 379.3 401.6 385.4 402.4" fill="none" stroke="#111111" stroke-width="9" stroke-linecap="round"></path><path d="M156.0 314.9 C158.0 315.2 160.6 316.2 168.2 316.9 C175.9 317.7 189.6 316.1 201.9 319.4 C214.1 322.8 227.4 330.7 241.6 337.0 C255.9 343.3 273.8 350.5 287.5 357.2 C301.3 363.9 314.0 370.6 324.2 377.3 C334.4 384.0 338.5 393.2 348.7 397.4 C358.9 401.6 379.3 401.6 385.4 402.4" fill="none" stroke="#D3E6EC" stroke-width="5" stroke-linecap="round"></path><path d="M152.3 305.8 C149.2 306.8 138.3 310.1 133.4 311.4 C128.5 312.6 124.7 313.1 123.0 313.4" fill="none" stroke="#111111" stroke-width="3.5" stroke-linecap="round"></path><path d="M144.4 323.0 C142.5 322.4 136.4 319.7 133.4 319.4 C130.3 319.2 127.2 321.1 126.0 321.4" fill="none" stroke="#111111" stroke-width="3.5" stroke-linecap="round"></path><path d="M369 250 C334 270 324 320 344 360 C356 380 369 384 369 384 Z" fill="#D3E6EC" stroke="#111111" stroke-width="2.5"></path><circle cx="345.6" cy="410.5" r="4" fill="#111111"></circle><text x="337.6" y="414.5" text-anchor="end" font-family="Space Mono, monospace" font-size="10" font-weight="700" fill="#111111">AMSTERDAM</text><circle cx="256.3" cy="148.9" r="4" fill="#111111"></circle><text x="264.3" y="152.9" text-anchor="start" font-family="Space Mono, monospace" font-size="10" font-weight="700" fill="#111111">ALKMAAR</text></svg>
+    <sc-for list="{{dots}}" as="d" hint-placeholder-count="17">
+      <span class="bob" style="position: absolute; left: {{d.x}}px; top: {{d.y}}px; width: 9px; height: 9px; margin: -4px 0 0 -4px; box-sizing: border-box; border-radius: 50%; background: {{d.c}}; border: 2px solid #111111; animation-delay: {{d.dl}}s"></span>
+    </sc-for>
+    <sc-for list="{{pins}}" as="p" hint-placeholder-count="4">
+      <button type="button" onClick="{{p.pick}}" aria-pressed="{{p.pressed}}" aria-label="{{p.aria}}" style="position: absolute; left: {{p.x}}px; top: {{p.y}}px; transform: translate(-17px, -17px); padding: 0; border: 0; background: none; cursor: pointer; display: flex; align-items: center; gap: 8px">
+        <span style="position: relative; width: 34px; height: 34px; flex-shrink: 0">
+          <sc-if value="{{p.live}}" hint-placeholder-val="{{true}}"><span class="ping" style="position: absolute; inset: 0; border: 3px solid #FF2D78"></span><span style="position: absolute; inset: -6px; border: 2.5px solid #FF2D78; background: rgba(255,45,120,.12)"></span></sc-if>
+          <sc-if value="{{p.pick2}}" hint-placeholder-val="{{false}}"><span style="position: absolute; inset: -6px; border: 2.5px dashed #111111"></span></sc-if>
+          <span style="position: absolute; inset: 0; background: {{p.bg}}; border: 2.5px solid #111111; box-shadow: 3px 3px 0 #111111; display: flex; align-items: center; justify-content: center"><sc-if value="{{p.is_kite}}" hint-placeholder-val="{{false}}"><svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true"><path d="M5 23 C13 6 35 6 43 23 L37 24 C30 16 18 16 11 24 Z" fill="#FFFFFF" stroke="none"/><path d="M11 24 L24 40 M37 24 L24 40 M18 41 H30" fill="none" stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round"/></svg></sc-if><sc-if value="{{p.is_wing}}" hint-placeholder-val="{{false}}"><svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true"><path d="M6 33 C8 17 21 8 42 7 C36 16 34 25 34 39 C25 34 15 33 6 33 Z" fill="#FFFFFF"/></svg></sc-if><sc-if value="{{p.is_surf}}" hint-placeholder-val="{{false}}"><svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true"><path d="M3 41 C3 20 15 9 28 9 C38 9 45 15 45 24 C38 21 32 24 31 31 C30 36 33 39 37 41 Z" fill="#FFFFFF"/></svg></sc-if><sc-if value="{{p.is_sup}}" hint-placeholder-val="{{false}}"><svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true"><path d="M4 34 H43 Q46 37 43 40 H4 Q2 37 4 34 Z" fill="#111111"/><path d="M35 5 L25 30" stroke="#111111" stroke-width="3.6" stroke-linecap="round"/><path d="M22 27 L29.5 30 L27 37 L19.5 34 Z" fill="#111111"/></svg></sc-if><sc-if value="{{p.is_mtb}}" hint-placeholder-val="{{false}}"><svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true"><g fill="none" stroke="#111111" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="32" r="7"/><circle cx="36" cy="32" r="7"/><path d="M12 32 L19 20 H30 L36 32 M19 20 L24 32 L30 20 M27 15 H33"/></g></svg></sc-if></span>
+          <sc-if value="{{p.live}}" hint-placeholder-val="{{true}}"><span style="position: absolute; left: -14px; top: -14px; width: 22px; height: 22px; box-sizing: border-box; border-radius: 50%; background: #FF2D78; border: 2px solid #111111; color: #FFFFFF; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center">{{p.n}}</span></sc-if>
+        </span>
+        <span style="display: flex; align-items: center; gap: 4px; padding: 3px 7px; background: {{p.lblBg}}; border: 2px solid #111111; font-size: 11px; font-weight: 700; white-space: nowrap; color: #111111"><span style="display: flex; transform: rotate(40deg)">↑</span>{{p.lbl}}</span>
+      </button>
+    </sc-for>
+    <span style="position: absolute; right: 12px; top: 14px; transform: rotate(-4deg); background: #FF2D78; color: #FFFFFF; border: 2.5px solid #111111; padding: 0 12px 4px; font-family: 'Yellowtail', cursive; font-size: 26px">{{tag}}</span>
+  </div>
+  <div style="margin: 12px 16px 0; display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 10px">
+    <span style="display: flex; align-items: center; gap: 6px"><span style="width: 12px; height: 12px; border: 2.5px solid #FF2D78; background: rgba(255,45,120,.12)"></span>crew out, people going</span>
+    <span style="display: flex; align-items: center; gap: 6px"><span style="width: 12px; height: 12px; border: 2px dashed #111111"></span>good at this hour, no crew yet</span>
+    <span style="display: flex; align-items: center; gap: 6px"><span style="width: 9px; height: 9px; border-radius: 50%; background: #FF2D78; border: 2px solid #111111"></span>someone out (anonymous)</span>
+  </div>
+
+  <div class="pop" style="margin: 18px 22px 0 16px; background: #FFFFFF; border: 2.5px solid #111111; box-shadow: 6px 6px 0 #111111">
+    <div style="display: flex; height: 92px; border-bottom: 2.5px solid #111111">
+      <span style="width: 62px; background: {{sel.bg}}; border-right: 2px solid #111111; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; color: {{sel.fg}}; font-size: 9px; font-weight: 700"><sc-if value="{{sel.is_kite}}" hint-placeholder-val="{{false}}"><svg width="24" height="24" viewBox="0 0 48 48" aria-hidden="true"><path d="M5 23 C13 6 35 6 43 23 L37 24 C30 16 18 16 11 24 Z" fill="#FFFFFF" stroke="none"/><path d="M11 24 L24 40 M37 24 L24 40 M18 41 H30" fill="none" stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round"/></svg></sc-if><sc-if value="{{sel.is_wing}}" hint-placeholder-val="{{false}}"><svg width="24" height="24" viewBox="0 0 48 48" aria-hidden="true"><path d="M6 33 C8 17 21 8 42 7 C36 16 34 25 34 39 C25 34 15 33 6 33 Z" fill="#FFFFFF"/></svg></sc-if><sc-if value="{{sel.is_surf}}" hint-placeholder-val="{{false}}"><svg width="24" height="24" viewBox="0 0 48 48" aria-hidden="true"><path d="M3 41 C3 20 15 9 28 9 C38 9 45 15 45 24 C38 21 32 24 31 31 C30 36 33 39 37 41 Z" fill="#FFFFFF"/></svg></sc-if><sc-if value="{{sel.is_sup}}" hint-placeholder-val="{{false}}"><svg width="24" height="24" viewBox="0 0 48 48" aria-hidden="true"><path d="M4 34 H43 Q46 37 43 40 H4 Q2 37 4 34 Z" fill="#111111"/><path d="M35 5 L25 30" stroke="#111111" stroke-width="3.6" stroke-linecap="round"/><path d="M22 27 L29.5 30 L27 37 L19.5 34 Z" fill="#111111"/></svg></sc-if><sc-if value="{{sel.is_mtb}}" hint-placeholder-val="{{false}}"><svg width="24" height="24" viewBox="0 0 48 48" aria-hidden="true"><g fill="none" stroke="#111111" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="32" r="7"/><circle cx="36" cy="32" r="7"/><path d="M12 32 L19 20 H30 L36 32 M19 20 L24 32 L30 20 M27 15 H33"/></g></svg></sc-if>{{sel.sportLbl}}</span>
+      <div class="ht" style="flex: 1; padding: 10px 12px; display: flex; flex-direction: column; justify-content: space-between; color: #FFFFFF">
+        <span style="font-size: 10px; font-weight: 700; letter-spacing: .06em">{{sel.kicker}}</span>
+        <span style="display: flex; justify-content: space-between; align-items: flex-end"><span style="font-family: 'Archivo Black', sans-serif; font-size: 18px; line-height: 1; text-shadow: 2px 2px 0 #111111">{{sel.name}}</span><span style="font-family: 'Anton', sans-serif; font-size: 28px; line-height: .9; text-shadow: 2px 2px 0 #111111">{{sel.big}}</span></span>
+      </div>
+    </div>
+    <div style="padding: 10px 12px 0; display: grid; grid-template-columns: 44px repeat(12, minmax(0, 1fr)); font-size: 9px; font-weight: 700">
+      <span>HOUR</span><sc-for list="{{sel.cells}}" as="c" hint-placeholder-count="12"><span style="text-align: center; color: {{c.tc}}">{{c.t}}</span></sc-for>
+    </div>
+    <div style="padding: 2px 12px 0; display: grid; grid-template-columns: 44px repeat(12, minmax(0, 1fr)); gap: 0">
+      <span style="font-size: 9px; font-weight: 700; align-self: center">{{sel.unit}}</span>
+      <sc-for list="{{sel.cells}}" as="c" hint-placeholder-count="12"><span style="height: 26px; display: flex; align-items: center; justify-content: center; font-family: 'Anton', sans-serif; font-size: 13px; background: {{c.bg}}; border: 1px solid #111111; outline: {{c.ol}}; outline-offset: -3px">{{c.v}}</span></sc-for>
+    </div>
+    <div style="padding: 10px 12px; font-size: 11px; font-weight: 700">{{sel.note}}</div>
+    <div style="padding: 0 12px 12px; display: flex; flex-direction: column; gap: 8px">
+      <sc-for list="{{sel.crews}}" as="c" hint-placeholder-count="2">
+        <a href="B24-Crew.dc.html" style="display: flex; align-items: center; gap: 10px; padding: 8px 8px 8px 10px; border: 2px solid #111111; border-left: 6px solid {{c.bar}}; text-decoration: none; color: #111111; background: #FFFFFF">
+          <span style="flex: 1; display: flex; flex-direction: column; gap: 1px"><span style="font-size: 9px; font-weight: 700; color: #FF2D78">{{c.k}}</span><b style="font-family: 'Archivo Black', sans-serif; font-weight: 400; font-size: 13px">{{c.t}}</b><span style="font-size: 10px">{{c.s}}</span></span>
+          <span style="height: 36px; padding: 0 10px; display: flex; align-items: center; background: #8DF5E8; border: 2px solid #111111; box-shadow: 2px 2px 0 #111111; font-family: 'Archivo Black', sans-serif; font-size: 11px">JOIN</span>
+        </a>
+      </sc-for>
+      <sc-if value="{{sel.none}}" hint-placeholder-val="{{false}}"><span style="font-size: 11px; line-height: 1.5">Good at this hour and nobody's going yet. Start it and we ping everyone watching this spot.</span></sc-if>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 2.5px solid #111111">
+      <a href="B24-Start.dc.html" style="height: 48px; display: flex; align-items: center; justify-content: center; background: #C8FF3D; border-right: 2px solid #111111; text-decoration: none; color: #111111; font-family: 'Archivo Black', sans-serif; font-size: 11px">START ONE</a>
+      <a href="B24-Invite.dc.html" style="height: 48px; display: flex; align-items: center; justify-content: center; background: #FFE14D; border-right: 2px solid #111111; text-decoration: none; color: #111111; font-family: 'Archivo Black', sans-serif; font-size: 11px">WATCH</a>
+      <a href="B24-Spot.dc.html" style="height: 48px; display: flex; align-items: center; justify-content: center; background: #FFFFFF; text-decoration: none; color: #111111; font-family: 'Archivo Black', sans-serif; font-size: 11px">FORECAST →</a>
+    </div>
+  </div>
+
+  <div style="position: absolute; left: 0; right: 0; bottom: 80px; padding: 10px 16px; background: #F3EFE3; border-top: 2.5px solid #111111; display: flex; align-items: center; gap: 10px"><span style="flex: 1; min-width: 0; font-size: 10px; font-weight: 700; line-height: 1.35">4 crews going out today, and good windows nobody has started yet.</span><a href="B24-Today.dc.html" style="flex-shrink: 0; height: 46px; padding: 0 14px; display: flex; align-items: center; background: #FF2D78; color: #FFFFFF; border: 2.5px solid #111111; box-shadow: 3px 3px 0 #111111; text-decoration: none; font-family: 'Archivo Black', sans-serif; font-size: 13px; white-space: nowrap">FIND MY CREW</a></div>
+  <nav aria-label="Main" style="position: absolute; left: 0; right: 0; bottom: 0; height: 80px; background: #F3EFE3; border-top: 2.5px solid #111111; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); align-items: center; padding-bottom: 10px; box-sizing: border-box">
+<a href="B24-Today.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 4px; text-decoration: none; font-size: 10px; font-weight: 700; color: #111111"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3"></circle><circle cx="17" cy="9" r="2.5"></circle><path d="M3 19c0-3 3-5 6-5s6 2 6 5"></path><path d="M15 14c3 0 6 1.5 6 4"></path></svg>CREWS</a>
+<a href="B24-Map.dc.html" aria-current="page" style="display: flex; flex-direction: column; align-items: center; gap: 4px; text-decoration: none; font-size: 10px; font-weight: 700; color: #FF2D78"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6-7-11a7 7 0 0 1 14 0c0 5-7 11-7 11z"></path><circle cx="12" cy="10" r="2.5"></circle></svg>LIVE MAP</a>
+<a href="B24-Start.dc.html" aria-label="Start a crew" style="justify-self: center; width: 56px; height: 56px; box-sizing: border-box; margin-top: -16px; background: #C8FF3D; border: 2.5px solid #111111; box-shadow: 4px 4px 0 #111111; display: flex; align-items: center; justify-content: center"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="3" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></a>
+<a href="B24-Try.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 4px; text-decoration: none; font-size: 10px; font-weight: 700; color: #111111"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l2.9 6.9 7.1.6-5.4 4.7 1.7 7.3L12 17.6 5.7 21.5l1.7-7.3L2 9.5l7.1-.6z"></path></svg>TRY</a>
+<a href="B24-Me.dc.html" style="display: flex; flex-direction: column; align-items: center; gap: 4px; text-decoration: none; font-size: 10px; font-weight: 700; color: #111111"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4 4-7 8-7s8 3 8 7"></path></svg>ME</a>
+</nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":1540}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { day: "today", hr: 4, sport: "all", sel: "wijk" }; }
+  flags(s) { return { is_kite: s === "kite", is_wing: s === "wing", is_surf: s === "surf", is_sup: s === "sup", is_mtb: s === "mtb" }; }
+  renderVals() {
+    const st = this.state;
+    const H = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21];
+    const NOW = 4; // 14:00
+    const FG = { kite: "#FFFFFF", wing: "#FFFFFF", surf: "#FFFFFF", sup: "#111111", mtb: "#111111" };
+    const BG = { kite: "#35677D", wing: "#173D57", surf: "#FF2D78", sup: "#8DF5E8", mtb: "#C8FF3D" };
+    const mul = { today: 1, tmrw: 1.15, sat: .8, sun: 1.05 }[st.day];
+    const base = [14, 16, 18, 20, 21, 21, 20, 18, 16, 13, 11, 9].map((x) => Math.round(x * mul));
+    const S = [
+      { id: "schoorl", name: "SCHOORL DUNES", sports: ["mtb"], main: "mtb", x: 199, y: 80, unit: "TRAIL",
+        val: (i) => (st.day === "sat" ? "DAMP" : "DRY"), good: (i) => i <= 8, n: (i) => (i >= 1 && i <= 7 ? 5 : 0), crews: [["mtb", "CREW · 15:00", "Schoorl red route", "Marta + 3 · 1 seat from A'dam"]], big: () => (st.day === "sat" ? "DAMP" : "DRY") },
+      { id: "wijk", name: "WIJK AAN ZEE", sports: ["kite", "wing", "surf"], main: "kite", x: 160, y: 289, unit: "KTS",
+        val: (i) => base[i], good: (i) => base[i] >= 15 && base[i] <= 30, n: (i) => (base[i] >= 17 && i <= 8 ? (st.day === "today" ? 8 : 4) : 0), crews: [["kite", "LIVE CREW · ON THE WATER", "Kite · 14:00", "Frankie + 4 · 1 spot left"], ["wing", "ROOKIES · 15:00", "Wing with a captain", "wings provided"]], big: (i) => base[i] + " KTS" },
+      { id: "ijm", name: "IJMUIDEN", sports: ["sup", "wing", "kite"], main: "sup", x: 141, y: 330, unit: "KTS",
+        val: (i) => Math.max(4, base[i] - 11), good: (i) => base[i] - 11 <= 10, n: (i) => (i <= 3 ? 4 : 0), crews: [["sup", "ROOKIES · 11:00", "SUP harbour loop", "Captain Lotte · boards provided"]], big: (i) => (base[i] - 11 <= 10 ? "FLAT" : (base[i] - 11) + " KTS") },
+      { id: "zand", name: "ZANDVOORT", sports: ["surf", "kite"], main: "surf", x: 121, y: 407, unit: "KTS",
+        val: (i) => base[i] - 1, good: (i) => false, n: () => 0, crews: [], big: () => "SOON", soon: true }
+    ];
+    const i = st.hr;
+    const visible = (s) => st.sport === "all" || s.sports.includes(st.sport);
+    const pins = S.filter(visible).map((s) => {
+      const n = s.n(i), live = n > 0 && i === NOW && st.day === "today", going = n > 0;
+      const sp = st.sport === "all" ? s.main : st.sport;
+      return Object.assign({}, this.flags(sp), { x: String(s.x), y: String(s.y), n: String(n), live: going, pick2: !going && s.good(i),
+        bg: s.soon ? "#9C968A" : BG[sp], lblBg: st.sel === s.id ? "#C8FF3D" : s.soon ? "#E4E0D6" : "#FFFFFF",
+        lbl: s.soon ? "SOON" : s.unit === "KTS" ? s.val(i) + "KTS G" + (s.val(i) + 7) + (going ? " · " + n : "") : s.val(i) + (going ? " · " + n : ""),
+        pressed: st.sel === s.id ? "true" : "false", aria: s.name + (going ? ", " + n + " going" : ""), pick: () => this.setState({ sel: s.id }) });
+    });
+    const D = [[120, 262], [131, 276], [108, 290], [126, 300], [114, 248], [138, 254], [100, 270], [118, 312], [170, 120], [184, 134], [160, 146], [178, 158], [196, 112], [104, 326], [92, 336], [110, 344], [98, 352]];
+    const own = [1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 2, 2, 2, 2];
+    const cnt = [S[1].n(i), S[0].n(i), S[2].n(i)];
+    const dotCol = ["#FF2D78", "#FFE14D", "#8DF5E8"];
+    const dots = D.filter((d, k) => { const sp = own[k] === 1 ? S[1] : own[k] === 0 ? S[0] : S[2]; const idx = own[k] === 1 ? k : own[k] === 0 ? k - 8 : k - 13; return visible(sp) && idx < sp.n(i); })
+      .map((d, k) => ({ x: String(d[0]), y: String(d[1]), c: dotCol[k % 3], dl: String((k % 5) * .4) }));
+    const total = S.reduce((a, s) => a + s.n(i), 0);
+    const s = S.find((x) => x.id === st.sel) || S[1];
+    const sp = st.sport !== "all" && s.sports.includes(st.sport) ? st.sport : s.main;
+    const days = [["today", "TODAY"], ["tmrw", "WED 21"], ["sat", "SAT 24"], ["sun", "SUN 25"]].map((d) => ({ label: d[1], pressed: st.day === d[0] ? "true" : "false", pick: () => this.setState({ day: d[0] }),
+      style: (st.day === d[0] ? "background:#FF2D78;color:#FFFFFF;" : "background:#FFFFFF;color:#111111;") + "height:42px;border:2.5px solid #111111;font-family:'Archivo Black',sans-serif;font-size:11px;cursor:pointer" }));
+    const chips = [["all", "ALL"], ["kite", "KITE"], ["wing", "WING"], ["surf", "SURF"], ["sup", "SUP"], ["mtb", "MTB"]].map((c) => ({ label: c[1], pressed: st.sport === c[0] ? "true" : "false", pick: () => this.setState({ sport: c[0] }),
+      style: (st.sport === c[0] ? "background:#111111;color:#C8FF3D;" : "background:#FFFFFF;color:#111111;") + "height:34px;padding:0 11px;border:2px solid #111111;font-family:'Archivo Black',sans-serif;font-size:11px;cursor:pointer" }));
+    const isNow = st.day === "today" && i === NOW;
+    return {
+      liveLbl: isNow ? "LIVE · NOW" : "FORECAST", outLbl: isNow ? "● " + total + " OUT NOW" : total + " GOING AT " + H[i] + ":00",
+      days: days, chips: chips, hr: String(i), pct: String(Math.round(i / 11 * 100)), hourLbl: H[i] + ":00",
+      hourNote: isNow ? "live now" : "drag the hour",
+      setHr: (e) => this.setState({ hr: Number(e && e.target ? e.target.value : i) }),
+      pins: pins, dots: dots, tag: isNow ? "Right now" : "Noord-Holland",
+      sel: Object.assign({}, this.flags(sp), { name: s.name, fg: s.soon ? "#FFFFFF" : FG[sp], bg: s.soon ? "#9C968A" : BG[sp], sportLbl: sp.toUpperCase(), big: s.big(i),
+        kicker: (isNow ? "LIVE · " : "FORECAST · ") + ({ today: "TODAY", tmrw: "WED 21 OCT", sat: "SAT 24 OCT", sun: "SUN 25 OCT" }[st.day]) + " · " + H[i] + ":00",
+        unit: s.unit,
+        cells: H.map((h, k) => ({ t: String(h), tc: k === i ? "#FF2D78" : "#111111", v: String(s.val(k)).slice(0, 4), bg: s.soon ? "#E4E0D6" : s.good(k) ? "#C8FF3D" : "#FFE14D", ol: k === i ? "3px solid #FF2D78" : "none" })),
+        note: s.soon ? "Not in Hi-8 yet · 31 people asked for it" : (s.good(i) ? "GOOD at " + H[i] + ":00" : "Marginal at " + H[i] + ":00") + " · " + (s.n(i) ? s.n(i) + " going, anonymous" : "nobody out yet"),
+        crews: s.crews.filter((c) => st.sport === "all" || c[0] === st.sport).map((c) => ({ k: c[1], t: c[2], s: c[3], bar: BG[c[0]] })),
+        none: s.crews.filter((c) => st.sport === "all" || c[0] === st.sport).length === 0 })
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+[
+  {"slug": "wijk-aan-zee", "name": "Wijk aan Zee", "lat": 52.4960, "lon": 4.5820, "sports": ["kite", "wing", "surf"], "good_dir_from": 200, "good_dir_to": 320, "meeting_point": "Kite beach, access 3 (beach pavilion)", "parking": "Relweg lot, paid"},
+  {"slug": "ijmuiden", "name": "IJmuiden", "lat": 52.4600, "lon": 4.5550, "sports": ["kite", "wing", "sup"], "good_dir_from": 200, "good_dir_to": 340, "meeting_point": "Kennemerstrand, south of the pier", "parking": "Kennemerstrand lot"},
+  {"slug": "zandvoort", "name": "Zandvoort", "lat": 52.3730, "lon": 4.5230, "sports": ["surf", "kite"], "good_dir_from": 200, "good_dir_to": 330, "meeting_point": "North beach", "parking": "Boulevard Barnaart"},
+  {"slug": "schoorl", "name": "Schoorl dunes", "lat": 52.7010, "lon": 4.6870, "sports": ["mtb"], "good_dir_from": null, "good_dir_to": null, "meeting_point": "Schoorl MTB route start (Schoorlse duinen)", "parking": "Duinvoetweg"}
+]

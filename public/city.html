@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Start Hi8ctane in your city</title>
+<meta name="description" content="A city opens at 25 riders and 3 captains. The spots are already found. I'm in, or I'll captain.">
+<link rel="canonical" href="https://hi8ctane.com/city">
+<meta property="og:title" content="Start Hi8ctane in your city">
+<meta property="og:description" content="A city opens at 25 riders and 3 captains. The spots are already found. I'm in, or I'll captain.">
+<meta property="og:image" content="https://hi8ctane.com/img/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="theme-color" content="#111111">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/img/icon-180.png">
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="stylesheet" href="/css/fonts.css">
+<link rel="stylesheet" href="/css/hi8.css">
+<script src="/js/site.js" defer></script>
+</head>
+<body data-page="city">
+<a class="sr" href="#main">Skip to content</a>
+<header class="top"><div class="wrap"><a class="wm" href="/" aria-label="Hi8ctane home"><span aria-hidden="true">H</span><span aria-hidden="true">I</span><span aria-hidden="true">8</span><span aria-hidden="true">c</span><span aria-hidden="true">T</span><span aria-hidden="true">A</span><span aria-hidden="true">N</span><span aria-hidden="true">E</span></a>
+<nav aria-label="Main"><a href="/#week">THE WEEK</a><a href="/#how">HOW IT WORKS</a><a href="/night">FOUNDING NIGHT</a><a href="/city/lisbon">YOUR CITY</a></nav>
+<a class="btn lm sm" href="/#join">GET MY PLATE</a></div></header>
+<main id="main">
+<div class="hero"><div class="wrap">
+<div>
+<div class="chips" role="group" aria-label="City" data-city-tabs></div>
+<div class="kick" style="margin-top:22px;color:var(--lime)">Not on Hi8 yet · <span data-season></span></div>
+<h1><span data-city-name>LISBON</span><br><em>IS NEXT.</em></h1>
+<p class="lead">Hi8 opens here at 25 riders and 3 captains. The first crew goes out on the next good window after that.</p>
+<div class="meter-bar"><div class="lb"><span>RIDERS IN</span><span data-riders>0 / 25</span></div><div class="prog"><i data-riders-bar style="width:0"></i></div></div>
+<div class="meter-bar cap"><div class="lb"><span>CAPTAINS</span><span data-captains>0 / 3</span></div><div class="prog"><i data-captains-bar style="width:0"></i></div></div>
+</div>
+<form class="card form" data-city-form novalidate style="color:var(--ink)">
+<h2>I'M IN</h2>
+<div class="two">
+<div class="field"><label for="c-name">FIRST NAME</label><input class="inp" id="c-name" name="first_name" autocomplete="given-name" maxlength="40" required><span class="err" data-err="first_name"></span></div>
+<div class="field"><label for="c-email">EMAIL</label><input class="inp" id="c-email" name="email" type="email" autocomplete="email" maxlength="254" required><span class="err" data-err="email"></span></div>
+</div>
+<div class="field"><span class="lb">WHAT YOU RIDE</span><div class="chips" data-city-sports></div></div>
+<label class="tick"><input type="checkbox" name="captain" data-captain><span><b>I'll captain.</b> One crew a week on a good day, welcoming first-timers. You ride alongside; captains never teach.</span></label>
+<div data-captain-more hidden><div class="field"><span class="lb">USUALLY FREE ON</span><div class="chips" data-days>
+<button type="button" class="chip" data-day="weekdays" aria-pressed="false">WEEKDAYS</button><button type="button" class="chip" data-day="fri" aria-pressed="false">FRI PM</button><button type="button" class="chip" data-day="sat" aria-pressed="true">SAT</button><button type="button" class="chip" data-day="sun" aria-pressed="false">SUN</button></div></div></div>
+<label class="tick"><input type="checkbox" name="consent" checked><span>Email me once, the day this city opens.</span></label>
+<div class="hp" aria-hidden="true"><label>Leave this empty <input name="website" tabindex="-1" autocomplete="off"></label></div>
+<div style="margin-top:16px"><button class="btn pk lg" type="submit" data-submit>COUNT ME IN</button></div>
+<span class="err" data-err="form" role="alert"></span>
+<div class="result" data-result hidden></div>
+</form>
+</div></div>
+<section><div class="wrap">
+<div class="sec-head"><h2>SPOTS WE FOUND</h2><span class="tag" data-spot-tag></span></div>
+<div class="card spot-list" data-spots></div>
+<p class="note">Found in open map data. A local city lead checks every spot before it opens: which way it faces, hazards, parking, best tide and level.</p>
+<div class="sec-head" style="margin-top:32px"><h2>HOW A CITY OPENS</h2><span class="tag">ABOUT A WEEK</span></div>
+<div class="grid3" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr))">
+<div class="card step"><div class="n">1</div><h3>25 riders and 3 captains</h3><p>Sign up here. Every link you share counts.</p></div>
+<div class="card step"><div class="n">2</div><h3>A city lead checks the spots</h3><p>And picks the pickup hubs: <span data-hubs></span>.</p></div>
+<div class="card step"><div class="n">3</div><h3>The first good window</h3><p>The meter picks it. The captains post crews for it.</p></div>
+<div class="card step"><div class="n">4</div><h3>The first session, then a night</h3><p>Photos, plates, and the captains' chat.</p></div>
+</div>
+</div></section>
+</main>
+<div class="sunset"><div class="wrap"><div class="t">SEE YOU<br><em>OUT THERE.</em></div></div><svg viewBox="0 0 1200 140" preserveAspectRatio="xMidYMax slice" aria-hidden="true"><defs><linearGradient id="sun" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFE14D"/><stop offset=".55" stop-color="#FF8FB6"/><stop offset="1" stop-color="#FF2D78"/></linearGradient><clipPath id="hz"><rect width="1200" height="104"/></clipPath></defs><circle cx="600" cy="104" r="92" fill="url(#sun)" clip-path="url(#hz)"/><rect x="490" y="52" width="220" height="3" fill="#FF4F8E"/><rect x="490" y="64" width="220" height="4" fill="#FF4F8E"/><rect x="490" y="77" width="220" height="5" fill="#FF4F8E"/><rect x="490" y="91" width="220" height="6" fill="#FF4F8E"/><rect y="104" width="1200" height="36" fill="#111111"/><path d="M0 116 Q24 110 48 116 Q72 110 96 116 Q120 110 144 116 Q168 110 192 116 Q216 110 240 116 Q264 110 288 116 Q312 110 336 116 Q360 110 384 116 Q408 110 432 116 Q456 110 480 116 Q504 110 528 116 Q552 110 576 116 Q600 110 624 116 Q648 110 672 116 Q696 110 720 116 Q744 110 768 116 Q792 110 816 116 Q840 110 864 116 Q888 110 912 116 Q936 110 960 116 Q984 110 1008 116 Q1032 110 1056 116 Q1080 110 1104 116 Q1128 110 1152 116 Q1176 110 1200 116 Q1224 110 1248 116" fill="none" stroke="#8DF5E8" stroke-width="2.5"/><path d="M-24 129 Q0 123 24 129 Q48 123 72 129 Q96 123 120 129 Q144 123 168 129 Q192 123 216 129 Q240 123 264 129 Q288 123 312 129 Q336 123 360 129 Q384 123 408 129 Q432 123 456 129 Q480 123 504 129 Q528 123 552 129 Q576 123 600 129 Q624 123 648 129 Q672 123 696 129 Q720 123 744 129 Q768 123 792 129 Q816 123 840 129 Q864 123 888 129 Q912 123 936 129 Q960 123 984 129 Q1008 123 1032 129 Q1056 123 1080 129 Q1104 123 1128 129 Q1152 123 1176 129 Q1200 123 1224 129 Q1248 123 1272 129" fill="none" stroke="#C8FF3D" stroke-width="2.5"/></svg></div>
+<footer class="small"><div class="wrap">Forecast: Open-Meteo, using KNMI, DWD, ECMWF and Météo-France models (CC BY 4.0). A model forecast, not a beach sensor: every session is your own call. 18+.<br>
+<a href="/privacy">Privacy</a> · <a href="/terms">Terms</a> · <a href="mailto:hello@hi8ctane.com">hello@hi8ctane.com</a> · © Hi8ctane</div></footer>
+</body>
+</html>

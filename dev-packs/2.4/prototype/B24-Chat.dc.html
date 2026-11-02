@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Hi8ctane — Crew chat</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&amp;family=Anton&amp;family=Space+Mono:wght@400;700&amp;family=Bowlby+One&amp;family=Yellowtail&amp;family=Permanent+Marker&amp;family=Special+Elite&amp;family=VT323&amp;family=Shrikhand&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#111111}a:hover{color:#FF2D78}
+.htd{background-color:#173D57;background-image:radial-gradient(rgba(255,255,255,.12) 1px,transparent 1.3px);background-size:6px 6px}
+input::placeholder{color:#77705F}
+input:focus{outline:3px solid #FF2D78;outline-offset:1px}
+@keyframes rise{from{transform:translateY(6px);opacity:0}to{transform:none;opacity:1}}
+.rise{animation:rise .25s ease-out both}
+</style>
+</helmet>
+<div style="position: relative; width: 390px; height: 844px; background: #F3EFE3; color: #111111; overflow: hidden; font-family: 'Space Mono', monospace">
+
+  <div style="position: absolute; left: 0; right: 0; top: 0; height: 64px; display: flex; align-items: center; gap: 6px; padding: 0 8px; box-sizing: border-box; background: #FFFFFF; border-bottom: 2.5px solid #111111">
+    <a href="B24-Crew.dc.html" aria-label="Back to messages" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111111" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>
+    </a>
+    <a href="B24-Crew.dc.html" style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; text-decoration: none">
+      <span style="font-family: 'Archivo Black', sans-serif; font-size: 15px">Wijk aan Zee · Sat 14:00</span>
+      <span style="font-size: 10px">3 in the crew · meet 13:45 at access 3</span>
+    </a>
+    <a href="B24-Crew.dc.html" aria-label="Crew details" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="#111111" aria-hidden="true"><circle cx="5" cy="12" r="2"></circle><circle cx="12" cy="12" r="2"></circle><circle cx="19" cy="12" r="2"></circle></svg>
+    </a>
+  </div>
+  <div class="htd" style="position: absolute; left: 0; right: 0; top: 64px; height: 30px; border-bottom: 2px solid #111111; display: flex; align-items: center; padding: 0 12px; color: #C8FF3D; font-size: 10px; font-weight: 700">SAT FORECAST · 21 KTS G27 SW · NOW AT WIJK: {{nowWind}} KTS</div>
+
+  <div style="position: absolute; left: 12px; right: 12px; top: 106px; bottom: 150px; display: flex; flex-direction: column; justify-content: flex-end; gap: 10px; overflow: hidden">
+    <div style="align-self: center; font-size: 10px">Today</div>
+    <sc-for list="{{msgs}}" as="m" hint-placeholder-count="4">
+      <sc-if value="{{m.isSystem}}" hint-placeholder-val="{{false}}">
+        <div style="align-self: center; border: 1.5px dashed #111111; padding: 4px 8px; font-size: 10px">{{m.text}}</div>
+      </sc-if>
+      <sc-if value="{{m.isOther}}" hint-placeholder-val="{{true}}">
+        <div style="align-self: flex-start; max-width: 76%; display: flex; flex-direction: column; gap: 3px">
+          <span style="font-size: 10px; font-weight: 700">{{m.who}}</span>
+          <span style="padding: 8px 10px; background: {{m.bg}}; border: 2px solid #111111; font-size: 12px; line-height: 1.45">{{m.text}}</span>
+        </div>
+      </sc-if>
+      <sc-if value="{{m.isMine}}" hint-placeholder-val="{{false}}">
+        <div class="rise" style="align-self: flex-end; max-width: 76%; padding: 8px 10px; background: #C8FF3D; border: 2px solid #111111; font-size: 12px; line-height: 1.45">{{m.text}}</div>
+      </sc-if>
+    </sc-for>
+  </div>
+
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; height: 140px; border-top: 2.5px solid #111111; background: #F3EFE3; padding: 12px; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px">
+    <div style="display: flex; gap: 6px; overflow-x: auto">
+      <sc-for list="{{quick}}" as="q" hint-placeholder-count="4">
+        <button type="button" onClick="{{q.send}}" style="flex-shrink: 0; height: 44px; padding: 0 10px; background: #FFFFFF; border: 2px solid #111111; font-family: 'Space Mono', monospace; font-size: 11px; font-weight: 700; cursor: pointer">{{q.label}}</button>
+      </sc-for>
+    </div>
+    <div style="display: flex; gap: 8px">
+      <label for="msg" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Message the crew</label>
+      <input id="msg" type="text" value="{{draft}}" onChange="{{setDraft}}" placeholder="Message the crew" style="flex: 1; min-width: 0; height: 48px; box-sizing: border-box; padding: 0 12px; border: 2.5px solid #111111; background: #FFFFFF; font-family: 'Space Mono', monospace; font-size: 13px">
+      <button type="button" onClick="{{sendDraft}}" style="height: 48px; padding: 0 16px; background: #FF2D78; color: #FFFFFF; border: 2.5px solid #111111; font-family: 'Archivo Black', sans-serif; font-size: 13px; cursor: pointer">SEND</button>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = {
+      t: 0,
+      draft: "",
+      msgs: [
+        { kind: "other", who: "Marta · HOST", bg: "#FFFFFF", text: "Rigging at 13:45. Bringing a pump and a spare 9." },
+        { kind: "mine", text: "I'm in. Bringing my 9m." },
+        { kind: "other", who: "Joost · REGULAR", bg: "#FFFFFF", text: "Parking at access 3, blue van" },
+        { kind: "system", text: "Joost joined the crew · 09:41" }
+      ]
+    };
+    this.iv = null;
+  }
+  componentDidMount() {
+    this.iv = setInterval(() => this.setState({ t: this.state.t + 1 }), 1000);
+  }
+  componentWillUnmount() {
+    if (this.iv) clearInterval(this.iv);
+  }
+  add(text) {
+    const t = (text || "").trim();
+    if (!t) return;
+    this.setState({ msgs: this.state.msgs.concat([{ kind: "mine", text: t }]).slice(-6), draft: "" });
+  }
+  renderVals() {
+    const st = this.state;
+    const msgs = st.msgs.map((m) => Object.assign({}, m, { isSystem: m.kind === "system", isOther: m.kind === "other", isMine: m.kind === "mine" }));
+    const quick = ["On my way", "Running 10 late", "Parked", "Still on?"].map((q) => ({ label: q, send: () => this.add(q) }));
+    return {
+      msgs: msgs,
+      quick: quick,
+      draft: st.draft,
+      setDraft: (e) => this.setState({ draft: e.target.value }),
+      sendDraft: () => this.add(st.draft),
+      nowWind: String(Math.max(0, Math.round(20 + Math.sin(st.t * 0.45 + 1) * 1.5)))
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+{
+  "name": "hi8ctane-day0",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Hi8ctane day-zero site: landing, live week ahead, founding plates, Founding Night RSVP, city waitlists. Static files + Vercel Functions, no dependencies.",
+  "type": "module",
+  "engines": { "node": ">=20" },
+  "scripts": {
+    "dev": "node dev.mjs",
+    "test": "node --test test/*.test.mjs",
+    "test:sql": "bash test/sql/run.sh",
+    "fonts": "node scripts/get-fonts.mjs"
+  }
+}
