@@ -1,12 +1,25 @@
-# The live site (version 1)
+# The live site (version 1, round 2.7.2)
 
-What goes live at hi8ctane.com: the 2.7 website and app screens, exactly as designed, plus the partner page for schools and rental shops. GitHub Pages publishes this folder on every change on main (`.github/workflows/pages.yml`).
+What runs at hi8ctane.com: the 2.7 website and app screens, with nothing made up. Every crew, rider and count comes from Supabase; every forecast from Open-Meteo. When there's nothing to show, the screens say so. GitHub Pages publishes this folder on every change on main (`.github/workflows/pages.yml`).
 
 - `index.html` opens the web page on a computer and the phone site on a phone.
-- `B27-*.dc.html` are the 2.7 screens from the canvas, run by `support.js` (the same player as in `design/`). The launch kit is left out: it's for us, not for riders.
-- `B27-Schools.dc.html` is the partner page for schools and rental shops: what they get, how it works, and a short form that opens an email to hello@hi8ctane.com with the details filled in (and, with Supabase on, saves it too).
-- `privacy/`, `terms/`: plain-language drafts, linked from the footers. Francisco checks them; a lawyer reviews them before the app launches.
-- Short links: `hi8ctane.com/join`, `/night`, `/schools`, `/city`, `/lisbon`, `/tarifa`, `/berlin` open the right screen and keep `?ref=` and `?utm_…` (use them in ads, bios and influencer links).
+- `B27-*.dc.html` are the screens, run by `support.js` (the same player as in `design/`). The design canvas has them as the page "2.7.2 · real crews, real forecast".
+- `hi8.js` is the data layer every screen shares: Supabase calls with the publishable key, the browser key, the offline queue, crews, your rider profile, and the forecast (Open-Meteo weather, marine and three models, rated per sport by the good-day meter, cached 30 minutes).
+- `live.js` extends the sign-up screens (Get In, onboarding, Founding Night, new city, schools form) without changing how they look.
+- `config.js`: the Supabase URL and publishable key. Never the secret key.
+- After the ride, Try something new, Invite and Getting there are off the live site until they have real data behind them; their old links forward to the crew page or home.
+- `B27-Schools.dc.html`: the partner page for schools and rental shops. `privacy/`, `terms/`: plain-language drafts.
+- Short links: `hi8ctane.com/join`, `/night`, `/schools`, `/city`, `/lisbon`, `/tarifa`, `/berlin`. They keep `?ref=` and `?utm_…`.
+
+## Crews (2.7.2)
+
+- **Captains** start crews. Francisco approves them: Supabase, SQL Editor, `select public.approve_captain('their@email.com', 'amsterdam');` (or tick `captain_approved` on their row in `signups`). Riders ask from the start-a-crew page or Me.
+- **Anyone with a plate** joins: their level, and how they get there (need a seat, driving with free seats, own way). "Any car" puts them in the car with the most room. The fuel split is an estimate from the hub-to-spot distance.
+- **The crew page** shows the meeting point, who's in and the cars only to people in the crew. Everyone else sees the spot, time, level and how many are going.
+- **Crew chat**: in the app, the crew only, nobody's phone number shared.
+- **Leave** any time; the captain can call it off with a reason.
+- **Spots and hubs** live in the `spots` and `hubs` tables (Table Editor); the site has a built-in copy if the database can't be reached.
+- **Forecast**: Open-Meteo's free API is for non-commercial use. Once Hi8ctane earns money, take an API plan and add the key (see `hi8.js`, `meteoKey` in `config.js`).
 
 ## Real sign-ups (Supabase)
 
@@ -21,13 +34,11 @@ What goes live at hi8ctane.com: the 2.7 website and app screens, exactly as desi
 | Schools + rental shops | The form, as well as the email. Asks for the name and contact before opening the email |
 | Landing, web page | Remember the hub, sport and how far, for onboarding |
 
-The rest of the app screens (home, crews, chat, map) are still sample data.
-
 Without a URL and key in `config.js`, `live.js` does nothing and the site is the sample, exactly as before.
 
 ### Switch it on
 
-1. Supabase → SQL Editor: run `supabase/migrations/0001_day_zero.sql`, then `0002_live_signups.sql`.
+1. Supabase → SQL Editor: run `supabase/migrations/0001_day_zero.sql`, then `0002_live_signups.sql`, then `0003_crews.sql`.
 2. Project Settings → API Keys: copy the project URL and the **publishable** key into `config.js`. Never the secret key.
 3. Push to main. Sign up once on hi8ctane.com and look in Table Editor → `signups`.
 
@@ -44,6 +55,5 @@ The link and Google sign-in land on onboarding, where `live.js` swaps the sign-i
 
 The tables are locked (row-level security, no policies, no table rights for the public key). The browser can only call the `hi8_*` functions, which check every value, never return names or emails, and are rate-limited (20 sign-ups per visitor per 10 minutes, counted by a salted hash of the IP). Signing up gives the browser a random key that only changes its own sign-up. Details in the migration.
 
-Tests: `test/live/` (66 end-to-end checks against Postgres + PostgREST, and a pixel-for-pixel comparison of every screen).
+Tests: `test/live/`: 67 sign-up checks, 42 crews API checks and 40 crew-flow checks in a browser, against Postgres + PostgREST and a stand-in Open-Meteo.
 
-The same screens are on the design canvas as the page "2.7.1 · live site: schools + rental shops".

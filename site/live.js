@@ -16,15 +16,14 @@
 (function () {
   'use strict';
 
-  var CFG = window.HI8_CONFIG || {};
-  var API = String(CFG.supabaseUrl || '').trim().replace(/\/+$/, '');
-  var KEY = String(CFG.publishableKey || '').trim();
-  if (!API || !KEY) return; // sample mode: change nothing
+  var H = window.HI8;
+  if (!H || !H.live) return; // no Supabase key in config.js: change nothing
+  var CFG = H.cfg, API = H.api, KEY = H.key;
 
-  var SCREEN = (location.pathname.split('/').pop() || '').replace(/\.dc\.html$/, '');
-  var PARAMS = new URLSearchParams(location.search);
-  var EVENT = 'founding-night-bcn';
-  var SP = ['kite', 'wing', 'surf', 'sup', 'mtb', 'mx'];
+  var SCREEN = H.screen;
+  var PARAMS = H.params;
+  var EVENT = H.EVENT;
+  var SP = H.SPORTS;
   var CITY_NAMES = { amsterdam: 'Amsterdam', barcelona: 'Barcelona', lisbon: 'Lisbon', tarifa: 'Tarifa', berlin: 'Berlin' };
   var AMS_HUBS = { // the four Amsterdam pickup hubs on the onboarding screen
     west: { n: 'SLOTERDIJK', lat: 52.3889, lon: 4.8378 },
@@ -39,108 +38,13 @@
   var CAPTAIN_DAYS = { wed: 'weekdays', fri: 'fri', sat: 'sat', sun: 'sun' };
   var noop = function () {};
 
-  // ---------------------------------------------------------------- storage (this browser only)
-  var store = {
-    get: function (k, d) {
-      try { var v = window.localStorage.getItem('hi8.' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; }
-    },
-    set: function (k, v) { try { window.localStorage.setItem('hi8.' + k, JSON.stringify(v)); } catch (e) { /* private mode */ } },
-    del: function (k) { try { window.localStorage.removeItem('hi8.' + k); } catch (e) { /* private mode */ } }
-  };
-  function me() { return store.get('me', null) || {}; }
-
-  // ---------------------------------------------------------------- talking to Supabase
-  function rpc(fn, args, jwt) {
-    var h = { 'Content-Type': 'application/json', 'Accept': 'application/json', 'apikey': KEY };
-    if (jwt) h.Authorization = 'Bearer ' + jwt;
-    else if (/^eyJ/.test(KEY)) h.Authorization = 'Bearer ' + KEY; // an older project's anon key
-    return fetch(API + '/rest/v1/rpc/' + fn, { method: 'POST', headers: h, body: JSON.stringify(args || {}) })
-      .then(function (r) {
-        return r.text().then(function (t) {
-          var b = null;
-          try { b = t ? JSON.parse(t) : null; } catch (e) { b = null; }
-          if (!r.ok) {
-            var err = new Error((b && b.message) || ('HTTP ' + r.status));
-            err.status = r.status; err.hint = b && b.hint; err.code = b && b.code;
-            throw err;
-          }
-          return b;
-        });
-      });
-  }
-  function timeout(p, ms) {
-    return new Promise(function (res, rej) {
-      var t = setTimeout(function () { rej(new Error('timeout')); }, ms);
-      p.then(function (v) { clearTimeout(t); res(v); }, function (e) { clearTimeout(t); rej(e); });
-    });
-  }
-  // no answer at all (offline, a dropped connection) as opposed to Supabase saying no
-  function unreachable(e) { return !e || !e.status; }
-
-  // calls that couldn't reach Supabase are kept in this browser and sent again on the next page
-  function later(fn, args) {
-    var q = store.get('queue', []);
-    q.push({ fn: fn, args: args, at: Date.now() });
-    store.set('queue', q.slice(-20));
-  }
-  var flushing = null;
-  function flushQueue() {
-    if (flushing) return flushing;
-    var q = store.get('queue', []);
-    if (!q.length) return Promise.resolve();
-    store.set('queue', []);
-    flushing = q.reduce(function (p, item) {
-      return p.then(function () {
-        if (Date.now() - item.at > 7 * 864e5) return null;
-        var args = Object.assign({}, item.args);
-        if ('p_key' in args) {
-          if (!me().key) return null; // never signed up on this device: nothing to attach it to
-          args.p_key = me().key;
-        }
-        return rpc(item.fn, args).then(function (out) {
-          if (item.fn === 'hi8_join') saveMe(out);
-        }, function (e) { if (unreachable(e)) later(item.fn, item.args); });
-      });
-    }, Promise.resolve()).then(function () { flushing = null; });
-    return flushing;
-  }
-  // a call made with this browser's key; queued if Supabase can't be reached
-  function withKey(fn, args) {
-    var k = me().key;
-    if (!k) { later(fn, Object.assign({ p_key: null }, args)); return Promise.reject(new Error('no_key')); }
-    return rpc(fn, Object.assign({ p_key: k }, args)).catch(function (e) {
-      if (unreachable(e)) later(fn, Object.assign({ p_key: null }, args));
-      if (e.message === 'unknown_key') store.del('me'); // the list was reset: sign up again
-      throw e;
-    });
-  }
-
-  function saveMe(out) {
-    if (!out || !out.key) return;
-    var m = me();
-    if (out.existing === false && m.key) {
-      // a different person on this device: forget the last one's choices
-      m = {};
-      ['rsvp', 'cities', 'cityMine'].forEach(store.del);
-    }
-    m.key = out.key;
-    m.city = out.city || m.city;
-    m.plates = m.plates || {};
-    if (out.city && out.plate != null) m.plates[out.city] = out.plate;
-    store.set('me', m);
-  }
-
-  // the public numbers (riders and plates per city, Founding Night RSVPs), shared by every screen
-  var counts = store.get('counts', null), countsLoad = null;
-  function loadCounts() {
-    if (!countsLoad) {
-      countsLoad = rpc('hi8_counts', { p_event: EVENT }).then(function (c) {
-        counts = c; store.set('counts', c); return c;
-      }, function (e) { countsLoad = null; throw e; });
-    }
-    return countsLoad;
-  }
-  function refreshOn(cmp) { loadCounts().then(function () { cmp.forceUpdate(); }, noop); }
+  // the shared pieces live in hi8.js
+  var store = H.store, me = H.me, rpc = H.rpc, timeout = H.timeout, unreachable = H.unreachable;
+  var later = H.later, withKey = H.withKey, saveMe = H.saveMe, ready = H.ready;
+  var counts = H.counts;
+  function loadCounts() { return H.loadCounts().then(function (c) { counts = c; return c; }); }
+  function refreshOn(cmp) { H.watch(cmp); loadCounts().then(function () { cmp.forceUpdate(); }, noop); }
+  H.onData(function () { counts = H.counts; });
 
   // ---------------------------------------------------------------- small helpers
   function root() { return document.getElementById('dc-root') || document.body; }
@@ -182,33 +86,6 @@
     return null;
   }
 
-  // where someone first came from (an ad, an influencer's link with ?ref=, Instagram), kept for their sign-up
-  (function firstTouch() {
-    if (store.get('src', null)) return;
-    var src = PARAMS.get('utm_source'), camp = PARAMS.get('utm_campaign'), ref = PARAMS.get('ref'), host = '';
-    try { host = document.referrer ? new URL(document.referrer).hostname : ''; } catch (e) { host = ''; }
-    if (!src && host && host !== location.hostname) src = host.replace(/^www\./, '');
-    if (src || ref) store.set('src', { source: src ? [src, camp].filter(Boolean).join('/').slice(0, 80) : null, ref: ref ? ref.slice(0, 40) : null });
-  })();
-
-  // back from the email link or Google: swap the sign-in for this browser's key
-  (function claim() {
-    var h = location.hash;
-    if (!h || h.length < 2 || !/access_token=|error/.test(h)) return;
-    var hp = new URLSearchParams(h.slice(1)), at = hp.get('access_token');
-    history.replaceState(null, '', location.pathname + location.search);
-    if (!at) return;
-    var after = store.get('after', null) || {};
-    rpc('hi8_claim', { p_city: after.city || (store.get('pick', null) || {}).city || 'amsterdam' }, at).then(function (out) {
-      saveMe(Object.assign({ existing: true }, out));
-      store.del('after');
-      var next = after.next && after.next.indexOf('B27-Onboard') !== 0 ? after.next : (out.onboarded ? 'B27-Home.dc.html' : null);
-      if (next && next.split('?')[0] !== SCREEN + '.dc.html') location.replace(next);
-    }, function (e) { if (window.console) console.warn('[hi8 live] sign-in link:', e.message); });
-  })();
-
-  var ready = flushQueue();
-
   // ================================================================ the screens
   var SCREENS = {};
 
@@ -249,6 +126,7 @@
     var n = PARAMS.get('next'), c = PARAMS.get('c');
     if (n === 'night') return 'B27-Night.dc.html?from=join';
     if (n === 'city' && NEW_CITIES[c]) return 'B27-City.dc.html?c=' + c + '&from=join';
+    if (n === 'crew' && /^[A-Za-z0-9]{6}$/.test(c || '')) return 'B27-Crew.dc.html?c=' + c.toUpperCase() + '&from=join';
     return 'B27-Onboard.dc.html';
   }
   function sendEmailLink(email) {
@@ -365,7 +243,7 @@
     var a = { p_name: (st.name || '').trim() || null, p_sports: picked, p_levels: lv };
     if (final) {
       a.p_city = home;
-      a.p_hub = home === 'amsterdam' ? st.hub : null; // these four hubs are Amsterdam's
+      a.p_hub = H.hubsOf(home).some(function (h) { return h.slug === st.hub; }) ? st.hub : null; // a hub of the rider's own city
       a.p_max_min = st.max;
       a.p_getting_there = st.mode;
     }
@@ -381,21 +259,58 @@
       constructor(props) {
         super(props);
         // start blank (the design's sample rider is "Frankie"), or from what this person already chose
-        var p = me().profile || {}, pick = store.get('pick', null) || {}, on = {};
+        var p = me().profile || {}, pick = store.get('pick', null) || {}, on = {}, home = me().city || pick.city || 'amsterdam';
+        var homeHubs = H.hubsOf(home).map(function (h) { return h.slug; });
         (p.sports && p.sports.length ? p.sports : (pick.sport ? [pick.sport] : [])).forEach(function (s) { on[s] = true; });
         Object.assign(this.state, {
           name: p.name || '',
           on: on,
           lvl: Object.assign({}, this.state.lvl, p.levels || {}),
-          hub: AMS_HUBS[p.hub] ? p.hub : (AMS_HUBS[pick.hub] ? pick.hub : this.state.hub),
+          hub: homeHubs.indexOf(p.hub) >= 0 ? p.hub : (homeHubs.indexOf(pick.hub) >= 0 ? pick.hub : (homeHubs[0] && home !== 'amsterdam' ? homeHubs[0] : this.state.hub)),
           max: p.max || ([30, 60, 90].indexOf(pick.max) >= 0 ? pick.max : this.state.max),
           mode: p.mode || this.state.mode
         });
         this.hi8Loc = null;
       }
       renderVals() {
-        var v = super.renderVals(), self = this, st = this.state;
+        var self = this, st = this.state, home = me().city || (store.get('pick', null) || {}).city || 'amsterdam';
+        var hubs = H.hubsOf(home), other = home !== 'amsterdam';
+        // the design's own matches box only knows Amsterdam's hubs: draw it with one, then fill in the real ones
+        if (other) this.state = Object.assign({}, st, { hub: 'west' });
+        var v;
+        try { v = super.renderVals(); } finally { this.state = st; }
         var picked = SP.filter(function (s) { return st.on[s]; });
+        var hubObj = hubs.filter(function (h) { return h.slug === st.hub; })[0] || hubs[0] || null;
+        var hubName = hubObj ? hubObj.name.charAt(0) + hubObj.name.slice(1).toLowerCase() : '';
+        if (other && hubs.length) {
+          v.hubs = hubs.map(function (h) {
+            var on = st.hub === h.slug;
+            return { t: h.name, sub: h.sub, on: on ? 'true' : 'false', go: function () { self.setState({ hub: h.slug, loc: false }); },
+              s: 'height:56px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:3px;padding:0 10px;text-align:left;border:2px solid #111111;cursor:pointer;' + (on ? 'background:#111111;color:#C8FF3D;box-shadow:3px 3px 0 #FF2D78' : 'background:#FFFFFF;color:#111111') };
+          });
+          if (st.mode === 'seat') v.modeT = 'We show crews with a free seat leaving from ' + hubName + ', with the smallest detour.';
+        }
+        // the real crews that match: sport, level, and close enough to the hub
+        var WDS = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'], tz = home === 'barcelona' ? 'Europe/Madrid' : 'Europe/Amsterdam';
+        var dayN = function (d) { for (var i = 0; i < 2; i++) if (new Date(Date.now() + i * 864e5).toLocaleDateString('en-CA', { timeZone: tz }) === d) return i ? 'TMRW' : 'TODAY'; var x = new Date(d + 'T12:00:00Z'); return WDS[x.getUTCDay()] + ' ' + x.getUTCDate(); };
+        var shown = [], lvlOut = 0, farOut = 0;
+        (H.crews || []).filter(function (c) { return c.status === 'on' && !c.past && c.city === home && st.on[c.sport]; }).forEach(function (c) {
+          var spot = H.spot(c.spot), min = hubObj && spot ? H.driveMin(hubObj, spot) : null;
+          if (c.levels === 'regular' && st.lvl[c.sport] === 'rookie') { lvlOut++; return; }
+          if (min != null && min > st.max) { farOut++; return; }
+          var fit = c.levels === 'rookie' ? 'ROOKIE CREW' : st.lvl[c.sport] === 'rookie' ? 'ALL LEVELS' : 'YOUR LEVEL', fl = {};
+          SP.forEach(function (x) { fl['is_' + x] = x === c.sport; });
+          shown.push(Object.assign({ spot: c.spot_name.toUpperCase(), when: dayN(c.day) + ' ' + c.start + ' · ' + c.going + ' GOING', hasSeat: st.mode === 'seat' && c.seats_free > 0,
+            seat: hubObj && spot ? 'Seat about ' + H.fuelEach(hubObj, spot, 4) + ' each' : '', fit: fit, min: min == null ? '–' : String(min),
+            fs: "padding:1px 6px;border:2px solid #111111;font-family:'Archivo Black',sans-serif;font-size:10px;white-space:nowrap;background:" + (fit === 'YOUR LEVEL' ? '#C8FF3D' : '#FFE14D') + ';color:#111111' }, fl));
+        });
+        v.ms = shown;
+        v.mN = shown.length + (shown.length === 1 ? ' CREW' : ' CREWS');
+        v.mSub1 = 'FROM ' + (hubObj ? hubObj.name : '');
+        v.hasHid = true;
+        v.hidT = [farOut ? farOut + ' more over ' + st.max + ' min away' : '', lvlOut ? lvlOut + ' for regulars and up' : ''].filter(function (x) { return x; }).join(' · ') +
+          (farOut || lvlOut ? '. ' : '') + (shown.length ? 'More start on good days.' : 'No crew matches yet: captains start them on good days, and they show on your home screen.');
+        v.goT = shown.length ? 'SEE MY ' + shown.length + ' CREW' + (shown.length > 1 ? 'S' : '') + ' →' : 'SEE THE CREWS →';
         v.setName = function (e) { self.setState({ name: e && e.target ? e.target.value : '' }); };
         var next = v.next;
         v.next = function () {
@@ -440,9 +355,11 @@
         this.forceUpdate();
         navigator.geolocation.getCurrentPosition(function (pos) {
           var here = { lat: pos.coords.latitude, lon: pos.coords.longitude }, best = null, bestKm = 1e9;
-          Object.keys(AMS_HUBS).forEach(function (k) { var d = km(here, AMS_HUBS[k]); if (d < bestKm) { bestKm = d; best = k; } });
+          var hubs = H.hubsOf(me().city || (store.get('pick', null) || {}).city || 'amsterdam'), names = {};
+          hubs.forEach(function (h) { names[h.slug] = h.name; var d = km(here, h); if (d < bestKm) { bestKm = d; best = h.slug; } });
+          if (!best) { self.hi8Loc = 'NO HUB NEAR YOU YET · PICK ONE'; self.forceUpdate(); return; }
           var mins = Math.max(1, Math.round(bestKm * 1.3 / 15 * 60)); // by bike, roads aren't straight
-          self.hi8Loc = 'NEAREST HUB: ' + AMS_HUBS[best].n + ' · ' + (mins <= 30 ? mins + ' MIN BY BIKE' : Math.round(bestKm) + ' KM AWAY') + ' ✓';
+          self.hi8Loc = 'NEAREST HUB: ' + names[best] + ' · ' + (mins <= 30 ? mins + ' MIN BY BIKE' : Math.round(bestKm) + ' KM AWAY') + ' ✓';
           self.setState({ loc: true, hub: best });
         }, function () {
           self.hi8Loc = 'LOCATION IS OFF · PICK A HUB';
@@ -503,12 +420,26 @@
           x.n = String(Math.max(0, n));
         });
         v.myN = String(this.hi8N || going);
+        v.needEmail = !me().key && !st.rsvp;
+        v.nEmail = st.nEmail || '';
+        v.setNEmail = function (e) { self.setState({ nEmail: e && e.target ? e.target.value : '' }); };
         v.rsvpGo = function () {
           if (!self.state.waiver) return;
           if (!me().key) {
-            // sign up first (one email), then straight back here with the same choices
-            store.set('pendingRsvp', Object.assign(self.hi8Choice(), { at: Date.now() }));
-            location.href = 'B27-Join.dc.html?next=night&city=barcelona';
+            // no account yet: the email in the RSVP box signs them up (a Barcelona plate) and RSVPs in one tap
+            var inp = document.getElementById('nem'), email = (self.state.nEmail || '').trim();
+            if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { nativeHint(inp, email ? "That email doesn't look right." : 'Your email first: for your plate and the night\'s details.'); return; }
+            var fix = emailTypo(email);
+            if (fix && self.hi8Warned !== email) { self.hi8Warned = email; nativeHint(inp, 'Did you mean ' + fix + '? Fix it, or press again to keep it.'); return; }
+            if (self.hi8Joining) return;
+            self.hi8Joining = true;
+            var src = store.get('src', null) || {};
+            rpc('hi8_join', { p_email: email, p_city: 'barcelona', p_source: src.source || null, p_ref: src.ref || null }).then(function (out) {
+              saveMe(out); self.hi8Joining = false; self.setState({ rsvp: true });
+            }, function (e) {
+              self.hi8Joining = false;
+              nativeHint(inp, e.status === 429 ? 'Too many tries from here. Wait a few minutes.' : (e.hint || (unreachable(e) ? 'No connection. Try again.' : "That didn't work. Try again.")));
+            });
             return;
           }
           self.setState({ rsvp: true });
@@ -549,7 +480,7 @@
               store.set('rsvp', { event: EVENT, s: now.s, hub: now.hub, photo: now.photo, n: out.n });
               self.hi8Mine = { s: now.s };
               self.hi8N = out.n;
-              counts = Object.assign({}, counts || {}, { night: { going: out.going, sessions: out.sessions } });
+              counts = H.counts = Object.assign({}, counts || {}, { night: { going: out.going, sessions: out.sessions } });
               store.set('counts', counts);
               self.forceUpdate();
             }, function (e) {
@@ -576,6 +507,67 @@
     var all = store.get('cities', null) || {}, c = all[k];
     return c ? { in: !!c.in, cap: !!c.cap, csp: c.csp || null, cdays: c.cdays || { sat: true } } : { in: false, cap: false, csp: null, cdays: { sat: true } };
   }
+  // ---- the good-day meter for the cities that aren't open yet (Open-Meteo, hourly) ----
+  var COMPASS = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
+  function compass(deg) { return COMPASS[Math.round((((deg % 360) + 360) % 360) / 22.5) % 16]; }
+  function outside(deg, from, to) {
+    var d = ((deg % 360) + 360) % 360, inside = from <= to ? d >= from && d <= to : d >= from || d <= to;
+    if (inside) return 0;
+    var dist = function (a, b) { var x = Math.abs(a - b) % 360; return Math.min(x, 360 - x); };
+    return Math.min(dist(d, from), dist(d, to));
+  }
+  function hourScore(sport, h, spot) {
+    var clamp = function (x) { return Math.max(0, Math.min(10, Math.round(x))); }, rp = function (p) { return p >= 70 ? 2 : p >= 40 ? 1 : 0; }, s;
+    if (sport === 'kite' || sport === 'wing') {
+      var lo = sport === 'kite' ? 15 : 12, w = h.w;
+      if (w < (sport === 'kite' ? 11 : 9)) s = Math.max(0, w - 6) / 2; else if (w < lo) s = 5; else if (w <= 25) s = w >= lo + 2 && w <= 23 ? 9 : 8; else if (w <= 30) s = 6; else s = 2;
+      var gd = h.g - h.w; s -= gd > 10 ? 3 : gd > 7 ? 2 : gd > 5 ? 1 : 0; s -= rp(h.r);
+      if (!spot.lake && spot.good_from != null) { var off = outside(h.dir, spot.good_from, spot.good_to); if (off > 30) s = Math.min(s, 1); else if (off > 0) s -= 2; }
+      return clamp(s);
+    }
+    if (sport === 'sup') { s = h.w <= 5 ? 9 : h.w <= 8 ? 7 : h.w <= 12 ? 4 : h.w <= 16 ? 2 : 0; if (h.w <= 3 && h.r < 30) s = 10; s -= rp(h.r); return clamp(s); }
+    if (sport === 'surf') {
+      var wave = h.wv || 0, per = h.per || 0;
+      s = wave < 0.4 ? 1 : wave < 0.7 ? 3 : wave < 1 ? 5 : wave < 2 ? 7 : wave < 3 ? 6 : 4;
+      s += per >= 10 ? 2 : per >= 8 ? 1 : per && per < 5 ? -1 : 0;
+      if (h.w <= 6) s += 1; else if (spot.good_from != null) { if (outside(h.dir, spot.good_from, spot.good_to) === 0) s -= h.w > 18 ? 3 : h.w > 12 ? 2 : 0; else if (h.w <= 15) s += 1; }
+      if (wave < 0.4) s = Math.min(s, 2);
+      return clamp(s);
+    }
+    s = h.r < 30 && (h.mm || 0) < 0.2 ? 8 : h.r < 60 ? 5 : 2; if (h.wet) s -= 2; return clamp(s);
+  }
+  var LBL = function (s) { return s >= 9 ? 'EPIC' : s >= 6 ? 'GOOD' : s >= 4 ? 'OK' : 'NO GO'; };
+  var WVC = { EPIC: ['#FF2D78', '#FFFFFF'], GOOD: ['#C8FF3D', '#111111'], OK: ['#FFE14D', '#111111'], 'NO GO': ['#E7E2D4', '#4A4538'] };
+  var WDAY = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+  // the best two days for a city this week, from the real forecast, in the city page's "this week" format
+  function cityWeek(city) {
+    var fx = H.fx || {}, out = [];
+    H.spotsOf(city).forEach(function (spot) {
+      var f = fx[spot.slug]; if (!f || !f.days) return;
+      f.days.forEach(function (d, i) {
+        if (!d || d.none || !d.hrs) return;
+        spot.sports.forEach(function (sp) {
+          var hs = d.hrs.map(function (x) { return Object.assign({ wet: d.wet }, x); }), best = -1, at = 0;
+          var sc = hs.map(function (x) { return hourScore(sp, x, spot); });
+          for (var k = 1; k < sc.length; k++) { var v2 = (sc[k - 1] + sc[k]) / 2; if (v2 > best) { best = v2; at = k; } }
+          var x = hs[at], score = Math.round(best), lab = LBL(score);
+          var line = sp === 'surf' ? (x.wv || 0).toFixed(1) + ' m at ' + Math.round(x.per || 0) + ' s, wind ' + Math.round(x.w) + ' kt'
+            : sp === 'mtb' ? (x.r < 30 ? 'Dry' : 'Rain ' + x.r + '%') + ', ' + Math.round(x.t) + '°' : Math.round(x.w) + ' kt ' + compass(x.dir) + (sp === 'sup' ? '' : ', gusts ' + Math.round(x.g));
+          var day = i === 0 ? 'TODAY' : i === 1 ? 'TOMORROW' : WDAY[new Date(d.date + 'T12:00:00Z').getUTCDay()];
+          out.push({ sc: score, sp: sp, t: sp.toUpperCase() + ' · ' + day + ' · ' + spot.name.toUpperCase(), s: line, v: lab + ' ' + score });
+        });
+      });
+    });
+    if (!out.length) return null;
+    out.sort(function (a, b) { return b.sc - a.sc; });
+    var pick = [out[0]].concat(out.filter(function (o) { return o.sp !== out[0].sp; }).slice(0, 1));
+    return pick.map(function (o) {
+      var c = WVC[o.v.split(' ')[0] === 'NO' ? 'NO GO' : o.v.split(' ')[0]], fl = {};
+      SP.forEach(function (s) { fl['is_' + s] = s === o.sp; });
+      return Object.assign({ t: o.t, s: o.s, v: o.v, vs: 'flex-shrink:0;padding:2px 6px;border:2px solid #111111;font-family:\'Archivo Black\',sans-serif;font-size:11px;white-space:nowrap;background:' + c[0] + ';color:' + c[1] }, fl);
+    });
+  }
+
   SCREENS['B27-City'] = function (C) {
     return class extends C {
       constructor(props) {
@@ -604,6 +596,21 @@
           if (!self.state.cap && !me().key) return self.hi8SignUpFirst({ cap: true });
           goCap();
         };
+        v.otherCity = st.otherCity || '';
+        v.setOther = function (e) { self.setState({ otherCity: e && e.target ? e.target.value : '', otherDone: false }); };
+        v.otherT = st.otherDone ? 'ASKED ✓' : 'ASK FOR IT';
+        v.otherBg = st.otherDone ? '#C8FF3D' : '#FFFFFF';
+        v.otherGo = function () {
+          var c = (self.state.otherCity || '').trim(), inp = root().querySelector('input[aria-label="Your city"]');
+          if (c.length < 2) { nativeHint(inp, 'Type your city first.'); return; }
+          if (!me().key) {
+            store.set('pendingOther', { city: c, at: Date.now() });
+            location.href = 'B27-Join.dc.html?next=city&c=' + self.state.city + '&city=' + ((store.get('pick', null) || {}).city || 'amsterdam');
+            return;
+          }
+          withKey('hi8_city_request', { p_city: c }).then(function () { self.setState({ otherDone: true }); }, function (e) { nativeHint(inp, e.hint || "That didn't work. Try again."); });
+        };
+        v.week = cityWeek(slug) || v.week;
         v.copyGo = function () {
           var nm = CITY_NAMES[slug];
           share('https://hi8ctane.com/' + slug, 'Hi8ctane ' + nm, 'Help open Hi8ctane in ' + nm + ': 25 riders and 3 captains and the first crews go out.', function () { self.setState({ copied: true }); });
@@ -631,6 +638,11 @@
         if (super.componentDidMount) super.componentDidMount();
         var self = this, pend = store.get('pendingCity', null);
         refreshOn(this);
+        var other = store.get('pendingOther', null);
+        if (PARAMS.get('from') === 'join' && other && Date.now() - other.at < 36e5) {
+          store.del('pendingOther');
+          ready.then(function () { if (me().key) withKey('hi8_city_request', { p_city: other.city }).then(function () { self.setState({ otherCity: other.city, otherDone: true }); }, noop); });
+        }
         if (PARAMS.get('from') === 'join' && pend && pend.c === this.state.city && Date.now() - pend.at < 36e5) {
           store.del('pendingCity');
           ready.then(function () {
@@ -663,7 +675,7 @@
               store.set('me', m);
               var cities = Object.assign({}, (counts && counts.cities) || {});
               cities[slug] = out;
-              counts = Object.assign({}, counts || {}, { cities: cities });
+              counts = H.counts = Object.assign({}, counts || {}, { cities: cities });
               store.set('counts', counts);
               self.forceUpdate();
             }, noop);
