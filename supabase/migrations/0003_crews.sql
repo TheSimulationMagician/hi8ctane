@@ -498,6 +498,7 @@ language sql stable security definer set search_path = public as $$
 $$;
 
 -- approve_captain: run it yourself in the SQL editor (or tick captain_approved in Table Editor)
+drop function if exists public.approve_captain(text, text, boolean);  -- 0004 changes its defaults
 create or replace function public.approve_captain(p_email text, p_city text, p_ok boolean default true) returns json
 language plpgsql security definer set search_path = public as $$
 declare n int;

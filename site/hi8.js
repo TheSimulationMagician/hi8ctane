@@ -290,26 +290,58 @@
   function getJSON(u) {
     return HI8.timeout(fetch(u).then(function (r) { if (!r.ok) throw new Error('forecast_' + r.status); return r.json(); }), 9000);
   }
+  // the sharpest model for each city: KNMI HARMONIE-AROME 2 km (the Netherlands, first 2.5 days, then ECMWF),
+  // Météo-France AROME (Barcelona), DWD ICON-D2 (Berlin); best_match fills anything the sharp model doesn't give
+  var CITY_MODEL = { amsterdam: 'knmi_seamless', barcelona: 'meteofrance_seamless', berlin: 'icon_seamless' };
+  HI8.CITY_MODEL = CITY_MODEL;
+  function pickModel(j, m) {
+    if (!m || !j) return j;
+    var pick = function (B) {
+      if (!B) return B;
+      var sfx = '_' + m, out = { time: B.time }, any = false;
+      Object.keys(B).forEach(function (k) {
+        if (k.length > sfx.length && k.slice(-sfx.length) === sfx) {
+          any = true;
+          var base = k.slice(0, -sfx.length), alt = B[base + '_best_match'] || [];
+          out[base] = B[k].map(function (v, i) { return v == null ? (alt[i] == null ? null : alt[i]) : v; });
+        }
+      });
+      if (!any) return B; // a plain answer (one model): use as is
+      Object.keys(B).forEach(function (k) { var b = k.replace(/_best_match$/, ''); if (b !== k && !out[b]) out[b] = B[k]; });
+      return out;
+    };
+    return Object.assign({}, j, { hourly: pick(j.hourly), daily: pick(j.daily) });
+  }
+  HI8.pickModel = pickModel;
   // fetches the forecast for these cities' spots (one call for the weather, one for the sea, one for model agreement)
   HI8.fetchForecast = function (cities) {
     var spots = HI8.placesNow().spots.filter(function (s) { return cities.indexOf(s.city) >= 0; });
     if (!spots.length) return Promise.resolve({});
-    var lat = spots.map(function (s) { return s.lat; }).join(','), lon = spots.map(function (s) { return s.lon; }).join(',');
     var sea = spots.filter(function (s) { return !s.lake && s.face != null; });
     var lead = cities.map(function (c) { return spots.filter(function (s) { return s.city === c; })[0]; }).filter(Boolean);
-    var wxU = METEO + '/v1/forecast?latitude=' + lat + '&longitude=' + lon +
-      '&hourly=wind_speed_10m,wind_gusts_10m,wind_direction_10m,precipitation_probability,precipitation,temperature_2m,cloud_cover' +
-      '&daily=sunset&wind_speed_unit=kn&timezone=auto&forecast_days=4&past_days=1' + KEYQ;
+    // one weather call per city, each with its sharpest model
+    var groups = cities.map(function (c) { return { city: c, spots: spots.filter(function (s) { return s.city === c; }) }; }).filter(function (g) { return g.spots.length; });
+    var wxU = function (g) {
+      var m = CITY_MODEL[g.city];
+      return METEO + '/v1/forecast?latitude=' + g.spots.map(function (s) { return s.lat; }).join(',') + '&longitude=' + g.spots.map(function (s) { return s.lon; }).join(',') +
+        '&hourly=wind_speed_10m,wind_gusts_10m,wind_direction_10m,precipitation_probability,precipitation,temperature_2m,cloud_cover' +
+        '&daily=sunset&wind_speed_unit=kn&timezone=auto&forecast_days=4&past_days=1' + (m ? '&models=' + m + ',best_match' : '') + KEYQ;
+    };
     var seaU = sea.length ? MARINE + '/v1/marine?latitude=' + sea.map(function (s) { return s.lat; }).join(',') + '&longitude=' + sea.map(function (s) { return s.lon; }).join(',') +
       '&hourly=wave_height,wave_period,wave_direction,sea_surface_temperature,sea_level_height_msl&timezone=auto&forecast_days=4&past_days=1' + KEYQ : null;
     var modU = METEO + '/v1/forecast?latitude=' + lead.map(function (s) { return s.lat; }).join(',') + '&longitude=' + lead.map(function (s) { return s.lon; }).join(',') +
       '&hourly=wind_speed_10m&models=ecmwf_ifs025,icon_seamless,gfs_seamless&wind_speed_unit=kn&timezone=auto&forecast_days=4' + KEYQ;
-    return Promise.all([getJSON(wxU), seaU ? getJSON(seaU).catch(function () { return null; }) : null, getJSON(modU).catch(function () { return null; })])
+    var wxAll = Promise.all(groups.map(function (g) {
+      return getJSON(wxU(g)).then(function (j) { return list(j).map(function (x) { return pickModel(x, CITY_MODEL[g.city]); }); });
+    }));
+    return Promise.all([wxAll, seaU ? getJSON(seaU).catch(function () { return null; }) : null, getJSON(modU).catch(function () { return null; })])
       .then(function (r) {
-        var wx = list(r[0]), sl = r[1] ? list(r[1]) : [], md = r[2] ? list(r[2]) : [], out = {};
-        spots.forEach(function (s, i) {
+        var wxBy = {}, sl = r[1] ? list(r[1]) : [], md = r[2] ? list(r[2]) : [], out = {};
+        groups.forEach(function (g, gi) { g.spots.forEach(function (s, i) { wxBy[s.slug] = r[0][gi][i]; }); });
+        spots.forEach(function (s) {
           var si = sea.indexOf(s), li = lead.map(function (x) { return x.city; }).indexOf(s.city);
-          out[s.slug] = normalise(wx[i], si >= 0 ? sl[si] : null, li >= 0 ? md[li] : null);
+          out[s.slug] = normalise(wxBy[s.slug], si >= 0 ? sl[si] : null, li >= 0 ? md[li] : null);
+          out[s.slug].model = CITY_MODEL[s.city] || 'best_match';
         });
         return out;
       });
@@ -355,6 +387,17 @@
       if (next && next.split('?')[0] !== HI8.screen + '.dc.html') location.replace(next);
     }, function (e) { if (window.console) console.warn('[hi8] sign-in link:', e.message); });
   })();
+
+  // what breaks on riders' phones comes back to us (at most 5 reports a page, no personal data)
+  var errs = 0;
+  HI8.report = function (msg, stack) {
+    if (!HI8.live || errs >= 5) return;
+    errs++;
+    HI8.rpc('hi8_log_error', { p_screen: HI8.screen || location.pathname, p_message: String(msg || '').slice(0, 500), p_stack: String(stack || '').slice(0, 2000), p_ua: navigator.userAgent.slice(0, 300) }).catch(noop);
+  };
+  window.addEventListener('error', function (e) { if (e && e.message) HI8.report(e.message, e.error && e.error.stack); });
+  window.addEventListener('unhandledrejection', function (e) { var r = e && e.reason; if (r && !r.status && r.message !== 'timeout' && !/fetch|network|load failed/i.test(r.message || '')) HI8.report('unhandled: ' + (r.message || r), r.stack); });
+  window.DC_ERROR = function (e) { HI8.report('render: ' + (e && e.message || e), e && e.stack); };
 
   HI8.ready = HI8.live ? HI8.flushQueue() : Promise.resolve();
   if (HI8.live) {

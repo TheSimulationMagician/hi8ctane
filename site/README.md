@@ -1,4 +1,4 @@
-# The live site (version 1, round 2.7.2)
+# The live site (version 1, round 2.7.3)
 
 What runs at hi8ctane.com: the 2.7 website and app screens, with nothing made up. Every crew, rider and count comes from Supabase; every forecast from Open-Meteo. When there's nothing to show, the screens say so. GitHub Pages publishes this folder on every change on main (`.github/workflows/pages.yml`).
 
@@ -10,6 +10,24 @@ What runs at hi8ctane.com: the 2.7 website and app screens, with nothing made up
 - After the ride, Try something new, Invite and Getting there are off the live site until they have real data behind them; their old links forward to the crew page or home.
 - `B27-Schools.dc.html`: the partner page for schools and rental shops. `privacy/`, `terms/`: plain-language drafts.
 - Short links: `hi8ctane.com/join`, `/night`, `/schools`, `/city`, `/lisbon`, `/tarifa`, `/berlin`. They keep `?ref=` and `?utm_…`.
+
+## The core loop (2.7.3)
+
+- **Post in one tap:** a good-day link (`B27-Start.dc.html?spot=wijk-aan-zee&sp=kite`) opens a quick post with the forecast's best window and the captain's own defaults (level, drive or own way, hub). One tap posts it; "Another day, spot or time" opens the full form.
+- **Join on one screen:** someone with no account types their email, rider name, level and how they get there on the crew page itself (`hi8_quick_join`): they get a founding plate and a place in the crew at once.
+- **Settle up:** drivers add what the car cost and a payment link (Tikkie, Revolut, PayPal, bunq, Wise, Monzo, Rabobank, ING). Everyone in that car sees their share, a pay button and "I've paid"; the driver sees the ticks.
+- **Emails** (queued in `outbox`, sent through Resend once its key is in Supabase Vault): to the captain when someone joins or leaves; to the rider "you're in"; called off; a chat digest (at most one per crew every 2 hours); the driver's payment request; a reminder the evening before; a welcome with the plate.
+- **Captains:** `select public.approve_captain('their@email.com');` once, and they can start crews in any city.
+- **Forecast:** KNMI HARMONIE-AROME 2 km for Amsterdam (the first 2.5 days, then ECMWF), Météo-France AROME for Barcelona, ICON-D2 for Berlin; best_match fills any gaps.
+- **Errors** on riders' phones land in `client_errors` (no names or emails).
+
+### Switch the emails on
+
+1. resend.com: add the domain hi8ctane.com and put the DNS records it shows at Squarespace (Domains → hi8ctane.com → DNS). Wait for "Verified".
+2. Resend → API Keys → create one ("Sending access").
+3. Supabase → SQL Editor: `select vault.create_secret('re_…your key…', 'resend_api_key');`
+4. Check: `select kind, to_email, subject, sent_at, error from public.outbox order by id desc limit 20;` Waiting emails from the last 2 days go out within a minute.
+5. For the "email me a link" sign-in: Supabase → Authentication → SMTP: host `smtp.resend.com`, port 465, user `resend`, password = the same key, sender `crews@hi8ctane.com`. Authentication → URL Configuration: Site URL `https://hi8ctane.com`, redirect `https://hi8ctane.com/**`. Then `emailLink: true` in `config.js`.
 
 ## Crews (2.7.2)
 
@@ -38,7 +56,7 @@ Without a URL and key in `config.js`, `live.js` does nothing and the site is the
 
 ### Switch it on
 
-1. Supabase → SQL Editor: run `supabase/migrations/0001_day_zero.sql`, then `0002_live_signups.sql`, then `0003_crews.sql`.
+1. Supabase → SQL Editor: run `supabase/migrations/0001_day_zero.sql`, then `0002_live_signups.sql`, then `0003_crews.sql`, then `0004_core_loop.sql`.
 2. Project Settings → API Keys: copy the project URL and the **publishable** key into `config.js`. Never the secret key.
 3. Push to main. Sign up once on hi8ctane.com and look in Table Editor → `signups`.
 
@@ -55,5 +73,5 @@ The link and Google sign-in land on onboarding, where `live.js` swaps the sign-i
 
 The tables are locked (row-level security, no policies, no table rights for the public key). The browser can only call the `hi8_*` functions, which check every value, never return names or emails, and are rate-limited (20 sign-ups per visitor per 10 minutes, counted by a salted hash of the IP). Signing up gives the browser a random key that only changes its own sign-up. Details in the migration.
 
-Tests: `test/live/`: 67 sign-up checks, 42 crews API checks and 40 crew-flow checks in a browser, against Postgres + PostgREST and a stand-in Open-Meteo.
+Tests: `test/live/`: 67 sign-up checks, 42 crews API checks, 49 core-loop API checks and 53 crew-flow checks in a browser, against Postgres + PostgREST and a stand-in Open-Meteo.
 
