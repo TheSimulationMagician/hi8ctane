@@ -17,7 +17,7 @@ def check(cond, what):
     if not cond: raise SystemExit('FAIL: ' + what)
     ok += 1; print('  ok ·', what)
 
-sql("truncate public.signups, public.night_rsvps, public.rider_keys, public.partner_leads, public.rate_hits, public.crews, public.crew_members, public.crew_messages, public.city_requests cascade")
+sql("truncate public.signups, public.night_rsvps, public.rider_keys, public.partner_leads, public.rate_hits, public.crews, public.crew_members, public.crew_messages, public.city_requests, public.outbox, public.client_errors cascade")
 SAMPLE = ['Marta', 'Frankie', 'Joost', 'Noor ', '112 OF 150', '17/25', '22/25', 'HEY FRANKIE', '5 going', 'Rider report 12', '4 regulars', 'SESSION 014', 'LIVE AT THE PIER', '37 of 100']
 
 with sync_playwright() as p:
@@ -63,7 +63,9 @@ with sync_playwright() as p:
     check('APPROVE' in t and 'ASK TO CAPTAIN' in t, 'not approved yet: the start page explains captains and how to ask')
     sql("select public.approve_captain('kai@example.com', 'amsterdam')")
     t = go(cap, 'B27-Start.dc.html?spot=wijk-aan-zee&sp=kite&day=tmrw', 2500)
-    check('PICK THE GOOD DAY' in t and 'WIJK AAN ZEE' in t, 'approved: the start form, with the spot and day from the link')
+    check('POST IT IN ONE TAP' in t and 'QUICK POST' in t and 'WIJK AAN ZEE' in t and 'TOMORROW' in t, 'approved: a one-tap quick post, with the spot and day from the link')
+    cap.get_by_role('button', name='Another day, spot or time ↓').click(); cap.wait_for_timeout(300)
+    check('PICK THE GOOD DAY' in re.sub(r'\s+', ' ', cap.inner_text('#dc-root')), 'and the full form one tap away')
     cap.get_by_role('button', name='6', exact=True).click()
     cap.get_by_role('button', name='RIPPER').click()
     cap.get_by_role('button', name='I\'M DRIVING').click(); cap.get_by_role('button', name='3', exact=True).click()
@@ -81,15 +83,12 @@ with sync_playwright() as p:
     check('1 COMING UP' in t and 'CAPTAIN KAI' in t, 'the crew is on the landing for everyone')
     rid.locator(f'a[href="B27-Crew.dc.html?c={code}"]').first.click(); rid.wait_for_timeout(1500)
     t = rid.inner_text('#dc-root')
-    check('GET YOUR PLATE TO JOIN' in t and 'Kite beach' not in t, 'not signed up: no meeting point, a plate to join')
-    rid.get_by_role('link', name='GET YOUR PLATE TO JOIN · FREE').click()
-    rid.wait_for_url('**/B27-Join.dc.html?next=crew*'); rid.wait_for_timeout(500)
-    rid.fill('#em', 'sam@example.com'); rid.press('#em', 'Enter')
-    rid.wait_for_url(f'**/B27-Crew.dc.html?c={code}*'); rid.wait_for_timeout(1500)
+    check('YOUR EMAIL · FOR YOUR FOUNDING PLATE' in t and 'Kite beach' not in t, 'not signed up: join right here (email on the crew page), no meeting point yet')
+    rid.fill('#qe', 'sam@example.com')
     check(rid.get_by_role('button', name='PICK YOUR LEVEL').count() == 1, 'join button waits for a level')
     rid.get_by_role('button', name='REGULAR').click()
     rid.get_by_role('button', name="I'M IN · JOIN THE CREW").click(); rid.wait_for_timeout(500)
-    check("Add a rider name" in rid.inner_text('#dc-root'), 'came straight from a crew link: asks for a rider name first')
+    check("Add a rider name" in rid.inner_text('#dc-root'), 'asks for a rider name before joining')
     rid.fill('#cn', 'Sam')
     rid.get_by_role('button', name='I NEED A SEAT').click(); rid.wait_for_timeout(300)
     rid.locator('button', has_text='ANY CAR').click()  # names and cars show once you're in; the crew fills the roomiest car
@@ -97,6 +96,25 @@ with sync_playwright() as p:
     t = rid.inner_text('#dc-root')
     check('Kite beach, access 3' in t and 'rides with' in t and 'LEAVE THE CREW' in t, 'joined: sees the meeting point, rides in the captain\'s car')
     check(sql(f"select m.level || '|' || m.getting || '|' || (m.car_with = h.member_id) from crew_members m join crews c on c.id = m.crew_id join crew_members h on h.crew_id = c.id and h.email = c.host_email where c.code = '{code}' and m.email = 'sam@example.com'") == 'regular|seat|true', 'saved: regular, a seat in the captain\'s car')
+    check(sql("select first_name || '|' || plate from signups where email = 'sam@example.com'") == 'Sam|2' and rid.evaluate("JSON.parse(localStorage.getItem('hi8.me')).key"), 'one screen: signed up as Sam with plate #2, key kept in the browser')
+    check(sql("select count(*) from outbox where kind = 'joined' and to_email = 'kai@example.com'") == '1', 'the captain gets an email that Sam joined')
+
+    print('settling up')
+    t = go(rid, f'B27-Crew.dc.html?c={code}')
+    check('KAI ADDS THE COST AFTER THE RIDE' in t, 'before the cost is in: the rider knows it comes after the ride')
+    t = go(cap, f'B27-Crew.dc.html?c={code}')
+    check('SETTLE UP' in t and 'NO PASSENGERS' not in t and '0 OF 1 PAID' in t, 'the driver sees settle up: 0 of 1 paid')
+    cap.fill('input[aria-label="What the car cost, fuel and parking"]', '18')
+    cap.fill('input[aria-label="Your payment link"]', 'https://evil.example.com/x'); cap.get_by_role('button', name='SAVE · SEND TO MY RIDERS').click(); cap.wait_for_timeout(1200)
+    check('Paste a Tikkie' in cap.inner_text('#dc-root'), 'a link that is not a payment service: refused, with what to paste')
+    cap.fill('input[aria-label="Your payment link"]', 'https://tikkie.me/pay/Hi8/abc'); cap.get_by_role('button', name='SAVE · SEND TO MY RIDERS').click(); cap.wait_for_timeout(1500)
+    check('€18.00 · €9.00 each' in cap.inner_text('#dc-root'), 'saved: €18 for the car, €9 each')
+    t = go(rid, f'B27-Crew.dc.html?c={code}')
+    check('PAY KAI €9.00' in t and rid.locator('a[href="https://tikkie.me/pay/Hi8/abc"]').count() == 1, 'the rider: PAY KAI €9.00, with the Tikkie link')
+    rid.get_by_role('button', name="I'VE PAID").click(); rid.wait_for_timeout(1500)
+    check('PAID ✓' in rid.inner_text('#dc-root'), 'ticks paid')
+    t = go(cap, f'B27-Crew.dc.html?c={code}')
+    check('1 OF 1 PAID' in t and 'Sam ✓' in t, 'the driver sees Sam ✓')
 
     print('chat')
     rid.goto(BASE + f'/B27-Chat.dc.html?c={code}'); rid.wait_for_timeout(1500)
@@ -121,6 +139,17 @@ with sync_playwright() as p:
     t = go(cap, 'B27-Map.dc.html')
     check('+' not in [cap.evaluate("(document.querySelector('.tb25 a[href=\"B27-Me.dc.html\"] svg text') || {}).textContent")], 'map: the plate badge is the captain\'s own')
 
+    print('quick post')
+    t = go(cap, 'B27-Start.dc.html?spot=zandvoort&sp=surf')
+    check('QUICK POST' in t and 'SURF · ZANDVOORT' in t, 'a good-day link: surf at Zandvoort, the best day picked')
+    cap.get_by_role('button', name='POST THIS CREW').click(); cap.wait_for_url('**/B27-Crew.dc.html?c=*'); cap.wait_for_timeout(1200)
+    check(sql("select count(*) from crews where spot = 'zandvoort' and sport = 'surf'") == '1', 'two taps from the link to a posted crew')
+
+    print('errors come back')
+    cap.evaluate("setTimeout(() => { throw new Error('test boom') }, 0)"); cap.wait_for_timeout(1500)
+    check(sql("select count(*) from client_errors where message like '%test boom%'") == '1', 'a script error on a phone lands in client_errors')
+    cap.errs.clear()  # that one was on purpose
+
     print('leave and call off')
     rid.goto(BASE + f'/B27-Crew.dc.html?c={code}'); rid.wait_for_timeout(1500)
     rid.get_by_role('button', name='LEAVE THE CREW').click(); rid.get_by_role('button', name='TAP AGAIN TO LEAVE').click(); rid.wait_for_timeout(1500)
@@ -130,7 +159,7 @@ with sync_playwright() as p:
     cap.get_by_role('button', name='CALL IT OFF').click(); cap.get_by_role('button', name='TAP AGAIN TO CALL IT OFF').click(); cap.wait_for_timeout(1500)
     check('CALLED OFF · Wind dropped' in cap.inner_text('#dc-root'), 'called off, with the reason, on the crew page')
     t = go(rid, 'B27-Landing.dc.html')
-    check('0 COMING UP' in t, 'and it\'s gone from the landing')
+    check('1 COMING UP' in t, 'and it\'s gone from the landing (the surf crew is still on)')
     check(not cap.errs and not rid.errs, 'no script errors')
     br.close()
 

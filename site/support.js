@@ -265,11 +265,12 @@
       grow();
     } catch (e) {
       if (window.console) console.error('[hi8 player]', e);
+      if (window.DC_ERROR) try { window.DC_ERROR(e); } catch (x) { /* never let reporting break the page */ }
     } finally {
       rendering = false;
     }
     if (mounted && comp && typeof comp.componentDidUpdate === 'function') {
-      try { comp.componentDidUpdate(); } catch (e2) { if (window.console) console.error('[hi8 player]', e2); }
+      try { comp.componentDidUpdate(); } catch (e2) { if (window.console) console.error('[hi8 player]', e2); if (window.DC_ERROR) try { window.DC_ERROR(e2); } catch (x) { /* ignore */ } }
     }
   }
 
@@ -328,6 +329,7 @@
         C = new Function('DCLogic', s.textContent + '\n;return typeof Component !== "undefined" ? Component : null;')(DCLogic);
       } catch (e) {
         if (window.console) console.error('[hi8 player]', e);
+      if (window.DC_ERROR) try { window.DC_ERROR(e); } catch (x) { /* never let reporting break the page */ }
       }
     }
     // extensions (live.js) get the screen's Component and its name, and may return a subclass

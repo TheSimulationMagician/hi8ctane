@@ -191,7 +191,7 @@ const HI8X = (() => {
   const btn = (on, off) => "height:44px;padding:0 6px;border:2px solid #111111;font-family:'Archivo Black',sans-serif;font-size:11px;cursor:" + (off ? "default" : "pointer") + ";" +
     (off ? "background:#E7E2D4;color:#9A9384" : on ? "background:#111111;color:#C8FF3D;box-shadow:3px 3px 0 #FF2D78" : "background:#FFFFFF;color:#111111");
   const chip = (bg) => "display:inline-flex;align-items:center;height:24px;padding:0 8px;border:2px solid #111111;font-family:'Archivo Black',sans-serif;font-size:10px;white-space:nowrap;background:" + bg + ";color:#111111";
-  const errText = (e) => (e && e.hint) || ({ crew_full: "This crew is full.", level: "This crew is for regulars and up.", car_full: "That car is full.", crew_off: "This crew was called off.", crew_past: "This crew has been.", no_key: "Get your founding plate first.", not_in_crew: "Join the crew first.", slow_down: "Too many tries. Wait a minute." }[e && e.message]) || "That didn't work. Try again.";
+  const errText = (e) => (e && e.hint) || ({ crew_full: "This crew is full.", level: "This crew is for regulars and up.", car_full: "That car is full.", crew_off: "This crew was called off.", crew_past: "This crew has been.", no_key: "Get your founding plate first.", not_in_crew: "Join the crew first.", slow_down: "Too many tries. Wait a minute.", bad_email: "That email doesn't look right.", name_required: "Add a rider name: it's what the crew sees.", not_captain: "Only approved captains start crews for now." }[e && e.message]) || "That didn't work. Try again.";
   return { dayL: dayL, LV: LV, GT: GT, btn: btn, chip: chip, errText: errText, MON: MON, WD: WD };
 })();
 class Component extends DCLogic {

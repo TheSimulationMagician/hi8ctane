@@ -14,7 +14,9 @@ const authLog = [], meteoLog = [];
 // every run (keyed on the day), local time per location like timezone=auto.
 function fakeMeteo(url) {
   const lats = url.searchParams.get('latitude').split(',').map(Number), lons = url.searchParams.get('longitude').split(',').map(Number);
-  const marine = url.pathname === '/v1/marine', models = url.searchParams.get('models');
+  const marine = url.pathname === '/v1/marine', asked = url.searchParams.get('models') || '';
+  // models=<sharp>,best_match is a weather call answered per model (suffixed), like Open-Meteo; other models= calls are the agreement check
+  const multi = asked.includes('best_match') ? asked.split(',') : null, models = multi ? null : asked || null;
   const one = (lat, lon) => {
     const off = lat < 45 ? 3600 : 3600, tzName = lat < 45 ? 'Europe/Madrid' : 'Europe/Amsterdam';
     const local = new Date(Date.now() + off * 1000);
@@ -44,6 +46,13 @@ function fakeMeteo(url) {
     if (!marine && !models) {
       const dt = [...new Set(time.map((t) => t.slice(0, 10)))];
       out.daily = { time: dt, sunset: dt.map((x) => x + (lat < 45 ? 'T17:32' : 'T17:05')) };
+    }
+    if (multi) {
+      // the sharp model: 1 kt more wind, no rain probability (best_match fills it in)
+      const hh = { time }, dd = { time: out.daily.time };
+      for (const m of multi) for (const [k, v] of Object.entries(H)) hh[k + '_' + m] = m === 'best_match' ? v : (k === 'precipitation_probability' ? v.map(() => null) : k.startsWith('wind_') && k !== 'wind_direction_10m' ? v.map((x) => x + 1) : v);
+      for (const m of multi) dd['sunset_' + m] = out.daily.sunset;
+      out.hourly = hh; out.daily = dd;
     }
     return out;
   };
