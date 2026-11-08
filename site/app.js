@@ -58,6 +58,8 @@
     crew: null, sf: null, jf: null, joinDay: 'all', spotDay: 0, live: null, me: HI8.me()
   };
   if (LIVE_SPORTS.indexOf(S.sport) < 0) S.sport = 'kite';
+  // landing iterations: ?v=1 conditions up top, ?v=2 one list to join or start, default 3 (both, polished, set-up inline)
+  var V = { '1': 1, '2': 2 }[P.get('v')] || 3;
   function kg() { return Number(HI8.store.get('kg', 75)) || 75; }
   function cityObj(slug) { return (HI8.placesNow().cities || []).filter(function (c) { return c.slug === slug; })[0] || { slug: slug, name: slug, tz: 'Europe/Madrid' }; }
   function spotsFor(city, sport) { return HI8.spotsOf(city).filter(function (s) { return (s.sports || []).indexOf(sport) >= 0; }); }
@@ -208,12 +210,13 @@
       '<section class="hero ht" id="hero"><span class="hdots"></span>' +
       '<div class="kick"><span class="blink pdot"></span><span id="heroKick">LIVE CREWS · KITE · MTB · MX</span></div>' +
       '<h1 class="hl">THE GOOD DAYS.<br>THE RIGHT PEOPLE.<br><span>A SEAT IN THE CAR.</span></h1>' +
-      '<p class="lede0">We rate every day for your sport, find who\'s going and split the car. Join a crew or start one: 20 seconds, no app to install.</p>' +
-      '<div class="lb0">WHAT DO YOU RIDE?</div><div class="tiles" id="sports"></div>' +
-      '<div class="cta2"><button class="jn lm lg" data-act="join">JOIN A CREW</button><button class="jn pk lg" data-act="start">START A CREW</button></div>' +
+      '<p class="lede0">The forecast for your spots, who\'s going, a seat in the car. Join a crew or start one in 20 seconds: no app to install.</p>' +
       '<div class="herostat" id="heroStat"></div></section>' +
+      '<div class="ctx" id="ctx"><div class="sps" id="sports"></div><button class="ctxfrom" data-act="from" id="ctxFrom"></button></div>' +
       '<div class="pg">' +
-      '<section class="blk" id="crews"></section>' +
+      (V === 3 ? '<section class="blk setup" id="setup"></section>' : '') +
+      (V !== 2 ? '<section class="blk" id="now"></section>' : '') +
+      (V === 1 ? '<section class="blk" id="crews"></section>' : '<section class="blk" id="sessions"></section>') +
       '<section class="blk" id="live"></section>' +
       '<section class="blk mapsec"><div class="sec2"><b>THE LIVE MAP</b><span>WIND · CREWS · WHO\'S THERE</span></div><div class="mapbox" id="mapslot"></div></section>' +
       '<section class="blk" id="week"></section>' +
@@ -389,16 +392,17 @@
     b.className = 'tbme' + (pl ? ' plate' : '');
     var live = (S.settings && S.settings.live_sports) || LIVE_SPORTS, soon = (S.settings && S.settings.soon_sports) || SOON;
     $('#sports').innerHTML = live.filter(function (k) { return SPORT[k]; }).map(function (k) {
-      return '<button class="stile" data-act="sport" data-sport="' + k + '" aria-pressed="' + (k === S.sport) + '" aria-label="' + SPORT[k].name + '">' + tile(k, 34, true) + '<span>' + SPORT[k].name.toUpperCase() + '</span></button>';
+      return '<button class="stile mini" data-act="sport" data-sport="' + k + '" aria-pressed="' + (k === S.sport) + '" aria-label="' + SPORT[k].name + '">' + tile(k, 20) + '<span>' + SPORT[k].name.toUpperCase() + '</span></button>';
     }).join('') + soon.filter(function (k) { return SPORT[k]; }).map(function (k) {
-      return '<button class="stile soon" data-act="soon" data-sport="' + k + '" aria-label="' + SPORT[k].name + ', coming soon">' + tile(k, 34, true) + '<span>' + SPORT[k].name.toUpperCase() + '</span><i>SOON</i></button>';
+      return '<button class="stile mini soon" data-act="soon" data-sport="' + k + '" aria-label="' + SPORT[k].name + ', coming soon">' + tile(k, 20) + '<span>' + SPORT[k].name.toUpperCase() + '</span><i>SOON</i></button>';
     }).join('');
+    var hm0 = home(); $('#ctxFrom').innerHTML = hm0 ? 'FROM <b>' + esc(hm0.name) + '</b> ▾' : '<b>WHERE FROM?</b> ▸';
     $('#heroKick').textContent = 'LIVE CREWS · ' + live.map(function (k) { return (SPORT[k] || { name: k }).name.toUpperCase(); }).join(' · ') + ' · ' + regionName().toUpperCase();
     var all = upcoming(null, 7), riders = all.reduce(function (n, x) { return n + (x.going || 0); }, 0);
     $('#heroStat').innerHTML = all.length ? '<b>' + all.length + '</b> CREW' + (all.length > 1 ? 'S' : '') + ' THIS WEEK · <b>' + riders + '</b> RIDER' + (riders === 1 ? '' : 'S') + ' GOING' : 'FREE · NO APP · FOUNDING PLATES OPEN';
   }
   function drawCrews() {
-    var el = $('#crews'), h = home();
+    var el = $('#crews'), h = home(); if (!el) return;
     var from = '<button class="fromb" data-act="from">' + (h ? 'FROM ' + esc(h.name) + ' ▾' : 'SET WHERE YOU START ▸') + '</button>';
     var head = function (n, note) { return '<div class="h2"><span class="pdot"></span>CREWS NEAR YOU</div><div class="h2s">' + n + ' COMING UP · ' + esc(SPORT[S.sport].name.toUpperCase()) + ' · ' + from + (n > 1 ? ' · SWIPE →' : '') + '</div>' + (note ? '<p class="lede" style="margin:6px 0 0 19px">' + note + '</p>' : ''); };
     if (!HI8.live) { el.innerHTML = head(0) + '<div class="rail"><div class="nocrew"><b>Crews need the live site</b><br>Open hi8ctane.com to see and start crews.</div></div>'; return; }
@@ -535,6 +539,89 @@
     el.style.display = '';
     el.innerHTML = sec('PLANS', 'DAYS OUT · BETTER WITH OTHERS') + '<p class="lede">Something different for a day: say you\'re in, pick a day, and we put you together with the others going.</p><div class="rail">' + P.map(planCard).join('') + '</div>';
   }
+  // ---------------------------------------------------------------- iteration 3: set up inline, conditions now, one list
+  // MAKE IT YOURS: where you start (once). Shown until it's set; nothing pops up.
+  function drawSetup() {
+    var el = $('#setup'); if (!el) return;
+    if (home()) { el.innerHTML = ''; el.style.display = 'none'; return; }
+    el.style.display = '';
+    var T = HI8.hubsOf(S.city).slice(0, 4).concat(towns().filter(function (t) { return t.rank <= 2 && !HI8.hubsOf(S.city).some(function (h) { return HI8.km(h, t) < 1.5; }); }).slice(0, 4));
+    el.innerHTML = '<div class="setupc"><b>WHERE DO YOU START FROM?</b><span>Your spots, drive times, crews and seat prices from there. Stays on this phone.</span>' +
+      '<div class="row"><button class="opt dk" data-act="geo">' + (S.geoBusy ? '<span class="spin"></span>' : 'USE MY LOCATION') + '</button>' +
+      T.map(function (x) { return '<button class="opt sm" data-act="sethome" data-name="' + esc(x.name) + '" data-lat="' + x.lat + '" data-lon="' + x.lon + '">' + esc(x.name) + '</button>'; }).join('') +
+      '<button class="opt sm" data-act="from">MORE…</button></div>' + (S.geoErr && !S.view ? '<p class="hint">' + esc(S.geoErr) + '</p>' : '') + '</div>';
+  }
+  function driveFromMe(spot) { var h = home() || HI8.hubsOf(S.city)[0]; return h ? HI8.driveMin(h, spot) : null; }
+  function spotsNear() {
+    var L = spotsFor(S.city, S.sport).map(function (sp) { return { spot: sp, min: driveFromMe(sp) }; });
+    L.sort(function (a, b) { return (a.min || 0) - (b.min || 0); });
+    return L;
+  }
+  // RIGHT NOW AT YOUR SPOTS: the nearest spots, as they are this hour (or the next daylight hour)
+  function drawNow() {
+    var el = $('#now'); if (!el) return;
+    var head = sec('RIGHT NOW AT YOUR SPOTS', home() ? 'NEAREST FIRST · FROM ' + esc(home().name) : 'NEAREST FIRST');
+    if (!FX.data[S.city]) { el.innerHTML = head + '<div class="rail">' + (FX.error ? '<div class="nocrew">No forecast right now: Open-Meteo can\'t be reached.</div>' : '<div class="skel nowc"></div><div class="skel nowc"></div><div class="skel nowc"></div>') + '</div>'; return; }
+    var t = S.today + 'T' + pad(Math.max(8, Math.min(S.nowH, 17))) + ':00', reps = S.live ? (S.live.reports || []) : [], live = upcoming(S.sport, 1);
+    el.innerHTML = head + '<div class="rail nowr">' + spotsNear().map(function (x) {
+      var sp = x.spot, r = rowAt(sp.slug, t), rt = rateAt(sp, t), rep = reps.filter(function (q) { return q.spot === sp.slug && q.sport === S.sport; })[0];
+      var crews = live.filter(function (c) { return c.spot === sp.slug; }).length, tone = rt ? (rt.dark ? 'none' : FX.tone(rt.s)) : 'none';
+      var big = !r || !rt ? '–' : S.sport === 'kite' ? Math.round(r.w) : Math.round(rt.s), unit = S.sport === 'kite' ? 'KT' : '/10';
+      var sub = !r || !rt ? 'no forecast' : S.sport === 'kite' ? FX.compass(r.dir) + ' · gusts ' + Math.round(r.g) + (rt.shore ? ' · ' + rt.shore : '') : (rt.ground || '') + ' · ' + Math.round(r.temp) + '°C' + (r.mm ? ' · rain' : '');
+      return '<button class="nowc" data-act="spot" data-spot="' + sp.slug + '" aria-label="' + esc(sp.name + ' now: ' + (rt ? rt.label : 'no forecast')) + '">' +
+        '<span class="nv t-' + tone + '">' + esc(rt ? (rt.dark ? 'DARK' : rt.label) : '–') + '</span><span class="nn">' + esc(sp.name.toUpperCase()) + '</span>' +
+        '<span class="nb">' + big + '<small>' + unit + '</small>' + (S.sport === 'kite' && r ? arrow(r.dir) : '') + '</span><span class="ns">' + esc(sub) + '</span>' +
+        '<span class="nf">' + (x.min ? CLOCK + x.min + ' MIN' : '') + (crews ? ' · <b>' + crews + ' CREW' + (crews > 1 ? 'S' : '') + ' TODAY</b>' : '') + (rep ? ' · <b class="rp">' + esc(rep.verdict.toUpperCase()) + ' ' + esc(ago(rep.at)) + '</b>' : '') + '</span></button>';
+    }).join('') + '</div><p class="wkn" style="color:var(--mute);margin:0">' + (S.nowH > 17 ? 'Late today: showing 17:00. ' : S.nowH < 8 ? 'Early: showing 08:00. ' : '') + 'Tap a spot for its 7-day, hour-by-hour forecast.</p>';
+  }
+  // NEXT GOOD SESSIONS: one list to join or start. A good window with a crew = JOIN; without = START IT.
+  function sessions() {
+    var near = spotsNear(), bySpot = {}; near.forEach(function (x) { bySpot[x.spot.slug] = x; });
+    var out = [], crews = upcoming(S.sport, 14).filter(home() ? isNear : function () { return true; });
+    if (FX.data[S.city]) for (var i = 0; i < 7; i++) {
+      var date = FX.addDays(S.today, i), best = [];
+      near.forEach(function (x) { var sp = fxSpot(x.spot.slug); var w = sp ? FX.windows(sp, date, S.sport, x.spot, { kg: kg() })[0] : null; if (w && w.score >= 6) best.push(Object.assign({ spot: x.spot, min: x.min }, w)); });
+      if (i === 0) best = best.filter(function (w) { return S.nowH * 60 + S.nowM + (w.min || 0) <= w.to * 60 - 90; }); // today: only if you'd still get 90 minutes
+      best.sort(function (a, b) { return b.score - a.score || a.min - b.min; });
+      best.slice(0, 2).forEach(function (w) { out.push({ date: date, from: w.from, to: w.to, spot: w.spot, min: w.min, fx: w, crews: [] }); });
+    }
+    crews.forEach(function (c) {
+      var f0 = Number(hm(c.start).slice(0, 2)), hit = out.filter(function (o) { return o.date === c.day && o.spot.slug === c.spot && f0 < o.to && f0 + 3 > o.from; })[0];
+      if (hit) hit.crews.push(c);
+      else { var sp = HI8.spot(c.spot); if (sp) out.push({ date: c.day, from: f0, to: c.end ? Number(hm(c.end).slice(0, 2)) : f0 + 3, spot: sp, min: driveFromMe(sp), fx: crewFx(c), crews: [c] }); }
+    });
+    out.sort(function (a, b) { return (a.date + pad(a.from)).localeCompare(b.date + pad(b.from)) || b.crews.length - a.crews.length; });
+    return out.slice(0, 8);
+  }
+  function hourBars(o) {
+    var sp = fxSpot(o.spot.slug); if (!sp) return '';
+    var rows = FX.dayRows(sp, o.date, S.sport, o.spot, { kg: kg() }, Math.max(6, o.from - 2), Math.min(21, o.to + 1));
+    return '<span class="hb">' + rows.map(function (r) {
+      var v = S.sport === 'kite' ? Math.min(1, (r.w || 0) / 30) : Math.min(1, (r.rate ? r.rate.s : 0) / 10), t = r.rate ? (r.rate.dark ? 'none' : FX.tone(r.rate.s)) : 'none', inw = r.h >= o.from && r.h < o.to;
+      return '<i class="t-' + t + (inw ? ' in' : '') + '" style="height:' + Math.max(8, Math.round(v * 30)) + 'px" title="' + pad(r.h) + ':00' + (S.sport === 'kite' ? ' · ' + Math.round(r.w) + ' kt' : '') + '"></i>';
+    }).join('') + '</span><span class="hbl"><span>' + pad(Math.max(6, o.from - 2)) + '</span><span>' + pad(Math.min(21, o.to + 1)) + '</span></span>';
+  }
+  function drawSessions() {
+    var el = $('#sessions'); if (!el) return;
+    var h = home(), L = sessions();
+    var head = '<div class="h2"><span class="pdot"></span>NEXT GOOD SESSIONS</div><div class="h2s">' + esc(SPORT[S.sport].name.toUpperCase()) + ' · ' + (h ? 'FROM ' + esc(h.name) : esc(regionName().toUpperCase())) + ' · JOIN ONE, OR START IT</div>';
+    if (!FX.data[S.city] && !L.length) { el.innerHTML = head + '<div class="sess"><div class="skel" style="height:150px"></div></div>'; return; }
+    if (!L.length) { el.innerHTML = head + '<div class="sess">' + emptyCrews() + '</div>'; return; }
+    el.innerHTML = head + '<div class="sess">' + L.map(function (o) {
+      var f = o.fx, c = o.crews[0], kite = S.sport === 'kite';
+      var key = f ? (kite ? f.w + ' KT ' + FX.compass(f.dir) + (f.g ? ' · G' + f.g : '') : (f.ground || '').toUpperCase() + (f.temp != null ? ' · ' + f.temp + '°C' : '')) : 'FORECAST SOON';
+      var crewLine = c ? (function () { var hub = hubOf(c), cost = hub ? tripCost(hub, o.spot) : null, m = cost ? seatMath(cost, 4) : null, more = o.crews.length - 1;
+        return '<span class="sg">' + faces(c) + '<span><b>' + esc(c.host) + '\'s crew</b> · ' + c.going + ' going' + (c.seats_free > 0 ? ' · ' + c.seats_free + ' seat' + (c.seats_free > 1 ? 's' : '') + (hub ? ' from ' + esc(title(hub.name)) : '') + (m ? ' ' + money(m.pay) : '') : '') + (more ? ' · +' + more + ' more' : '') + '</span></span>'; })()
+        : '<span class="sg none">Nobody yet: start it and it\'s on everyone\'s list.</span>';
+      return '<div class="ss' + (c ? ' has' : '') + '">' +
+        '<div class="ss-t"><span class="ss-d">' + esc(dayRel(o.date)) + ' <b>' + pad(o.from) + '–' + pad(o.to) + '</b></span>' + (f ? '<span class="vd t-' + FX.tone(f.score != null ? f.score : f.s) + '">' + esc(f.label) + '</span>' : '') + (c && c.live ? '<span class="vd t-live">LIVE</span>' : '') + '</div>' +
+        '<button class="ss-n" data-act="spotat" data-spot="' + o.spot.slug + '" data-date="' + o.date + '">' + esc(o.spot.name.toUpperCase()) + ' <small>' + (o.min ? o.min + ' MIN' : '') + ' ›</small></button>' +
+        '<div class="ss-m"><span class="ss-k">' + esc(key) + (f && f.kite && kite ? ' · ' + f.kite + ' M KITE' : '') + (f && f.models ? ' · ' + f.models.label : '') + '</span>' + hourBars(o) + '</div>' +
+        '<div class="ss-f">' + crewLine + (c ? '<button class="jn lm" data-act="crew" data-code="' + esc(c.code) + '">JOIN</button>'
+          : '<button class="jn pk" data-act="startwin" data-date="' + o.date + '" data-from="' + o.from + '" data-to="' + o.to + '" data-spot="' + o.spot.slug + '">START IT</button>') + '</div></div>';
+    }).join('') + '</div>' + (L.some(function (o) { return o.crews.length; }) ? '' : '<div class="alertw">' + alertBox() + '</div>') + '<div class="two2"><button class="hbtn" data-act="join">ALL CREWS</button><button class="hbtn lime" data-act="start">ANOTHER TIME</button></div>';
+  }
+
   // NO CREW FROM YOUR TOWN YET? Crews leave from wherever riders live: the first one from a town puts it on the list
   function drawTowns() {
     var el = $('#towns'); if (!el) return;
@@ -547,7 +634,7 @@
       '<a class="go2" href="B27-City.dc.html">Outside the Netherlands and Catalonia? Ask for your region →</a></div>';
   }
   function drawAll() {
-    refreshToday(); drawTop(); drawTime(); drawMapSpots(); drawCrews(); drawLive(); drawWeek(); drawBest(); drawSave(); drawPlans(); drawTowns();
+    refreshToday(); drawTop(); drawTime(); drawMapSpots(); drawSetup(); drawNow(); drawSessions(); drawCrews(); drawLive(); drawWeek(); drawBest(); drawSave(); drawPlans(); drawTowns();
     if (S.view) renderSheet();
   }
 
@@ -737,10 +824,30 @@
       C.data = d; C.err = null;
       document.title = SPORT[d.sport].name + ' crew · ' + d.spot_name + ' · ' + dayRel(d.day) + ' ' + hm(d.start);
       if (d.city !== S.city) { S.city = d.city; drawAll(); initMap(); loadForecast(); }
-      if (d.me) { startChat(); if (!S.wallet) loadWallet(); }
+      if (d.me) { startChat(); if (!S.wallet) loadWallet(); loadPlan(); }
       renderSheet();
       if (C.chat && d.me) setTimeout(function () { var el = $('#chatBox'); if (el) el.scrollIntoView({ block: 'center' }); }, 60);
     }, function (e) { if (S.crew === C) { C.err = errText(e); renderSheet(); } });
+  }
+  // the smart pick-ups: where each car stops, in order, with times (names only: nobody sees where anyone starts)
+  function loadPlan(setFrom) {
+    var C = S.crew; if (!C || !C.data || !C.data.me || !HI8.live) return Promise.resolve();
+    var h = home();
+    var p = setFrom && h ? HI8.withKey('hi8_set_from', { p_code: C.code, p_lat: h.lat, p_lon: h.lon }, { noQueue: true }) : HI8.withKey('hi8_car_plan', { p_code: C.code }, { noQueue: true });
+    return p.then(function (plan) { if (S.crew !== C) return; var moved = setFrom && C.plan && JSON.stringify(C.plan.cars.map(function (x) { return x.driver; })) !== JSON.stringify(plan.cars.map(function (x) { return x.driver; })); C.plan = plan; if (setFrom) loadCrew(); else renderSheet(); }, noop);
+  }
+  function planHtml(c) {
+    var pl = S.crew.plan; if (!pl || !pl.cars || !pl.cars.length) return '';
+    var meName = (c.members || []).filter(function (m) { return m.me; })[0], h = home();
+    return '<div class="box route"><h3>THE ROUTE' + (pl.saved_km ? ' <span class="tag good">' + pl.saved_km + ' KM NOT DRIVEN</span>' : '') + '</h3>' + pl.cars.map(function (car) {
+      return '<div class="rc"><b class="rcd">🚗 ' + esc(car.driver) + (car.me_driving ? ' (you)' : '') + '</b>' +
+        (car.stops.length ? '<ol class="stops">' + car.stops.map(function (st) { return '<li><span class="at">' + esc(st.at) + '</span><span><b>' + esc(st.name) + '</b><br>' + st.riders.map(esc).join(', ') + '</span></li>'; }).join('') + '<li class="end"><span class="at">' + esc(hm(c.start)) + '</span><span><b>' + esc(c.spot_name.toUpperCase()) + '</b></span></li></ol>'
+          : '<p class="hint" style="margin:4px 0 0">No riders in this car yet.</p>') +
+        '<p class="hint" style="margin:4px 0 0">' + car.route_km + ' km to the spot' + (car.saved_km ? ', ' + car.saved_km + ' km less than everyone driving' : '') + '.</p>' +
+        (car.me_driving && car.stops.length ? '<a class="opt" target="_blank" rel="noopener" href="' + esc(car.maps) + '" style="display:inline-block;margin-top:8px">ROUTE IN GOOGLE MAPS</a>' : '') + '</div>';
+    }).join('') +
+      '<p class="hint">Pick-ups are picked from where each of you starts: a short trip for riders, a small detour for the driver. ' + (h ? 'You start from ' + esc(title(h.name)) + '.' : '') + '</p>' +
+      (h ? '<button class="opt" data-act="planfrom">USE ' + esc(h.name) + ' AS WHERE I START</button>' : '<button class="opt" data-act="from">SET WHERE I START</button>') + '</div>';
   }
   var chatTimer = null, crewTimer = null;
   function startChat() {
@@ -879,6 +986,7 @@
         (c.seats_free ? c.seats_free + ' seat' + (c.seats_free > 1 ? 's' : '') + ' free' + (hub ? ' from ' + esc(hub.name) : '') + (c.meet_time ? ' at ' + esc(hm(c.meet_time)) : '') : c.drivers ? 'cars are full' : 'no car yet') +
         (c.need_seat ? ' · ' + c.need_seat + ' need' + (c.need_seat > 1 ? '' : 's') + ' a seat' : '') + (c.here ? ' · ' + c.here + ' at the spot' : '') + '</span></div><p class="hint">Names, cars and the chat are for the crew.</p>') + '</div>';
     if (member) {
+      body += planHtml(c);
       body += '<div class="box"><h3>MEETING POINT</h3><div style="font-size:13px">' + (hub ? '<b>' + esc(hub.name) + '</b> · ' + esc(hub.sub || '') + (c.meet_time ? ' at <b>' + esc(hm(c.meet_time)) + '</b>' : '') + '<br>' : '') +
         (c.meet_note ? esc(c.meet_note) + '<br>' : '') + 'Spot: ' + esc(c.spot_name) + '</div><div class="row" style="margin-top:10px">' +
         (hub ? '<a class="opt" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=' + hub.lat + ',' + hub.lon + '">PICK-UP ON MAPS</a>' : '') +
@@ -1062,17 +1170,17 @@
   }
   function geoHome() {
     if (!navigator.geolocation) { S.geoErr = 'This browser can\'t share its location: pick a place below.'; renderSheet(); return; }
-    S.geoBusy = true; S.geoErr = null; renderSheet();
+    S.geoBusy = true; S.geoErr = null; if (S.view) renderSheet(); else drawSetup();
     navigator.geolocation.getCurrentPosition(function (pos) {
       S.geoBusy = false;
       var pt = { lat: Math.round(pos.coords.latitude * 100) / 100, lon: Math.round(pos.coords.longitude * 100) / 100 }; // about 1 km: never your address
-      if (!inRegion(pt)) { S.geoErr = 'You\'re outside the ' + regionName() + ': pick a place below, or switch region at the top.'; renderSheet(); return; }
+      if (!inRegion(pt)) { S.geoErr = 'You\'re outside the ' + regionName() + ': pick a place, or switch region at the top.'; if (S.view) renderSheet(); else drawSetup(); return; }
       var named = nearestTo(pt, HI8.hubsOf(S.city).concat(towns()));
       setHome({ name: named && HI8.km(named, pt) < 12 ? named.name : 'NEAR ME', lat: pt.lat, lon: pt.lon });
       afterHome();
-    }, function () { S.geoBusy = false; S.geoErr = 'No location: allow it in the browser, or pick a place below.'; renderSheet(); }, { timeout: 10000, maximumAge: 600000 });
+    }, function () { S.geoBusy = false; S.geoErr = 'No location: allow it in the browser, or pick a place.'; if (S.view) renderSheet(); else drawSetup(); }, { timeout: 10000, maximumAge: 600000 });
   }
-  function afterHome() { if (S.sf && !S.sf.done) { S.sf.hub = null; autoMeet(); } if (S.save) S.save.hub = null; drawAll(); renderSheet(); }
+  function afterHome() { if (S.sf && !S.sf.done) { S.sf.hub = null; autoMeet(); } if (S.save) S.save.hub = null; drawAll(); if (S.view) renderSheet(); }
 
   // ---- ME
   function sheetMe() {
@@ -1154,7 +1262,7 @@
     p.then(function (d) {
       var was = !!c.me; f.busy = false; S.jf = null; C.data = d; S.me = HI8.me(); drawTop();
       HI8.loadCrews(true).catch(noop); HI8.loadMine(true).catch(noop); loadLive();
-      startChat(); renderSheet();
+      startChat(); renderSheet(); if (home()) loadPlan(true);
       if (!was) {
         var al = (HI8.mine && HI8.mine.alerts) || [];
         toast("You're in" + (d.plate ? ': founding plate #' + pad3(d.plate) : '') + '.' + (al.some(function (a) { return a.sport === c.sport; }) ? '' : ' <button class="opt" data-act="alert" data-sport="' + c.sport + '" data-on="true" style="margin-left:8px">EMAIL ME NEW ' + esc(SPORT[c.sport].name.toUpperCase()) + ' CREWS</button>'), 7000);
@@ -1197,6 +1305,7 @@
     p.then(function (c) {
       HI8.loadPlaces && HI8.loadPlaces(true).then(function () { drawTowns(); }, noop);
       f.busy = false; f.done = c; f.force = false; drawTop();
+      if (home() && c.code) HI8.withKey('hi8_set_from', { p_code: c.code, p_lat: home().lat, p_lon: home().lon }, { noQueue: true }).catch(noop);
       HI8.loadCrews(true).then(drawAll, noop); HI8.loadMine(true).catch(noop); loadLive();
       renderSheet();
     }, function (e) {
@@ -1306,6 +1415,7 @@
       case 'pass': toast('<span class="spin"></span> Opening Stripe…', 8000); HI8.fn('stripe-checkout', { key: HI8.me().key, kind: 'pass', plan: d.plan, back: location.href.split('#')[0] + '#me' }).then(function (r) { if (r && r.url) location.href = r.url; }, function (e) { toast(errText(e), 5000); }); break;
       case 'payout': toast('<span class="spin"></span> One moment…', 8000); HI8.fn('stripe-checkout', { key: HI8.me().key, kind: 'payout', country: S.city === 'barcelona' ? 'ES' : 'NL', back: location.href.split('#')[0] + '#me' }).then(function (r) {
           if (r && r.url) location.href = r.url; else if (r && r.done) { toast('On its way: ' + euro(r.cents) + ' to your bank.', 6000); loadWallet(); } }, function (e) { toast(errText(e), 5000); }); break;
+      case 'planfrom': loadPlan(true); toast('Done: the pick-ups are worked out from there.'); break;
       case 'svhub': S.save.hub = d.hub; drawSave(); break;
       case 'svspot': S.save.spot = d.spot; drawSave(); break;
       case 'wkcell': if (d.sport !== S.sport) setSport(d.sport); S.spotDay = Number(d.i); if (d.spot) go('#spot/' + d.spot); break;
@@ -1376,7 +1486,7 @@
   }
   function loadLive() {
     if (!HI8.live) return Promise.resolve();
-    return HI8.rpc('hi8_live', { p_city: S.city }).then(function (l) { S.live = l; drawMapSpots(); drawCrews(); drawLive(); if (S.view && S.view !== 'start') renderSheet(); }, noop);
+    return HI8.rpc('hi8_live', { p_city: S.city }).then(function (l) { S.live = l; drawMapSpots(); drawCrews(); drawSessions(); drawNow(); drawLive(); if (S.view && S.view !== 'start') renderSheet(); }, noop);
   }
   function boot() {
     frame(); sheet = $('#sheet');
@@ -1391,7 +1501,7 @@
     drawAll(); initMap();
     if (HI8.live) {
       HI8.rpc('hi8_settings', {}).then(function (s) { S.settings = s; if (!P.get('city') && !HI8.store.get('city28', null) && s.pilot_city) S.city = s.pilot_city; drawTop(); drawSave(); drawWeek(); }, noop);
-      HI8.onData(function () { drawTop(); drawCrews(); drawMapSpots(); if (S.view === 'join' || S.view === 'me') renderSheet(); });
+      HI8.onData(function () { drawTop(); drawCrews(); drawSessions(); drawMapSpots(); if (S.view === 'join' || S.view === 'me') renderSheet(); });
       window.addEventListener('focus', function () { if (Date.now() - (S.plansAt || 0) > 120000) { S.plansAt = Date.now(); loadPlans(); } });
       HI8.loadPlaces().then(function () { fitMap(); loadForecast(); drawAll(); }, function () { loadForecast(); });
       loadLive(); loadPlans();
