@@ -22,6 +22,14 @@ The 2.7 identity, kept on purpose: surf mag meets 90s music TV. Cream paper, 3px
 - Links: `/?c=CODE` a crew (`#chat` scrolls to its chat), `/#join`, `/#start` (`?spot=…&sport=…` preselects), `/#spot/<slug>` a spot's hourly forecast, `/#plan/<slug>` a plan, `/#me`, `/?city=amsterdam`, `/?sport=mtb`, `/?stop=TOKEN` (the stop link in alert emails).
 - The 2.7 app screens (`B27-Landing`, `Web`, `Home`, `Map`, `Spot`, `Start`, `Crew`, `Chat`, `Me`) forward to the app, so old links in emails and chats keep working. Founding Night, Schools, City, Get In and onboarding are the 2.7 screens as before. **The radio is off for now**: `B27-Radio` forwards to the app and the radio button is gone from the other screens. `hi8ctane.com/join` opens JOIN A CREW.
 
+## Smart pick-ups and routes (`supabase/migrations/0009_routes.sql`, 2.11)
+
+- Each rider in a crew can say roughly where they start (rounded to about 1 km, never an address). The app sends it after joining or starting if "where you start" is set.
+- A rider who needs a seat (and hasn't paid it) goes to the car that goes least out of its way for them (`hi8_set_from`).
+- For every rider, the pick-up (station or town start) that's best for both: a short trip for the rider (counts 1.5x), a small detour for the driver.
+- Stops come in the order the driver reaches them, with times worked back from arriving 10 minutes early and lined up with the captain's meeting time, plus a Google Maps route through them (`hi8_car_plan`). Only crew members see it, and only pick-up names and times leave the database.
+- Landing (2.11): three versions behind `?v=1`, `?v=2`, default v3: inline set-up, "right now", one list of sessions with JOIN or START IT, a sticky sport and from bar.
+
 ## Payments: the wallet and the Hi8 Pass (`supabase/migrations/0008_wallet.sql`, `supabase/functions/`)
 
 - **The wallet:** riders top up €10, €20 or €50 through Stripe Checkout and pay their seats from it, so a €4 seat doesn't carry a card fee of its own (one iDEAL top-up is about €0.29). The wallet holds at most €100.
