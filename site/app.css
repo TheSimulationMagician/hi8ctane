@@ -468,3 +468,11 @@ table.fx tr.rate td { color: var(--ink); }
   .sheet { left: auto; width: var(--panel); top: var(--top); border-left: 3px solid var(--ink); }
   .toast { left: auto; right: 16px; transform: none; bottom: 96px; max-width: calc(var(--panel) - 32px); }
 }
+
+/* the wallet and the Pass */
+.ledger { margin-top: 12px; border-top: 2px dashed rgba(17,17,17,.25); }
+.ledger div { display: flex; justify-content: space-between; gap: 10px; padding: 6px 0; font-size: 11.5px; border-bottom: 1px solid var(--sand); }
+.ledger b { font: 400 14px/1 var(--big); font-weight: 400; white-space: nowrap; }
+.ledger b.in { color: #1a7f37; } .ledger b.out { color: var(--ink); }
+.box.pass { background: var(--paper); }
+.perks { margin: 0 0 10px; padding-left: 18px; font-size: 11.5px; line-height: 1.6; }

@@ -2,10 +2,12 @@
 
 They run the real thing locally: Postgres 16 with both migrations, PostgREST (the same REST server Supabase uses) in front of it, and a headless Chromium clicking through the screens.
 
-- `app_e2e.py`: 81 checks on the 2.9 app in a browser: the 2.7 look (logo, headline, tiles), the live map, the week ahead and the best window, ride with a buddy, the savings with the 15% fee (free in the pilot), plans and "I'm in", START A CREW and JOIN A CREW for people with no account, the WhatsApp message, the duplicate warning, the chat, settling up with Bizum, checking in and reporting, alerts and their stop link, Me, the 7-day spot tables, old links forwarding, the desktop layout, and Open-Meteo being down.
+- `app_e2e.py`: 90 checks on the 2.9 app in a browser: the 2.7 look (logo, headline, tiles), the live map, the week ahead and the best window, ride with a buddy, the savings with the 15% fee (free in the pilot), plans and "I'm in", START A CREW and JOIN A CREW for people with no account, the WhatsApp message, the duplicate warning, the chat, settling up with Bizum, checking in and reporting, alerts and their stop link, Me, the 7-day spot tables, old links forwarding, the desktop layout, and Open-Meteo being down.
 - `pilot_api.py`: 57 checks on 0005: open posting and its switch, rookie crews for captains only, coming-soon sports, duplicates, start-and-sign-up in one go, alerts (at most 3 a day, the stop link), Bizum only for your car, check-ins and reports, the live map feed without names, rate limits, erase.
 - `plans_api.py`: 26 checks on 0006: the ride fee setting, the Martorelles MX spot, plans and their counts, "I'm in" with or without an account, updates not counted twice, the team email, switched-off plans, rate limits, erase.
 - `starts_api.py`: 19 checks on 0007: regions, starting points riders add (validation, reuse within 1.5 km, about 100 m precision), hidden until a crew leaves from them, crews from them, the rate limit, the MX day at €180.
+- `wallet_api.py`: 26 checks on 0008: the wallet off and on, only the service role credits it, paying a seat (held, twice refused, not enough money says how much), the fee (pilot, live, waived by the Pass), refunds (left, called off), release to the driver the day after (once), withdrawals (all out first, back on failure, from €5), erase keeps the books anonymised.
+- `../unit/money_test.mjs`: 23 checks on the Stripe functions against the real database and a fake Stripe: signatures, top-up checkout and webhook (once), unpaid not credited, the €100 cap, the Pass subscription on and off, withdrawals through Connect.
 - `../unit/fx_test.mjs`: 31 checks on the forecast engine (`site/fx.js`): kite, MTB and MX ratings, shore classes, kite size, windows, a week ahead, a day's numbers (rain chance, cloud, waves, water, light), model agreement, the map grid.
 - `e2e.py`: 63 checks. The old landing link → Get In → onboarding; the Founding Night RSVP without an account (Get In, then straight back); "I'm in" and "I'll captain" for a new city; the schools form; a sign-up made offline that goes out on the next page; the email-link sign-in; and that the website can't read tables, call internal functions, skip the waiver or flood the list.
 - `crews_api.py`: 42 checks on the crews functions in 0003: captains only, seats and cars, full crews, leaving, calling off, chat for members only, erase.
@@ -27,6 +29,7 @@ psql -h 127.0.0.1 -p 5440 -U postgres -d hi8 -f supabase/migrations/0004_core_lo
 psql -h 127.0.0.1 -p 5440 -U postgres -d hi8 -f supabase/migrations/0005_pilot.sql
 psql -h 127.0.0.1 -p 5440 -U postgres -d hi8 -f supabase/migrations/0006_plans.sql
 psql -h 127.0.0.1 -p 5440 -U postgres -d hi8 -f supabase/migrations/0007_starts.sql
+psql -h 127.0.0.1 -p 5440 -U postgres -d hi8 -f supabase/migrations/0008_wallet.sql
 
 # PostgREST 12 (static binary from github.com/PostgREST/postgrest/releases)
 postgrest test/live/postgrest.conf &
@@ -37,7 +40,7 @@ node test/live/serve.mjs site 8802 off &
 
 pip install playwright pillow && playwright install chromium   # crews_api/core_api run in captains-only mode, pilot_api and app_e2e with open posting
 python3 test/live/e2e.py                      # wipes the test database's tables first
-python3 test/live/crews_api.py && python3 test/live/core_api.py && python3 test/live/pilot_api.py && python3 test/live/plans_api.py && python3 test/live/starts_api.py
+python3 test/live/crews_api.py && python3 test/live/core_api.py && python3 test/live/pilot_api.py && python3 test/live/plans_api.py && python3 test/live/starts_api.py && python3 test/live/wallet_api.py && node test/unit/money_test.mjs
 python3 test/live/app_e2e.py                  # serve.mjs also stands in for Open-Meteo
 node test/unit/fx_test.mjs                    # needs serve.mjs on 8801
 python3 test/live/pixdiff.py 8802 <port of another copy of the site> out/

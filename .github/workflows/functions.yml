@@ -1,0 +1,58 @@
+# Deploys the Stripe Edge Functions (supabase/functions/) to Supabase, and keeps their secrets there.
+# It runs when anything in supabase/functions/ or this file changes on main, and from the Actions tab ("Run workflow").
+#
+# One-time setup, all in GitHub: Settings → Secrets and variables → Actions → New repository secret
+#   SUPABASE_ACCESS_TOKEN   supabase.com → Account → Access Tokens → Generate new token
+#   STRIPE_SECRET_KEY       Stripe → Developers → API keys → Secret key (sk_live_… or sk_test_… to try it first)
+#   STRIPE_WEBHOOK_SECRET   Stripe → Developers → Webhooks → your endpoint → Signing secret (whsec_…)
+# Without SUPABASE_ACCESS_TOKEN the job says so and stops: nothing breaks.
+
+name: Deploy the Stripe functions to Supabase
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "supabase/functions/**"
+      - "supabase/config.toml"
+      - ".github/workflows/functions.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: functions
+  cancel-in-progress: false
+
+env:
+  PROJECT_REF: ttpryqrjkhlthftdkhju
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
+      STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+    steps:
+      - name: Check the token is there
+        id: gate
+        run: |
+          if [ -z "$SUPABASE_ACCESS_TOKEN" ]; then echo "No SUPABASE_ACCESS_TOKEN secret yet: skipping (see the top of this file)."; echo "go=false" >> "$GITHUB_OUTPUT"; else echo "go=true" >> "$GITHUB_OUTPUT"; fi
+      - uses: actions/checkout@v4
+        if: steps.gate.outputs.go == 'true'
+      - uses: supabase/setup-cli@v1
+        if: steps.gate.outputs.go == 'true'
+        with:
+          version: latest
+      - name: Secrets for the functions
+        if: steps.gate.outputs.go == 'true' && env.STRIPE_SECRET_KEY != ''
+        run: |
+          supabase secrets set --project-ref "$PROJECT_REF" STRIPE_SECRET_KEY="$STRIPE_SECRET_KEY" SITE_URL="https://hi8ctane.com"
+          if [ -n "$STRIPE_WEBHOOK_SECRET" ]; then supabase secrets set --project-ref "$PROJECT_REF" STRIPE_WEBHOOK_SECRET="$STRIPE_WEBHOOK_SECRET"; fi
+      - name: Deploy
+        if: steps.gate.outputs.go == 'true'
+        run: |
+          supabase functions deploy stripe-checkout --project-ref "$PROJECT_REF" --no-verify-jwt
+          supabase functions deploy stripe-webhook --project-ref "$PROJECT_REF" --no-verify-jwt

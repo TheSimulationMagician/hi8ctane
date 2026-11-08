@@ -18,9 +18,16 @@ def check(cond, what):
     global ok
     if not cond: raise SystemExit('FAIL: ' + what)
     ok += 1; print('  ok ·', what)
+import urllib.request
+def rpc(fn, body, ip='10.4.4.4'):
+    req = urllib.request.Request(f'{BASE}/rest/v1/rpc/{fn}', data=json.dumps(body).encode(), method='POST', headers={'apikey': 'sb_publishable_test', 'content-type': 'application/json', 'x-test-ip': ip})
+    try:
+        with urllib.request.urlopen(req) as r: return json.loads(r.read() or b'null')
+    except urllib.error.HTTPError as e: return json.loads(e.read() or b'null')
 def txt(pg, sel='body'): return re.sub(r'\s+', ' ', pg.inner_text(sel)).upper()  # headings are upper-cased by CSS
 
-sql("truncate public.signups, public.night_rsvps, public.rider_keys, public.crews, public.crew_members, public.crew_messages, public.rate_hits, public.outbox, public.spot_reports, public.crew_alerts, public.plan_leads cascade")
+sql("truncate public.signups, public.night_rsvps, public.rider_keys, public.crews, public.crew_members, public.crew_messages, public.rate_hits, public.outbox, public.spot_reports, public.crew_alerts, public.plan_leads, public.wallet_ledger, public.seat_payments, public.passes, public.payout_accounts cascade")
+sql("update public.app_settings set value = 'false' where key in ('payments_live', 'fee_live')")
 sql("delete from public.hubs where kind = 'town'")
 sql("update public.app_settings set value = 'true' where key = 'open_posting'")
 
@@ -201,6 +208,37 @@ with sync_playwright() as p:
     G.goto(BASE + '/?city=amsterdam'); G.wait_for_timeout(2500)
     check('UTRECHT' in txt(G, '#towns') and '1 CREW' in txt(G, '#towns'), 'everyone now sees Utrecht on the list, with its crew')
 
+    print('the wallet: top up once, pay seats from it')
+    W0 = rpc('hi8_quick_start', {'p_email': 'wanda@example.com', 'p_name': 'Wanda', 'p_sport': 'mtb', 'p_spot': 'garraf-park', 'p_day': (datetime.date.today() + datetime.timedelta(days=2)).isoformat(),
+             'p_start': '10:00', 'p_end': '13:00', 'p_meet_hub': 'sants', 'p_meet_time': '09:15', 'p_getting': 'drive', 'p_seats': 3, 'p_level': 'regular'}, ip='10.4.4.1')
+    wcode = W0['code']
+    T0 = rpc('hi8_quick_join', {'p_email': 'toni@example.com', 'p_name': 'Toni', 'p_code': wcode, 'p_level': 'regular', 'p_getting': 'seat'}, ip='10.4.4.2')
+    rpc('hi8_settle', {'p_key': W0['key'], 'p_code': wcode, 'p_cost': 12, 'p_link': None, 'p_bizum': None}, ip='10.4.4.1')
+    ctxW = br.new_context(viewport={'width': 390, 'height': 844}); ctxW.add_init_script("localStorage.setItem('hi8.me', JSON.stringify({key: '%s', city: 'barcelona', plates: {barcelona: %d}}))" % (T0['key'], T0['plate']))
+    Wp = ctxW.new_page(); Wp.errs = []; Wp.on('pageerror', lambda e: Wp.errs.append(str(e)))
+    Wp.goto(BASE + '/#me'); Wp.wait_for_selector('#sheet.on'); Wp.wait_for_timeout(1500)
+    check('WALLET' in txt(Wp, '#sheet') and 'OPENS SOON' in txt(Wp, '#sheet') and Wp.locator('[data-act=topup]').count() == 0, 'payments off: the wallet says it opens soon, nothing to press')
+    check('HI8 PASS' in txt(Wp, '#sheet') and 'NO HI8 FEE ON ANY SEAT' in txt(Wp, '#sheet') and 'FEE-FREE ANYWAY' in txt(Wp, '#sheet'), 'the Pass: what it gives, and that the pilot is fee-free anyway')
+    sql("update public.app_settings set value = 'true' where key = 'payments_live'")
+    asked = []
+    def fake_fn(route):
+        asked.append(json.loads(route.request.post_data)); route.fulfill(status=200, content_type='application/json', body=json.dumps({'url': BASE + '/?paid=topup#me'}))
+    ctxW.route(re.compile(r'.*/functions/v1/stripe-checkout'), fake_fn)
+    Wp.reload(); Wp.wait_for_selector('#sheet.on'); Wp.wait_for_timeout(1500)
+    check(Wp.locator('[data-act=topup]').count() == 3, 'payments on: top up €10, €20 or €50')
+    Wp.locator('[data-act=topup][data-cents="2000"]').click(); Wp.wait_for_timeout(1500)
+    check(asked and asked[0]['kind'] == 'topup' and asked[0]['cents'] == 2000 and asked[0]['key'] == T0['key'], 'a €20 top-up goes to Stripe Checkout with the rider\'s key')
+    sql("select public.hi8_topup_paid('toni@example.com', 2000, 'cs_e2e_1')")  # what Stripe's webhook does
+    Wp.wait_for_timeout(3500)
+    check('TOP-UP PAID' in txt(Wp, '#toast') or '€20.00' in txt(Wp, '#sheet'), 'back from Stripe: it says so')
+    Wp.goto(BASE + '/?c=' + wcode); Wp.wait_for_selector('#sheet.on'); Wp.wait_for_timeout(2000)
+    check('PAY €6.00 FROM MY WALLET' in txt(Wp, '#sheet') and 'NO FEE IN THE PILOT' in txt(Wp, '#sheet'), "Toni's seat in Wanda's car: €12 split 2 ways, €6.00, no fee in the pilot")
+    Wp.locator('[data-act=payseat]').click(); Wp.wait_for_timeout(1500)
+    check(sql(f"select sp.status || '|' || sp.share_cents from seat_payments sp join crews c on c.id = sp.crew_id where c.code = '{wcode}'") == 'held|600' and 'PAID IN THE APP' in txt(Wp, '#sheet'), 'paid from the wallet: held until the ride')
+    Wp.goto(BASE + '/#me'); Wp.wait_for_selector('#sheet.on'); Wp.wait_for_timeout(1500)
+    check('€14.00' in txt(Wp, '#sheet') and '€6.00 HELD' in txt(Wp, '#sheet'), 'Me: €14 left, €6 held for the seat')
+    sql("update public.app_settings set value = 'false' where key = 'payments_live'")
+
     print('old links')
     C.goto(BASE + '/B27-Crew.dc.html?c=' + code); C.wait_for_url('**/?c=' + code); C.wait_for_selector('#sheet.on')
     check('KITE CREW'.upper() in txt(C, '#shTitle'), 'an old crew link (emails, chats) opens the crew')
@@ -225,7 +263,7 @@ with sync_playwright() as p:
     N.goto(BASE + '/'); N.wait_for_timeout(2500)
     check('No forecast right now'.upper() in txt(N, '#week') and 'CREWS NEAR YOU' in txt(N, '#crews') and not N.errs, 'Open-Meteo down: says so, crews still work, nothing breaks')
 
-    for name, pg in (('A', A), ('B', B), ('C', C), ('D', D), ('E', E), ('F', F), ('G', G), ('V', V)):
+    for name, pg in (('A', A), ('B', B), ('C', C), ('D', D), ('E', E), ('F', F), ('G', G), ('W', Wp), ('V', V)):
         check(not pg.errs, f'no script errors ({name}): {pg.errs[:2]}')
     br.close()
 print(f'\nALL {ok} APP CHECKS PASSED')

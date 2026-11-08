@@ -71,6 +71,16 @@
         });
       });
   };
+  // a Supabase Edge Function (the Stripe ones): same key, same errors as rpc
+  HI8.fn = function (name, body) {
+    if (!HI8.live) return Promise.reject(Object.assign(new Error('offline_build'), { status: 0 }));
+    var base = String(CFG.functionsUrl || (API + '/functions/v1')).replace(/\/+$/, '');
+    return fetch(base + '/' + name, { method: 'POST', headers: { 'Content-Type': 'application/json', 'apikey': KEY }, body: JSON.stringify(body || {}) })
+      .then(function (r) { return r.json().catch(function () { return null; }).then(function (b) {
+        if (!r.ok) { var e = new Error((b && b.message) || ('HTTP ' + r.status)); e.status = r.status; e.hint = b && b.hint; throw e; }
+        return b;
+      }); });
+  };
   HI8.timeout = function (p, ms) {
     return new Promise(function (res, rej) {
       var t = setTimeout(function () { rej(new Error('timeout')); }, ms);

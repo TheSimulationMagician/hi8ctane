@@ -26,7 +26,9 @@
     slow_down: 'Too many tries from here. Wait a few minutes.', not_today: 'That works on the day of the crew.', unknown_key: 'Sign up again on this phone.', not_in_crew: 'Join the crew first.',
     bad_link: 'Paste a Revolut, PayPal, Tikkie, bunq, Wise, Monzo, Rabobank or ING link.', bad_bizum: 'Bizum needs a Spanish mobile number, like 612 345 678.', bad_cost: 'Between €0 and €500.',
     offline_build: 'Crews need the live site.', no_crew: "This crew link doesn't exist.", sport_soon: 'That sport is coming soon.',
-    no_plan: "That plan isn't on any more.", bad_people: 'Between 1 and 12 people.'
+    no_plan: "That plan isn't on any more.", bad_people: 'Between 1 and 12 people.',
+    payments_off: 'Paying in the app opens soon. Pay the driver directly for now.', no_funds: 'Not enough in your wallet: top up first.', already_paid: 'Your seat is already paid.',
+    not_ready: "Your driver hasn't added what the car costs yet.", wallet_full: 'Your wallet holds up to €100.', pass_active: 'Your Hi8 Pass is already on.', payout_min: 'You can withdraw from €5.', payout_failed: "The transfer didn't go through: your money is back in your wallet."
   };
   function errText(e) {
     if (!e) return 'Something went wrong.';
@@ -570,7 +572,7 @@
         newStart({ spot: q.get('spot') || null, sport: sp && LIVE_SPORTS.indexOf(sp) >= 0 ? sp : null });
       }
     }
-    else if (h === 'me') { S.view = 'me'; if (signedIn()) HI8.loadMine(true).then(renderSheet, noop); }
+    else if (h === 'me') { S.view = 'me'; if (signedIn()) { HI8.loadMine(true).then(renderSheet, noop); loadWallet(); } }
     else if (h === 'city') { S.view = 'city'; }
     else if (/^spot\//.test(h)) { S.view = 'spot'; S.spotSlug = h.slice(5); S.spotDay = S.spotDay || 0; }
     else if (/^soon\//.test(h)) { S.view = 'soon'; S.soonSport = h.slice(5); }
@@ -735,7 +737,7 @@
       C.data = d; C.err = null;
       document.title = SPORT[d.sport].name + ' crew · ' + d.spot_name + ' · ' + dayRel(d.day) + ' ' + hm(d.start);
       if (d.city !== S.city) { S.city = d.city; drawAll(); initMap(); loadForecast(); }
-      if (d.me) startChat();
+      if (d.me) { startChat(); if (!S.wallet) loadWallet(); }
       renderSheet();
       if (C.chat && d.me) setTimeout(function () { var el = $('#chatBox'); if (el) el.scrollIntoView({ block: 'center' }); }, 60);
     }, function (e) { if (S.crew === C) { C.err = errText(e); renderSheet(); } });
@@ -800,11 +802,22 @@
         '<label class="sr" for="payLink">Payment link</label><input class="inp" id="payLink" style="margin-top:8px" inputmode="url" placeholder="or a Revolut / PayPal link" value="' + esc(me.pay_link || '') + '">' +
         '<p class="hint">Split between you and ' + ps.length + ' rider' + (ps.length > 1 ? 's' : '') + ': €' + (me.trip_cost != null ? (me.trip_cost / (ps.length + 1)).toFixed(2) : '–') + ' each, all of it to you' + (me.trip_cost != null && !feeLive() ? ' (the ' + feePct() + '% Hi8 fee on top is free during the pilot)' : '') + '. Your Bizum number is shown only to the riders in your car. Paid: ' +
         ps.map(function (p) { return esc(p.name) + (p.paid ? ' ✓' : ' ·'); }).join(' ') + '</p>' +
+        (S.wallet && S.wallet.live ? '<p class="hint money">Riders can pay their seat in the app: it reaches your wallet the day after the ride, and you withdraw to your bank from Me.</p>' : '') +
         '<button class="big dark" data-act="settle" style="width:100%;margin-top:6px;font-size:17px">SAVE + TELL MY CAR</button></div>';
     }
     if (me.car_with) {
       var d = M.filter(function (m) { return m.member_id === me.car_with; })[0];
       if (!d || d.share == null) return d ? '<div class="box"><h3>YOUR RIDE</h3><p class="hint" style="margin:0">You ride with ' + esc(d.name) + '. When they add what the car cost, your share shows here.</p></div>' : '';
+      var W = S.wallet, inApp = !!(W && (W.seats || []).some(function (x) { return x.code === c.code; })), live = W && W.live && !(me.paid && !inApp); // paid by Bizum before: the old box
+      if (live) {
+        var fee0 = S.settings && S.settings.fee_live === true && !(W.pass && W.pass.active) ? Math.max(Math.round(d.share * 100 * feePct() / 100), Number((S.settings && S.settings.fee_min_cents) || 49)) : 0;
+        var total = Math.round(d.share * 100) + fee0, enough = W.balance_cents >= total;
+        return '<div class="box"><h3>YOUR SHARE <span class="tag ' + (me.paid ? 'good' : 'ok') + '">' + (me.paid ? 'PAID' : euro(total)) + '</span></h3>' +
+          '<p class="hint" style="margin:0 0 10px">' + esc(d.name) + "'s car: €" + Number(d.trip_cost).toFixed(2) + ' split ' + Math.round(d.trip_cost / d.share) + ' ways' + (fee0 ? ', + ' + euro(fee0) + ' Hi8 fee' : (W.pass && W.pass.active ? ', no fee with your Pass' : ', no fee in the pilot')) + '.</p>' +
+          (me.paid ? '<p class="hint money">Paid in the app. ' + esc(d.name) + ' gets it the day after the ride; if the crew is called off or you leave, it comes straight back.</p>'
+            : enough ? '<button class="big join" data-act="payseat" style="width:100%">PAY ' + euro(total) + ' FROM MY WALLET</button><p class="hint">Your wallet: ' + euro(W.balance_cents) + '. Held until the ride.</p>'
+              : '<button class="big join" data-act="topup" data-cents="' + ((W.topups || [2000]).filter(function (c) { return c >= total - W.balance_cents; })[0] || 5000) + '" data-back="crew" style="width:100%">TOP UP ' + euro((W.topups || [2000]).filter(function (c) { return c >= total - W.balance_cents; })[0] || 5000).replace('.00', '') + ' AND PAY</button><p class="hint">One top-up covers several seats, with no card fee each time.</p>') + '</div>';
+      }
       return '<div class="box"><h3>YOUR SHARE <span class="tag ' + (me.paid ? 'epic' : 'ok') + '">' + (me.paid ? 'PAID' : '€' + Number(d.share).toFixed(2)) + '</span></h3>' +
         '<p class="hint" style="margin:0 0 10px">' + esc(d.name) + "'s car: €" + Number(d.trip_cost).toFixed(2) + ' split ' + Math.round(d.trip_cost / d.share) + ' ways. ' + feeLine(seatMath(Number(d.trip_cost), Math.round(d.trip_cost / d.share))) + '.</p><div style="display:grid;gap:8px">' +
         (d.bizum ? '<button class="big ghost" data-act="copy" data-text="' + esc(d.bizum.replace(/^\+34/, '')) + '" style="font-size:17px">BIZUM ' + esc(d.bizum.replace(/^\+34(\d{3})(\d{3})(\d{3})$/, '$1 $2 $3')) + ' · COPY</button>' : '') +
@@ -1001,6 +1014,39 @@
     return HI8.rpc('hi8_plans', { p_city: S.city, p_key: HI8.me().key || null }).then(function (P) { S.plans = P || []; drawPlans(); if (S.view === 'plan' || S.view === 'me') renderSheet(); }, function () { S.plans = S.plans || []; });
   }
 
+  // ---- THE WALLET and THE HI8 PASS (Stripe; switched on with payments_live)
+  function loadWallet() {
+    if (!signedIn() || !HI8.live) return Promise.resolve(null);
+    return HI8.withKey('hi8_wallet', {}, { noQueue: true }).then(function (w) { S.wallet = w; if (S.view === 'me' || S.view === 'crew') renderSheet(); return w; }, function () { return null; });
+  }
+  function euro(c) { return money((c || 0) / 100); }
+  function walletBox() {
+    var w = S.wallet;
+    if (!w) return '<div class="box"><h3>WALLET</h3><p class="hint" style="margin:0"><span class="spin"></span> Loading…</p></div>';
+    var kinds = { topup: 'Top-up', seat: 'Seat', refund: 'Refund', earning: 'From your car', payout: 'To your bank', adjust: 'Correction' };
+    return '<div class="box wal"><h3>WALLET <span class="tag good">' + euro(w.balance_cents) + '</span></h3>' +
+      (w.live ? '<p class="hint" style="margin:0 0 10px">Top up once, pay your seats from it: no card fee on every ride. Seat money is held until the crew has ridden; called off or left = straight back.</p>' +
+        '<div class="row">' + (w.topups || [1000, 2000, 5000]).map(function (c) { return '<button class="opt" data-act="topup" data-cents="' + c + '"' + (w.balance_cents + c > w.max_cents ? ' disabled' : '') + '>+ ' + euro(c).replace('.00', '') + '<small>iDEAL, card and more</small></button>'; }).join('') + '</div>' +
+        (w.held_cents ? '<p class="hint">' + euro(w.held_cents) + ' held for seats coming up.</p>' : '') +
+        (w.pending_cents ? '<p class="hint money">' + euro(w.pending_cents) + ' from riders in your car, yours the day after the ride.</p>' : '') +
+        (w.balance_cents >= 500 ? '<button class="opt" data-act="payout" style="margin-top:10px">' + (w.payout_ready ? 'WITHDRAW ' + euro(w.balance_cents) + ' TO MY BANK' : 'SET UP WITHDRAWALS') + '<small>through Stripe, who keep your bank details</small></button>' : '')
+        : '<p class="hint" style="margin:0">Paying in the app opens soon: top up once and pay every seat from it, with no card fee each time. For now, pay your driver directly.</p>') +
+      (w.ledger && w.ledger.length ? '<div class="ledger">' + w.ledger.slice(0, 6).map(function (l) { return '<div><span>' + esc(l.note || kinds[l.kind] || l.kind) + '</span><b class="' + (l.cents < 0 ? 'out' : 'in') + '">' + (l.cents < 0 ? '−' : '+') + euro(Math.abs(l.cents)) + '</b></div>'; }).join('') + '</div>' : '') + '</div>';
+  }
+  function passBox() {
+    var w = S.wallet; if (!w) return '';
+    var perks = '<ul class="perks"><li>No Hi8 fee on any seat</li><li>Crew rates at partner shops, tracks and cable parks</li><li>First pick of seats on EPIC days</li><li>Season stats: days out, euros saved</li></ul>';
+    if (w.pass && w.pass.active) return '<div class="box pass"><h3>HI8 PASS <span class="tag good">ON</span></h3><p class="hint" style="margin:0">' + (w.pass.plan === 'year' ? 'Yearly' : 'Monthly') + (w.pass.until ? ', renews ' + esc(dayLong(String(w.pass.until).slice(0, 10))) : '') + '. Cancel any time from the Stripe receipt email.</p>' + perks + '</div>';
+    var fee = S.settings && S.settings.fee_live === true;
+    return '<div class="box pass"><h3>HI8 PASS <span class="tag">' + euro(w.pass_month_cents) + ' A MONTH</span></h3>' + perks +
+      (w.live && fee ? '<div class="row"><button class="opt" data-act="pass" data-plan="month">' + euro(w.pass_month_cents) + ' A MONTH<small>SEPA or card</small></button><button class="opt" data-act="pass" data-plan="year">' + euro(w.pass_year_cents).replace('.00', '') + ' A YEAR<small>two months free</small></button></div>'
+        : '<p class="hint">Comes with the Hi8 fee: during the pilot every seat is fee-free anyway.</p>') + '</div>';
+  }
+  function topup(cents, back) {
+    toast('<span class="spin"></span> Opening Stripe…', 8000);
+    HI8.fn('stripe-checkout', { key: HI8.me().key, kind: 'topup', cents: Number(cents), back: back || location.href.split('#')[0] + '#me' }).then(function (r) { if (r && r.url) location.href = r.url; }, function (e) { toast(errText(e), 5000); });
+  }
+
   // ---- WHERE YOU START FROM (kept on this phone only)
   function sheetFrom() {
     var h = home(), A = HI8.hubsOf(S.city), T = towns().filter(function (t) { return inRegion(t) && !A.some(function (x) { return HI8.km(x, t) < 1.5; }); });
@@ -1039,6 +1085,7 @@
     var al = m.alerts || [];
     var body = '<div class="sec" style="display:flex;gap:16px;align-items:center">' + (pl ? '<div class="bigplate"><b>#' + pad3(pl) + '</b><small>' + esc((cityObj(S.city).name || '').toUpperCase()) + '</small></div>' : '') +
       '<div><div style="font:400 30px/1 var(--big)">' + esc(m.name || '') + '</div><div class="hint">' + esc(m.email_hint || '') + (m.captain ? ' · captain' : '') + '</div></div></div>' +
+      walletBox() + passBox() +
       '<div class="box"><h3>EMAIL ME NEW CREWS</h3><div class="row">' + LIVE_SPORTS.map(function (k) {
         var on = al.some(function (a) { return a.city === S.city && a.sport === k; });
         return '<button class="opt" data-act="alert" data-sport="' + k + '" data-on="' + (!on) + '" aria-pressed="' + on + '">' + SPORT[k].name.toUpperCase() + '</button>';
@@ -1254,6 +1301,11 @@
       case 'homename': { var hn = ($('#homeName') || {}).value || '', hc = home(); hn = hn.trim().toUpperCase().replace(/\s+/g, ' ').slice(0, 32); if (hc && hn.length >= 2) { hc.name = hn; setHome(hc); afterHome(); toast('Saved: ' + esc(hn) + '.'); } break; }
       case 'clearhome': setHome(null); afterHome(); break;
       case 'startfrom': newStart({}); go('#start'); break;
+      case 'topup': topup(d.cents, d.back === 'crew' ? location.href.split('#')[0] : null); break;
+      case 'payseat': after(HI8.withKey('hi8_pay_seat', { p_code: S.crew.code }, { noQueue: true }), function (dd) { S.crew.data = dd; loadWallet(); renderSheet(); toast('Paid: your seat is yours. Held until the ride.'); }).catch(noop); break;
+      case 'pass': toast('<span class="spin"></span> Opening Stripe…', 8000); HI8.fn('stripe-checkout', { key: HI8.me().key, kind: 'pass', plan: d.plan, back: location.href.split('#')[0] + '#me' }).then(function (r) { if (r && r.url) location.href = r.url; }, function (e) { toast(errText(e), 5000); }); break;
+      case 'payout': toast('<span class="spin"></span> One moment…', 8000); HI8.fn('stripe-checkout', { key: HI8.me().key, kind: 'payout', country: S.city === 'barcelona' ? 'ES' : 'NL', back: location.href.split('#')[0] + '#me' }).then(function (r) {
+          if (r && r.url) location.href = r.url; else if (r && r.done) { toast('On its way: ' + euro(r.cents) + ' to your bank.', 6000); loadWallet(); } }, function (e) { toast(errText(e), 5000); }); break;
       case 'svhub': S.save.hub = d.hub; drawSave(); break;
       case 'svspot': S.save.spot = d.spot; drawSave(); break;
       case 'wkcell': if (d.sport !== S.sport) setSport(d.sport); S.spotDay = Number(d.i); if (d.spot) go('#spot/' + d.spot); break;
@@ -1328,6 +1380,12 @@
   }
   function boot() {
     frame(); sheet = $('#sheet');
+    var paid = P.get('paid');
+    if (paid) { // back from Stripe: the webhook credits the wallet within seconds
+      var q2 = new URLSearchParams(location.search); q2.delete('paid'); history.replaceState(null, '', location.pathname + (q2.toString() ? '?' + q2 : '') + location.hash);
+      setTimeout(function () { toast({ topup: 'Top-up paid: it shows in your wallet in a few seconds.', pass: 'Welcome to the Hi8 Pass.', payout: 'Withdrawals are set up.' }[paid] || 'Done.', 6000); }, 300);
+      [2500, 7000].forEach(function (t) { setTimeout(loadWallet, t); });
+    }
     var stop = P.get('stop');
     if (stop && HI8.live) HI8.rpc('hi8_unsubscribe', { p_token: stop }).then(function (r) { toast(r.stopped ? 'Stopped: no more ' + esc((SPORT[r.sport] || { name: r.sport }).name) + ' crew emails.' : 'Already stopped.', 6000); }, function () { toast('That stop link didn\'t work. Email hello@hi8ctane.com and we\'ll do it.'); });
     drawAll(); initMap();
