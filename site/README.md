@@ -1,17 +1,35 @@
-# The live site (version 1, round 2.7.3)
+# The live site (2.8, the Barcelona pilot)
 
-What runs at hi8ctane.com: the 2.7 website and app screens, with nothing made up. Every crew, rider and count comes from Supabase; every forecast from Open-Meteo. When there's nothing to show, the screens say so. GitHub Pages publishes this folder on every change on main (`.github/workflows/pages.yml`).
+What runs at hi8ctane.com. Two things to do: **JOIN A CREW** or **START A CREW**. The live map and the forecast are there to help you pick. Nothing is made up: every crew, rider and count comes from Supabase, every forecast from Open-Meteo, and when there's nothing to show, the page says so. GitHub Pages publishes this folder on every change on main (`.github/workflows/pages.yml`).
 
-- `index.html` opens the web page on a computer and the phone site on a phone.
-- `B27-*.dc.html` are the screens, run by `support.js` (the same player as in `design/`). The design canvas has them as the page "2.7.2 · real crews, real forecast".
-- `hi8.js` is the data layer every screen shares: Supabase calls with the publishable key, the browser key, the offline queue, crews, your rider profile, and the forecast (Open-Meteo weather, marine and three models, rated per sport by the good-day meter, cached 30 minutes).
-- `live.js` extends the sign-up screens (Get In, onboarding, Founding Night, new city, schools form) without changing how they look.
-- `config.js`: the Supabase URL and publishable key. Never the secret key.
-- After the ride, Try something new, Invite and Getting there are off the live site until they have real data behind them; their old links forward to the crew page or home.
-- `B27-Schools.dc.html`: the partner page for schools and rental shops. `privacy/`, `terms/`: plain-language drafts.
-- Short links: `hi8ctane.com/join`, `/night`, `/schools`, `/city`, `/lisbon`, `/tarifa`, `/berlin`. They keep `?ref=` and `?utm_…`.
+## The app (`index.html`)
 
-## The core loop (2.7.3)
+- `index.html` + `app.css` + `app.js`: one responsive page. Phone: the map on top, then the forecast and the crews, with the two buttons always at the bottom. Computer: the map fills the left, the app sits on the right.
+- `map.js`: the live map, drawn by us on a canvas (no map service, no keys). The wind as a colour field and particles flowing with it, hour by hour with a time slider and play; spots coloured by the good-day rating with the crews coming up there; a pulse where a crew is on now. MTB and MX open on the rain layer. Pan, pinch, zoom.
+- `geo.js`: coastlines, lakes, borders and rivers from Natural Earth (public domain), clipped to each city's region, plus town names. Rebuild it with `scripts/make_geo.py` if a region changes.
+- `fx.js`: the forecast engine. Per spot, hour by hour for 3 days: Météo-France AROME for Barcelona (KNMI HARMONIE for Amsterdam, ICON-D2 for Berlin), with ECMWF, ICON and GFS side by side; waves for sea spots. Each hour is rated per sport:
+  - **kite**: 15-25 kt is the sweet spot; gusts and the wind direction against the beach (onshore, cross-on, side-shore, cross-offshore, offshore = no go; lagoons work in any direction); the kite size for your weight (2.2 x kg / kt, set on Me);
+  - **MTB**: rain now, mud from the last 24 hours of rain, heat, cold, storm gusts;
+  - **MX**: a little rain before = tacky (the best), lots = mud, dry = hard-pack, dust on hot days.
+  The good stretches of each day become windows (up to 4 hours for kite, 5 for MTB and MX), and the best window across the spots is what START suggests.
+- `fonts/`: Anton, Archivo Black and Space Mono, self-hosted (SIL Open Font License), Latin only (`scripts/make_fonts.sh`). No calls to Google Fonts from the app.
+- `og.jpg`: the picture WhatsApp and Instagram show when a link is shared.
+- Links: `/?c=CODE` a crew (`#chat` scrolls to its chat), `/#join`, `/#start` (`?spot=…&sport=…` preselects), `/#spot/<slug>` a spot's hourly forecast, `/#me`, `/?city=amsterdam`, `/?sport=mtb`, `/?stop=TOKEN` (the stop link in alert emails). Landing iterations to test: `/?v=forecast`, `/?v=crews`.
+- The 2.7 app screens (`B27-Landing`, `Web`, `Home`, `Map`, `Spot`, `Start`, `Crew`, `Chat`, `Me`) now forward to the app, so old links in emails and chats keep working. Founding Night, Schools, City, Radio, Get In and onboarding are the 2.7 screens as before. `hi8ctane.com/join` opens JOIN A CREW.
+
+## The pilot rules (`supabase/migrations/0005_pilot.sql`)
+
+- **Anyone with a founding plate starts a crew** (no approval). Crews with rookies stay with approved captains. Back to captains only: Supabase, SQL Editor, `update public.app_settings set value = 'false' where key = 'open_posting';`
+- **Start and sign up in one go**: email, rider name and the crew, one screen, one tap. Same for joining from a crew link.
+- **Duplicates**: the same sport, spot and day starting within 2 hours gets a warning with a JOIN IT button (or post it anyway).
+- **Share**: after posting, a WhatsApp message with the spot, time, wind, seats and the link; riders join in one tap with no app to install.
+- **At the spot**: on the crew's day, "I'm at the spot" and a quick report (ON / MEH / OFF, the kite you're on, or the ground). The crew sees names and notes; the map and everyone else see the report without names.
+- **Alerts**: "email me when someone posts a kite crew in Barcelona" (at most 3 a day, every email has a one-click stop link). People with no account get one with a single email field (and a founding plate).
+- **Settle up with Bizum**: drivers add what the car cost and their Bizum number (shown only to the riders in their car) or a payment link.
+- **Barcelona spots**: kite at Castelldefels, Sant Pere Pescador, Trabucador and Riumar; MTB at Collserola, Garraf and Sant Llorenç del Munt; MX at Rocco's Ranch (Montmeló), ParcMotor Vallgorguina and Bellpuig. Pick-up points: Sants, La Sagrera, Zona Universitària, Gràcia. Every spot has its rules and a place name for directions. Edit them in Table Editor (`spots`, `hubs`); the app has a built-in copy in `hi8.js` for when Supabase can't be reached.
+- **Settings the app reads** (`hi8_settings`): `open_posting`, `pilot_city`, `live_sports` (kite, mtb, mx), `soon_sports` (wing, surf, sup show as "coming soon").
+
+## The core loop (2.7.3, still in place)
 
 - **Post in one tap:** a good-day link (`B27-Start.dc.html?spot=wijk-aan-zee&sp=kite`) opens a quick post with the forecast's best window and the captain's own defaults (level, drive or own way, hub). One tap posts it; "Another day, spot or time" opens the full form.
 - **Join on one screen:** someone with no account types their email, rider name, level and how they get there on the crew page itself (`hi8_quick_join`): they get a founding plate and a place in the crew at once.
@@ -56,7 +74,7 @@ Without a URL and key in `config.js`, `live.js` does nothing and the site is the
 
 ### Switch it on
 
-1. Supabase → SQL Editor: run `supabase/migrations/0001_day_zero.sql`, then `0002_live_signups.sql`, then `0003_crews.sql`, then `0004_core_loop.sql`.
+1. Supabase → SQL Editor: run `supabase/migrations/0001_day_zero.sql`, then `0002_live_signups.sql`, `0003_crews.sql`, `0004_core_loop.sql` and `0005_pilot.sql` (or the one-paste file with all five).
 2. Project Settings → API Keys: copy the project URL and the **publishable** key into `config.js`. Never the secret key.
 3. Push to main. Sign up once on hi8ctane.com and look in Table Editor → `signups`.
 
@@ -73,5 +91,5 @@ The link and Google sign-in land on onboarding, where `live.js` swaps the sign-i
 
 The tables are locked (row-level security, no policies, no table rights for the public key). The browser can only call the `hi8_*` functions, which check every value, never return names or emails, and are rate-limited (20 sign-ups per visitor per 10 minutes, counted by a salted hash of the IP). Signing up gives the browser a random key that only changes its own sign-up. Details in the migration.
 
-Tests: `test/live/`: 67 sign-up checks, 42 crews API checks, 49 core-loop API checks and 53 crew-flow checks in a browser, against Postgres + PostgREST and a stand-in Open-Meteo.
+Tests: `test/live/` (see its README): 55 app checks in a browser, 57 pilot API checks, 63 sign-up checks, 42 crews API checks, 49 core-loop API checks, and 26 forecast-engine checks in `test/unit/`, against Postgres + PostgREST and a stand-in Open-Meteo.
 

@@ -29,12 +29,13 @@ def err(fn, body):
     return b.get('message') if s >= 400 else None
 
 sql("truncate public.signups, public.night_rsvps, public.rider_keys, public.partner_leads, public.rate_hits, public.crews, public.crew_members, public.crew_messages, public.city_requests cascade")
+sql("update public.app_settings set value = 'false' where key = 'open_posting'")  # these checks are for captains-only mode (0005 switches open posting on)
 tomorrow = (datetime.date.today() + datetime.timedelta(days=1)).isoformat()
 yesterday = (datetime.date.today() - datetime.timedelta(days=1)).isoformat()
 
 print('places')
 pl = must('hi8_places', {})
-check(len(pl['spots']) >= 20 and any(s['slug'] == 'wijk-aan-zee' for s in pl['spots']) and len(pl['hubs']) == 7, 'spots and hubs for the forecast and the form')
+check(len(pl['spots']) >= 20 and any(s['slug'] == 'wijk-aan-zee' for s in pl['spots']) and len(pl['hubs']) >= 7, 'spots and hubs for the forecast and the form')
 
 print('people')
 cap = must('hi8_join', {'p_email': 'cap@example.com', 'p_city': 'amsterdam'})['key']
@@ -82,7 +83,7 @@ must('hi8_join_crew', {'p_key': r2, 'p_code': code, 'p_level': 'regular', 'p_get
 check(must('hi8_crew', {'p_code': code})['seats_free'] == 1, 'changing to "my own way" frees the seat')
 
 print('levels')
-c2 = must('hi8_start_crew', dict(crew_args, p_key=cap, p_levels='regular', p_getting='own', p_seats=0))
+c2 = must('hi8_start_crew', dict(crew_args, p_key=cap, p_levels='regular', p_getting='own', p_seats=0, p_force=True))  # same slot on purpose (0005 would warn)
 check(err('hi8_join_crew', {'p_key': r1, 'p_code': c2['code'], 'p_level': 'rookie'}) == 'level', 'regulars-only crew turns rookies away')
 
 print('chat')

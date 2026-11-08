@@ -120,7 +120,7 @@
 
   // ---- Get In ----
   function joinCity() {
-    return knownCity(PARAMS.get('city')) || (store.get('pick', null) || {}).city || 'amsterdam';
+    return knownCity(PARAMS.get('city')) || (store.get('pick', null) || {}).city || knownCity(store.get('city28', null)) || 'barcelona'; // 2.8: Barcelona is the pilot
   }
   function nextAfterJoin() {
     var n = PARAMS.get('next'), c = PARAMS.get('c');
