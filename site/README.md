@@ -22,6 +22,24 @@ The 2.7 identity, kept on purpose: surf mag meets 90s music TV. Cream paper, 3px
 - Links: `/?c=CODE` a crew (`#chat` scrolls to its chat), `/#join`, `/#start` (`?spot=…&sport=…` preselects), `/#spot/<slug>` a spot's hourly forecast, `/#plan/<slug>` a plan, `/#me`, `/?city=amsterdam`, `/?sport=mtb`, `/?stop=TOKEN` (the stop link in alert emails).
 - The 2.7 app screens (`B27-Landing`, `Web`, `Home`, `Map`, `Spot`, `Start`, `Crew`, `Chat`, `Me`) forward to the app, so old links in emails and chats keep working. Founding Night, Schools, City, Get In and onboarding are the 2.7 screens as before. **The radio is off for now**: `B27-Radio` forwards to the app and the radio button is gone from the other screens. `hi8ctane.com/join` opens JOIN A CREW.
 
+## Payments: the wallet and the Hi8 Pass (`supabase/migrations/0008_wallet.sql`, `supabase/functions/`)
+
+- **The wallet:** riders top up €10, €20 or €50 through Stripe Checkout and pay their seats from it, so a €4 seat doesn't carry a card fee of its own (one iDEAL top-up is about €0.29). The wallet holds at most €100.
+- **A seat paid in the app** is held until the crew has ridden. Three hours after the crew ends, it moves to the driver's wallet (every hour, `hi8_release_seats`). If the crew is called off, the rider leaves, or the rider changes cars, the money goes straight back.
+- **Drivers withdraw** from €5, through Stripe Connect Express: Stripe asks for and keeps their bank details, never us.
+- **The Hi8 fee** (`ride_fee_pct`, minimum `fee_min_cents`) is added only when `fee_live` is true, and never for Hi8 Pass members.
+- **The Hi8 Pass:** €3.99 a month or €39 a year, a Stripe subscription (SEPA direct debit or card). It's on sale only once the fee is live.
+- **Off until you switch it on** (`payments_live` false): the app shows "paying in the app opens soon", and Bizum or payment links work as before.
+
+### Switch payments on
+
+1. Create a Stripe account for the business. In Settings → Payment methods, turn on iDEAL, Bancontact, cards and SEPA Direct Debit, plus Bizum or Wero if Stripe offers them on your account. Turn on Connect (Express) for withdrawals.
+2. **Before charging anyone:** confirm with Stripe (or a payments lawyer) that holding riders' top-ups and paying drivers through Connect fits your account. Holding money for others can need a licence. Stripe's marketplace setup is designed for this, but check it for a wallet.
+3. In GitHub, Settings → Secrets and variables → Actions, add `SUPABASE_ACCESS_TOKEN`, `STRIPE_SECRET_KEY` and `STRIPE_WEBHOOK_SECRET` (start with Stripe's test keys). The "Deploy the Stripe functions" workflow then deploys `stripe-checkout` and `stripe-webhook` and stores the keys in Supabase. The keys never go in `config.js`.
+4. Stripe → Developers → Webhooks → Add endpoint `https://ttpryqrjkhlthftdkhju.supabase.co/functions/v1/stripe-webhook`, with the events `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted` and `account.updated`. Copy its signing secret into `STRIPE_WEBHOOK_SECRET`.
+5. Supabase → SQL Editor: `update public.app_settings set value = 'true' where key = 'payments_live';`. When the fee should be charged: `… where key = 'fee_live';`.
+6. The money, any time: `select email, sum(cents) / 100.0 from public.wallet_ledger group by 1;` and `select status, count(*), sum(fee_cents) / 100.0 as fees from public.seat_payments group by 1;`
+
 ## Where you start (`supabase/migrations/0007_starts.sql`)
 
 - No more cities opening at 25 riders. A **region** (the Netherlands, Catalonia) has its spots; **crews leave from wherever riders live**.

@@ -1,0 +1,7 @@
+# Supabase CLI settings for the Edge Functions. The website calls stripe-checkout with the publishable key and the
+# rider's browser key (checked inside the function); Stripe calls stripe-webhook with its signature. Neither uses a JWT.
+[functions.stripe-checkout]
+verify_jwt = false
+
+[functions.stripe-webhook]
+verify_jwt = false
