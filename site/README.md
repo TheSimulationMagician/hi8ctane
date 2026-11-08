@@ -22,9 +22,17 @@ The 2.7 identity, kept on purpose: surf mag meets 90s music TV. Cream paper, 3px
 - Links: `/?c=CODE` a crew (`#chat` scrolls to its chat), `/#join`, `/#start` (`?spot=…&sport=…` preselects), `/#spot/<slug>` a spot's hourly forecast, `/#plan/<slug>` a plan, `/#me`, `/?city=amsterdam`, `/?sport=mtb`, `/?stop=TOKEN` (the stop link in alert emails).
 - The 2.7 app screens (`B27-Landing`, `Web`, `Home`, `Map`, `Spot`, `Start`, `Crew`, `Chat`, `Me`) forward to the app, so old links in emails and chats keep working. Founding Night, Schools, City, Get In and onboarding are the 2.7 screens as before. **The radio is off for now**: `B27-Radio` forwards to the app and the radio button is gone from the other screens. `hi8ctane.com/join` opens JOIN A CREW.
 
+## Where you start (`supabase/migrations/0007_starts.sql`)
+
+- No more cities opening at 25 riders. A **region** (the Netherlands, Catalonia) has its spots; **crews leave from wherever riders live**.
+- A rider sets where they start (their location, rounded to about 1 km, or a town or station from the list). It stays in their browser only. Crews from within about 35 km (or own-way crews within 120 km) show first under CREWS NEAR YOU, and the savings count from there.
+- The first crew posted from a new place adds it as a starting point (`hi8_add_start`: within 160 km of the region's spots, kept to about 100 m, reused when one exists within 1.5 km, at most 10 new places an hour per phone). From then on it's on the list for everyone. Places nobody has started a crew from stay hidden.
+- The card that replaced "not in your city yet" shows where crews leave from and "start one from <your town>".
+- Take a place down: `delete from public.hubs where kind = 'town' and slug = 't-…';` (when no crew uses it).
+
 ## Plans (`supabase/migrations/0006_plans.sql`)
 
-- Days out that are better with others: an **MX day at Moto Club Martorelles** (track and day insurance at the club's prices; bike and gear hire lined up on request), a **wakeboard session at BCP Barcelona Cable Park** (Fòrum) and a **first time on a cable at Olimpic Cable Park** (Castelldefels). Prices only where the place publishes them.
+- Days out that are better with others: an **MX day at Moto Club Martorelles** (€180 a rider, all in: bike, gear, track, insurance and fuel), a **wakeboard session at BCP Barcelona Cable Park** (Fòrum) and a **first time on a cable at Olimpic Cable Park** (Castelldefels). Prices only where the place publishes them.
 - **Add or change a plan** in Supabase, Table Editor, `plans`: slug, city, kind (mx, mtb, kite, wake, other…), title, place, blurb, and optionally price_from, price_note, includes, hours, spot (then the plan gets "start a crew for it"), maps, url, badge, sort. Untick `active` to take one down.
 - **"I'm in"**: a day (or any), how many of you and a note; with no account, just an email (a founding plate comes with it). It lands in `plan_leads`, and the team gets an email once emails are on (`team_email` in Vault, else hello@hi8ctane.com). Who's in: `select * from public.plan_leads order by created_at desc;`
 - **The ride fee**: `update public.app_settings set value = '12' where key = 'ride_fee_pct';` changes what the page shows. `fee_live` stays false until payments go through Hi8ctane.

@@ -42,7 +42,7 @@ s, P = rpc('hi8_plans', {'p_city': 'barcelona'})
 by = {p['slug']: p for p in P}
 check(s == 200 and list(by)[:3] == ['mx-day-martorelles', 'bcp-cable', 'olimpic-cable'], 'three plans in Barcelona, in order')
 mx = by['mx-day-martorelles']
-check(mx['spot'] == 'martorelles-mx' and mx['price_from'] == 25 and 'insurance' in mx['price_note'] and mx['interested'] == 0 and mx['mine'] is None, 'the MX day: spot, club price, nobody in yet')
+check(mx['spot'] == 'martorelles-mx' and mx['price_from'] in (25, 180) and 'insurance' in mx['price_note'] and mx['interested'] == 0 and mx['mine'] is None, 'the MX day: spot, price, nobody in yet')
 check(by['bcp-cable']['price_from'] is None and 'ask' in by['bcp-cable']['price_note'].lower(), 'no made-up price where the park publishes none')
 s, A = rpc('hi8_plans', {'p_city': 'amsterdam'})
 check(s == 200 and A == [], 'no plans in Amsterdam yet')

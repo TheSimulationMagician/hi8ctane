@@ -21,6 +21,7 @@ def check(cond, what):
 def txt(pg, sel='body'): return re.sub(r'\s+', ' ', pg.inner_text(sel)).upper()  # headings are upper-cased by CSS
 
 sql("truncate public.signups, public.night_rsvps, public.rider_keys, public.crews, public.crew_members, public.crew_messages, public.rate_hits, public.outbox, public.spot_reports, public.crew_alerts, public.plan_leads cascade")
+sql("delete from public.hubs where kind = 'town'")
 sql("update public.app_settings set value = 'true' where key = 'open_posting'")
 
 with sync_playwright() as p:
@@ -38,7 +39,7 @@ with sync_playwright() as p:
     A.wait_for_selector('.map-canvas'); A.wait_for_timeout(2500)
     check(A.locator('.dock .big.join').inner_text() == 'JOIN A CREW' and A.locator('.dock .big.start').inner_text() == 'START A CREW', 'two options, always on screen')
     check([x.inner_text() for x in A.locator('#sports .stile[data-act=sport]').all()] == ['KITE', 'MTB', 'MX'] and A.locator('#sports .soon').count() == 3 and 'SOON' in A.locator('#sports .soon').first.inner_text(), 'kite, MTB and MX live; the rest coming soon')
-    check('BARCELONA' in A.locator('.tbcity').inner_text().upper() and 'PILOT' in A.locator('.tbcity').inner_text(), 'opens on Barcelona, the pilot')
+    check('CATALONIA' in A.locator('.tbcity').inner_text().upper() and 'PILOT' in A.locator('.tbcity').inner_text(), 'opens on the Barcelona pilot (Catalonia)')
     check(A.locator('.ransom span').count() == 8 and A.locator('.hero .hl').inner_text().startswith('THE GOOD DAYS.'), 'the 2.7 look: the ransom-note logo, the headline')
     A.locator('.mapsec').scroll_into_view_if_needed(); A.wait_for_timeout(1200)
     px = A.evaluate("""(() => { const c = document.querySelector('.map-canvas'), x = c.getContext('2d').getImageData(0, 0, c.width, c.height).data, seen = new Set();
@@ -52,7 +53,7 @@ with sync_playwright() as p:
     check('FILL THE CAR' in sv and '15%' in sv and 'FREE DURING THE PILOT' in sv and re.search(r'A DAY OUT €\d+\.\d\d', sv), 'the savings: solo vs a full car, the 15% fee, free in the pilot')
     A.locator('#save [data-act=svspot][data-spot=castelldefels]').click(); A.wait_for_timeout(200)
     check(txt(A, '#save') != sv and 'TO CASTELLDEFELS AND BACK' in txt(A, '#save'), 'pick another spot: the numbers change')
-    check(A.locator('#plans .pc').count() == 3 and 'MX DAY, BIKE + GEAR' in txt(A, '#plans') and 'FROM €25' in txt(A, '#plans'), 'plans: the MX day and two cable parks')
+    check(A.locator('#plans .pc').count() == 3 and 'MX DAY, ALL IN' in txt(A, '#plans') and 'FROM €180' in txt(A, '#plans'), 'plans: the MX day and two cable parks')
     check(json.loads(A.evaluate("localStorage.getItem('hi8.src')"))['ref'] == 'kaiwave', 'the ref code from the link is kept')
 
     print('START A CREW, as someone with no account')
@@ -170,7 +171,7 @@ with sync_playwright() as p:
     E.goto(BASE + '/'); E.wait_for_timeout(2000)
     E.locator('#plans .pc[data-plan=mx-day-martorelles]').click(); E.wait_for_selector('#sheet.on'); E.wait_for_timeout(300)
     t = txt(E, '#sheet')
-    check('MX DAY, BIKE + GEAR' in t and 'MOTO CLUB MARTORELLES' in t and 'DAY INSURANCE €30' in t and 'START A CREW FOR IT' in t, 'the MX day: what it costs, the club prices, start a crew for it')
+    check('MX DAY, ALL IN' in t and 'MOTO CLUB MARTORELLES' in t and '€180 A RIDER FOR THE FULL DAY, ALL IN' in t and 'START A CREW FOR IT' in t, 'the MX day: €180 all in, start a crew for it')
     E.locator('[data-act=plpeople][data-d="1"]').click(); E.locator('[data-act=plday]').nth(3).click()
     E.fill('#plNote', 'size M, 1.80 m'); E.fill('#plEmail', 'eva@example.com'); E.locator('[data-act=plgo]').click(); E.wait_for_selector('#toast.on', timeout=8000); E.wait_for_timeout(600)
     check("YOU'RE IN" in txt(E, '#toast') and sql("select people || '|' || (day is not null) || '|' || note from plan_leads where email = 'eva@example.com'") == '2|true|size M, 1.80 m', "Eva is in: 2 of them, a day, her note, with a plate")
@@ -179,6 +180,26 @@ with sync_playwright() as p:
     check(sql("select count(*) from plan_leads where email = 'eva@example.com'") == '0', 'NOT ANYMORE takes her out')
     E.goto(BASE + '/#plan/olimpic-cable'); E.wait_for_selector('#sheet.on'); E.wait_for_timeout(1500)
     check('FIRST TIME ON A CABLE' in txt(E, '#sheet') and 'ASK' in txt(E, '#sheet') and 'START A CREW FOR IT' not in txt(E, '#sheet'), 'a plan link opens the plan; no made-up price, no crew for a sport that isn\'t live')
+
+    print('where you start: crews leave from wherever riders live')
+    ctxF, F = fresh()
+    F.goto(BASE + '/?city=amsterdam'); F.wait_for_timeout(2200)
+    check('NETHERLANDS' in txt(F, '.tbcity') and 'SET WHERE YOU START' in txt(F, '#crews') and 'NO CREW FROM YOUR TOWN YET?' in txt(F, '#towns'), 'the Netherlands: one region, set where you start, the towns card')
+    check('25 RIDERS' not in txt(F, 'body'), 'no more "a city opens at 25 riders"')
+    F.locator('#crews [data-act=from]').click(); F.wait_for_selector('#sheet.on'); F.wait_for_timeout(300)
+    check('CREWS LEAVE FROM' in txt(F, '#sheet') and F.locator('[data-act=sethome][data-name=UTRECHT]').count() == 1, 'pick a place: the pick-up points, or your town')
+    F.locator('[data-act=sethome][data-name=UTRECHT]').click(); F.wait_for_timeout(300)
+    check(json.loads(F.evaluate("localStorage.getItem('hi8.home29.amsterdam')"))['name'] == 'UTRECHT' and sql("select count(*) from hubs where kind = 'town'") == '0', 'kept on the phone only: nothing sent yet')
+    F.locator('.sh-foot .big').click(); F.wait_for_timeout(300)
+    check('FROM UTRECHT' in txt(F, '#crews') and 'NO CREW FROM UTRECHT YET?' in txt(F, '#towns') and 'START ONE FROM UTRECHT' in txt(F, '#towns'), 'crews near you, from Utrecht; start the first one from there')
+    F.locator('#towns [data-act=startfrom]').click(); F.wait_for_selector('#sheet.on'); F.wait_for_timeout(600)
+    check('UTRECHT' in F.locator('[data-act=sfhub][aria-pressed=true]').inner_text() and 'NEW' in F.locator('[data-act=sfhub][aria-pressed=true]').inner_text(), 'START picks Utrecht as the pick-up, new')
+    F.fill('#sfEmail', 'ruud@example.com'); F.fill('#sfName', 'Ruud'); F.locator('.sh-foot .big.start').click(); F.wait_for_selector('text=YOUR CREW IS UP', timeout=8000)
+    check(sql("select c.meet_hub || '|' || h.kind from crews c join hubs h on h.city = c.city and h.slug = c.meet_hub where c.city = 'amsterdam'") == 't-utrecht|town', 'posted: Utrecht is a start point now, and the crew leaves from it')
+    check('from Utrecht' in F.locator('a.big.wa').get_attribute('href').replace('%20', ' '), 'the WhatsApp message says it leaves from Utrecht')
+    ctxG, G = fresh()
+    G.goto(BASE + '/?city=amsterdam'); G.wait_for_timeout(2500)
+    check('UTRECHT' in txt(G, '#towns') and '1 CREW' in txt(G, '#towns'), 'everyone now sees Utrecht on the list, with its crew')
 
     print('old links')
     C.goto(BASE + '/B27-Crew.dc.html?c=' + code); C.wait_for_url('**/?c=' + code); C.wait_for_selector('#sheet.on')
@@ -204,7 +225,7 @@ with sync_playwright() as p:
     N.goto(BASE + '/'); N.wait_for_timeout(2500)
     check('No forecast right now'.upper() in txt(N, '#week') and 'CREWS NEAR YOU' in txt(N, '#crews') and not N.errs, 'Open-Meteo down: says so, crews still work, nothing breaks')
 
-    for name, pg in (('A', A), ('B', B), ('C', C), ('D', D), ('E', E), ('V', V)):
+    for name, pg in (('A', A), ('B', B), ('C', C), ('D', D), ('E', E), ('F', F), ('G', G), ('V', V)):
         check(not pg.errs, f'no script errors ({name}): {pg.errs[:2]}')
     br.close()
 print(f'\nALL {ok} APP CHECKS PASSED')
