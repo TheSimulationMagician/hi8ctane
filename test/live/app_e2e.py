@@ -1,7 +1,8 @@
-# TEST ONLY. The 2.8 app (site/index.html) in a real browser against Postgres + PostgREST and the stand-in
+# TEST ONLY. The 2.9 app (site/index.html) in a real browser against Postgres + PostgREST and the stand-in
 # Open-Meteo: the live map, the two options (start a crew, join a crew) for people with no account, sharing,
 # the duplicate warning, the crew chat, settling up with Bizum, checking in and reporting, alerts and the stop
-# link, Me, the spot forecast tables, old links, the desktop layout, the landing iterations, no forecast.
+# link, Me, the spot forecast tables, the week ahead, savings and the ride fee, ride with a buddy, plans, old links,
+# the desktop layout, no forecast.
 import json, os, re, subprocess, datetime
 from playwright.sync_api import sync_playwright
 
@@ -19,7 +20,7 @@ def check(cond, what):
     ok += 1; print('  ok ·', what)
 def txt(pg, sel='body'): return re.sub(r'\s+', ' ', pg.inner_text(sel)).upper()  # headings are upper-cased by CSS
 
-sql("truncate public.signups, public.night_rsvps, public.rider_keys, public.crews, public.crew_members, public.crew_messages, public.rate_hits, public.outbox, public.spot_reports, public.crew_alerts cascade")
+sql("truncate public.signups, public.night_rsvps, public.rider_keys, public.crews, public.crew_members, public.crew_messages, public.rate_hits, public.outbox, public.spot_reports, public.crew_alerts, public.plan_leads cascade")
 sql("update public.app_settings set value = 'true' where key = 'open_posting'")
 
 with sync_playwright() as p:
@@ -36,13 +37,22 @@ with sync_playwright() as p:
     A.goto(BASE + '/?ref=kaiwave')
     A.wait_for_selector('.map-canvas'); A.wait_for_timeout(2500)
     check(A.locator('.dock .big.join').inner_text() == 'JOIN A CREW' and A.locator('.dock .big.start').inner_text() == 'START A CREW', 'two options, always on screen')
-    check([x.inner_text() for x in A.locator('.sports .sp[data-act=sport]').all()] == ['KITE', 'MTB', 'MX'] and 'SOON' in A.locator('.sports .soon').inner_text(), 'kite, MTB and MX live; the rest coming soon')
-    check('BARCELONA' in A.locator('.city').inner_text().upper() and 'PILOT' in A.locator('.city').inner_text(), 'opens on Barcelona, the pilot')
+    check([x.inner_text() for x in A.locator('#sports .stile[data-act=sport]').all()] == ['KITE', 'MTB', 'MX'] and A.locator('#sports .soon').count() == 3 and 'SOON' in A.locator('#sports .soon').first.inner_text(), 'kite, MTB and MX live; the rest coming soon')
+    check('BARCELONA' in A.locator('.tbcity').inner_text().upper() and 'PILOT' in A.locator('.tbcity').inner_text(), 'opens on Barcelona, the pilot')
+    check(A.locator('.ransom span').count() == 8 and A.locator('.hero .hl').inner_text().startswith('THE GOOD DAYS.'), 'the 2.7 look: the ransom-note logo, the headline')
+    A.locator('.mapsec').scroll_into_view_if_needed(); A.wait_for_timeout(1200)
     px = A.evaluate("""(() => { const c = document.querySelector('.map-canvas'), x = c.getContext('2d').getImageData(0, 0, c.width, c.height).data, seen = new Set();
                         for (let i = 0; i < x.length; i += 4 * 997) seen.add(x[i] >> 4 << 8 | x[i + 1] >> 4 << 4 | x[i + 2] >> 4); return seen.size; })()""")
     check(px > 25, f'the map is drawn: wind colours, coast, spots ({px} colours)')
-    check('KITE FORECAST'.upper() in txt(A, '#best') and 'AROME'.upper() in txt(A, '#best') and ('BEST WINDOW'.upper() in txt(A, '#best') or 'No good'.upper() in txt(A, '#best')), 'the forecast: the sharp model, the best window')
-    check('No Kite crews yet in Barcelona'.upper() in txt(A, '#crews'), 'no crews yet: says so, and offers to start the first')
+    check('THE WEEK AHEAD' in txt(A, '#week') and A.locator('#week .wc').count() == 21 and 'AROME' in txt(A, '#week'), 'the week ahead: kite, MTB and MX x 7 days, and where it comes from')
+    check('THE BEST WINDOW' in txt(A, '#best') and ('MODELS' in txt(A, '#best') or 'NO GOOD' in txt(A, '#best')), 'the best window, with the numbers and the models')
+    check('No Kite crew yet'.upper() in txt(A, '#crews'), 'no crews yet: says so, and offers to start the first')
+    check('SAFER' in txt(A, '#buddy') and 'MORE FUN' in txt(A, '#buddy') and 'SOMEONE SEES YOU GO OUT' in txt(A, '#buddy'), 'ride with a buddy: safer, more fun')
+    sv = txt(A, '#save')
+    check('FILL THE CAR' in sv and '15%' in sv and 'FREE DURING THE PILOT' in sv and re.search(r'A DAY OUT €\d+\.\d\d', sv), 'the savings: solo vs a full car, the 15% fee, free in the pilot')
+    A.locator('#save [data-act=svspot][data-spot=castelldefels]').click(); A.wait_for_timeout(200)
+    check(txt(A, '#save') != sv and 'TO CASTELLDEFELS AND BACK' in txt(A, '#save'), 'pick another spot: the numbers change')
+    check(A.locator('#plans .pc').count() == 3 and 'MX DAY, BIKE + GEAR' in txt(A, '#plans') and 'FROM €25' in txt(A, '#plans'), 'plans: the MX day and two cable parks')
     check(json.loads(A.evaluate("localStorage.getItem('hi8.src')"))['ref'] == 'kaiwave', 'the ref code from the link is kept')
 
     print('START A CREW, as someone with no account')
@@ -70,7 +80,7 @@ with sync_playwright() as p:
           'posted: a WhatsApp message with the spot, the time, the wind, the seats and the link')
     check(sql(f"select s.plate || '|' || s.source || '|' || s.ref || '|' || c.note from crews c join signups s on lower(s.email) = c.host_email where c.code = '{code}'") == '1|start|kaiwave|Bring a 9',
           'one go: signed up with plate #1 (and the ref), crew posted')
-    check(A.locator('.plate').inner_text() == '#001', 'the plate shows in the top bar')
+    check(A.locator('#plate').inner_text() == '#001', 'the plate shows in the top bar')
 
     print('the same crew again')
     A.locator('[data-act=crew]').last.click(); A.wait_for_selector('#sheet .hero', timeout=8000); A.wait_for_timeout(500)
@@ -122,8 +132,8 @@ with sync_playwright() as p:
     check('LIVE NOW'.upper() in txt(C, '#crews'), 'the crew card says LIVE NOW')
 
     print('alerts and the stop link')
-    C.locator('.sports [data-sport=mx]').click(); C.wait_for_timeout(400)
-    check('No MX crews yet'.upper() in txt(C, '#crews'), 'MX: nothing yet')
+    C.locator('#sports [data-sport=mx]').click(); C.wait_for_timeout(400)
+    check('No MX crew yet'.upper() in txt(C, '#crews'), 'MX: nothing yet')
     C.fill('#alertEmail', 'noor@example.com'); C.locator('#crews form button').click(); C.wait_for_timeout(1500)
     check('founding plate #003'.upper() in txt(C, '#toast') and sql("select sport from crew_alerts where email = 'noor@example.com'") == 'mx', 'one email: plate #003 and an MX alert')
     check('STOP THESE EMAILS'.upper() in txt(C, '#crews'), 'and the button now offers to stop them')
@@ -148,6 +158,28 @@ with sync_playwright() as p:
     t = txt(C, '#sheet')
     check('GROUND'.upper() in t and 'RAIN 24H'.upper() in t and 'C-61'.upper() in t, 'MX: the ground from the last 24 h of rain, and the track notes')
 
+    print('the week ahead, a seat split, plans')
+    C.goto(BASE + '/'); C.wait_for_timeout(2200)
+    C.locator('#week .wc[data-sport=kite][data-i="2"]').click(); C.wait_for_selector('table.fx'); C.wait_for_timeout(300)
+    check(C.locator('[data-act=spotday][aria-pressed=true]').get_attribute('data-i') == '2' and 'MODELS' in txt(C, '.dinfo') and 'WATER' in txt(C, '.dinfo'), 'a day in the week opens its hour-by-hour, with rain, water, light and the models')
+    check(C.locator('[data-act=spotday]').count() == 7, 'the spot forecast goes 7 days out')
+    ctxE, E = fresh()
+    E.goto(BASE + '/?c=' + code); E.wait_for_selector('#sheet.on'); E.wait_for_timeout(1200)
+    t = txt(E, '#sheet')
+    check('A SEAT, SPLIT' in t and 'YOU SAVE €' in t and 'HI8 FEE 15%' in t and 'FREE' in t, 'a crew shows what a seat saves, and the fee (free in the pilot)')
+    E.goto(BASE + '/'); E.wait_for_timeout(2000)
+    E.locator('#plans .pc[data-plan=mx-day-martorelles]').click(); E.wait_for_selector('#sheet.on'); E.wait_for_timeout(300)
+    t = txt(E, '#sheet')
+    check('MX DAY, BIKE + GEAR' in t and 'MOTO CLUB MARTORELLES' in t and 'DAY INSURANCE €30' in t and 'START A CREW FOR IT' in t, 'the MX day: what it costs, the club prices, start a crew for it')
+    E.locator('[data-act=plpeople][data-d="1"]').click(); E.locator('[data-act=plday]').nth(3).click()
+    E.fill('#plNote', 'size M, 1.80 m'); E.fill('#plEmail', 'eva@example.com'); E.locator('[data-act=plgo]').click(); E.wait_for_selector('#toast.on', timeout=8000); E.wait_for_timeout(600)
+    check("YOU'RE IN" in txt(E, '#toast') and sql("select people || '|' || (day is not null) || '|' || note from plan_leads where email = 'eva@example.com'") == '2|true|size M, 1.80 m', "Eva is in: 2 of them, a day, her note, with a plate")
+    check("YOU'RE IN" in txt(E, '#plans') and '1 IN' in txt(E, '#plans'), 'the plan card says so, and counts her')
+    E.locator('[data-act=plleave]').click(); E.wait_for_timeout(1000)
+    check(sql("select count(*) from plan_leads where email = 'eva@example.com'") == '0', 'NOT ANYMORE takes her out')
+    E.goto(BASE + '/#plan/olimpic-cable'); E.wait_for_selector('#sheet.on'); E.wait_for_timeout(1500)
+    check('FIRST TIME ON A CABLE' in txt(E, '#sheet') and 'ASK' in txt(E, '#sheet') and 'START A CREW FOR IT' not in txt(E, '#sheet'), 'a plan link opens the plan; no made-up price, no crew for a sport that isn\'t live')
+
     print('old links')
     C.goto(BASE + '/B27-Crew.dc.html?c=' + code); C.wait_for_url('**/?c=' + code); C.wait_for_selector('#sheet.on')
     check('KITE CREW'.upper() in txt(C, '#shTitle'), 'an old crew link (emails, chats) opens the crew')
@@ -160,20 +192,19 @@ with sync_playwright() as p:
     ctxD, D = fresh(1440, 900)
     D.goto(BASE + '/'); D.wait_for_timeout(2000)
     m, pnl = D.locator('.mapwrap').bounding_box(), D.locator('.panel').bounding_box()
-    check(m['x'] == 0 and m['width'] > 900 and pnl['x'] >= 990 and m['height'] > 800, 'computer: the map fills the left, the app on the right')
+    check(m['x'] == 0 and m['width'] > 900 and pnl['x'] >= 960 and m['height'] > 800, 'computer: the map fills the left, the app on the right')
+    check(D.locator('.hero').bounding_box()['height'] > 300, 'computer: the hero keeps its full height')
     ctxV, V = fresh()
-    V.goto(BASE + '/?v=crews'); V.wait_for_timeout(1500)
-    check(V.locator('#crews').bounding_box()['y'] < V.locator('.mapwrap').bounding_box()['y'], '?v=crews: crews first')
-    V.goto(BASE + '/?v=forecast'); V.wait_for_timeout(1500)
-    check(V.locator('#best').bounding_box()['y'] < V.locator('.mapwrap').bounding_box()['y'], '?v=forecast: forecast first')
+    V.goto(BASE + '/'); V.wait_for_timeout(1500)
+    check(V.locator('#crews').bounding_box()['y'] < V.locator('.mapwrap').bounding_box()['y'] < V.locator('#week').bounding_box()['y'], 'phone: crews first, then the map, then the week')
 
     print('no forecast')
     ctxN, N = fresh()
     N.route(re.compile(r'.*/v1/(forecast|marine).*'), lambda r: r.abort())
     N.goto(BASE + '/'); N.wait_for_timeout(2500)
-    check('No forecast right now'.upper() in txt(N, '#best') and 'KITE CREWS'.upper() in txt(N, '#crews') and not N.errs, 'Open-Meteo down: says so, crews still work, nothing breaks')
+    check('No forecast right now'.upper() in txt(N, '#week') and 'CREWS NEAR YOU' in txt(N, '#crews') and not N.errs, 'Open-Meteo down: says so, crews still work, nothing breaks')
 
-    for name, pg in (('A', A), ('B', B), ('C', C), ('D', D), ('V', V)):
+    for name, pg in (('A', A), ('B', B), ('C', C), ('D', D), ('E', E), ('V', V)):
         check(not pg.errs, f'no script errors ({name}): {pg.errs[:2]}')
     br.close()
 print(f'\nALL {ok} APP CHECKS PASSED')

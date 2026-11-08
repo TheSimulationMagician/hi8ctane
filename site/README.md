@@ -1,21 +1,33 @@
-# The live site (2.8, the Barcelona pilot)
+# The live site (2.9: the 2.7 look, crews first)
 
-What runs at hi8ctane.com. Two things to do: **JOIN A CREW** or **START A CREW**. The live map and the forecast are there to help you pick. Nothing is made up: every crew, rider and count comes from Supabase, every forecast from Open-Meteo, and when there's nothing to show, the page says so. GitHub Pages publishes this folder on every change on main (`.github/workflows/pages.yml`).
+What runs at hi8ctane.com. Two things to do: **JOIN A CREW** or **START A CREW**. Everything else on the page makes the case for riding together: the forecast, what a seat saves, why a buddy beats riding alone, and days out with others. Nothing is made up: every crew, rider, plan and count comes from Supabase, every forecast from Open-Meteo, and when there's nothing to show, the page says so. GitHub Pages publishes this folder on every change on main (`.github/workflows/pages.yml`).
+
+## The look
+
+The 2.7 identity, kept on purpose: surf mag meets 90s music TV. Cream paper, 3px ink outlines, hard offset shadows (black, pink on the dark blocks), square corners, halftone steel blues, lime and hot pink. Anton for headlines, Archivo Black for labels, Space Mono for data. The ransom-note wordmark cuts one letter each from Archivo Black, Anton, Bowlby One, Special Elite, Shrikhand and Permanent Marker. Verdicts: EPIC pink, GOOD lime, OK yellow, NO GO sand. Buttons are the clipped-corner `.jn` stickers; crews are the `.sc` cards (sport tile, the spot on its halftone, chips, who's going, the seat price).
 
 ## The app (`index.html`)
 
-- `index.html` + `app.css` + `app.js`: one responsive page. Phone: the map on top, then the forecast and the crews, with the two buttons always at the bottom. Computer: the map fills the left, the app sits on the right.
-- `map.js`: the live map, drawn by us on a canvas (no map service, no keys). The wind as a colour field and particles flowing with it, hour by hour with a time slider and play; spots coloured by the good-day rating with the crews coming up there; a pulse where a crew is on now. MTB and MX open on the rain layer. Pan, pinch, zoom.
+- `index.html` + `app.css` + `app.js`: one responsive page. Phone, top to bottom: the hero (the headline, the sport tiles, JOIN / START), **crews near you** (a swipe rail), live reports, **the live map**, **the week ahead** (kite, MTB and MX x 7 days at the best spot each day), **the best window** (with wind, gusts, kite size, waves, water, rain chance, light and how many models agree), **ride with a buddy** (safer, more fun), **fill the car** (what a seat costs solo vs shared, with the Hi8 fee), **plans**, how we keep it good, Founding Night, other cities, schools, and "see you out there". JOIN / START stay docked at the bottom. Computer: the map fills the left, the page scrolls on the right.
+- `map.js`: the live map, drawn by us on a canvas (no map service, no keys). The wind as a colour field and particles flowing with it, hour by hour with a time slider and play; spots as square stickers in the verdict colours, a yellow tag with the crews coming up there, a pulse where a crew is on now. MTB and MX open on the rain layer. Pan, pinch, zoom.
 - `geo.js`: coastlines, lakes, borders and rivers from Natural Earth (public domain), clipped to each city's region, plus town names. Rebuild it with `scripts/make_geo.py` if a region changes.
-- `fx.js`: the forecast engine. Per spot, hour by hour for 3 days: Météo-France AROME for Barcelona (KNMI HARMONIE for Amsterdam, ICON-D2 for Berlin), with ECMWF, ICON and GFS side by side; waves for sea spots. Each hour is rated per sport:
+- `fx.js`: the forecast engine. Per spot, hour by hour for **7 days**: Météo-France AROME for Barcelona for the first two days (KNMI HARMONIE for Amsterdam, ICON-D2 for Berlin), then the best global model, with ECMWF, ICON and GFS side by side all week (wind and rain); waves, wave period and water temperature for sea spots; rain chance, cloud, temperatures, sunrise and sunset. Each hour is rated per sport:
   - **kite**: 15-25 kt is the sweet spot; gusts and the wind direction against the beach (onshore, cross-on, side-shore, cross-offshore, offshore = no go; lagoons work in any direction); the kite size for your weight (2.2 x kg / kt, set on Me);
   - **MTB**: rain now, mud from the last 24 hours of rain, heat, cold, storm gusts;
   - **MX**: a little rain before = tacky (the best), lots = mud, dry = hard-pack, dust on hot days.
-  The good stretches of each day become windows (up to 4 hours for kite, 5 for MTB and MX), and the best window across the spots is what START suggests.
-- `fonts/`: Anton, Archivo Black and Space Mono, self-hosted (SIL Open Font License), Latin only (`scripts/make_fonts.sh`). No calls to Google Fonts from the app.
+  The good stretches of each day become windows (up to 4 hours for kite, 5 for MTB and MX). For each window, `FX.agreement` counts how many of ECMWF, ICON and GFS see the same (kite: average wind within 4 kt; MTB/MX: rain or no rain): SURE, LIKELY or UNSURE.
+- **The money** (`seatMath` in `app.js`): fuel for the round trip (6.5 L/100 km at €1.95, roads 30% longer than the crow flies) split by the people in the car. Riders add the Hi8 fee on top of their share (`ride_fee_pct`, 15); the driver always gets the full share. While `fee_live` is false (the pilot) the fee is shown crossed out, "free during the pilot", and nothing is charged.
+- `fonts/`: Anton, Archivo Black, Space Mono, Bowlby One, Shrikhand (SIL Open Font License), Special Elite and Permanent Marker (Apache 2.0), self-hosted, cut to what's used (`scripts/make_fonts.sh`). No calls to Google Fonts from the app.
 - `og.jpg`: the picture WhatsApp and Instagram show when a link is shared.
-- Links: `/?c=CODE` a crew (`#chat` scrolls to its chat), `/#join`, `/#start` (`?spot=…&sport=…` preselects), `/#spot/<slug>` a spot's hourly forecast, `/#me`, `/?city=amsterdam`, `/?sport=mtb`, `/?stop=TOKEN` (the stop link in alert emails). Landing iterations to test: `/?v=forecast`, `/?v=crews`.
-- The 2.7 app screens (`B27-Landing`, `Web`, `Home`, `Map`, `Spot`, `Start`, `Crew`, `Chat`, `Me`) now forward to the app, so old links in emails and chats keep working. Founding Night, Schools, City, Radio, Get In and onboarding are the 2.7 screens as before. `hi8ctane.com/join` opens JOIN A CREW.
+- Links: `/?c=CODE` a crew (`#chat` scrolls to its chat), `/#join`, `/#start` (`?spot=…&sport=…` preselects), `/#spot/<slug>` a spot's hourly forecast, `/#plan/<slug>` a plan, `/#me`, `/?city=amsterdam`, `/?sport=mtb`, `/?stop=TOKEN` (the stop link in alert emails).
+- The 2.7 app screens (`B27-Landing`, `Web`, `Home`, `Map`, `Spot`, `Start`, `Crew`, `Chat`, `Me`) forward to the app, so old links in emails and chats keep working. Founding Night, Schools, City, Get In and onboarding are the 2.7 screens as before. **The radio is off for now**: `B27-Radio` forwards to the app and the radio button is gone from the other screens. `hi8ctane.com/join` opens JOIN A CREW.
+
+## Plans (`supabase/migrations/0006_plans.sql`)
+
+- Days out that are better with others: an **MX day at Moto Club Martorelles** (track and day insurance at the club's prices; bike and gear hire lined up on request), a **wakeboard session at BCP Barcelona Cable Park** (Fòrum) and a **first time on a cable at Olimpic Cable Park** (Castelldefels). Prices only where the place publishes them.
+- **Add or change a plan** in Supabase, Table Editor, `plans`: slug, city, kind (mx, mtb, kite, wake, other…), title, place, blurb, and optionally price_from, price_note, includes, hours, spot (then the plan gets "start a crew for it"), maps, url, badge, sort. Untick `active` to take one down.
+- **"I'm in"**: a day (or any), how many of you and a note; with no account, just an email (a founding plate comes with it). It lands in `plan_leads`, and the team gets an email once emails are on (`team_email` in Vault, else hello@hi8ctane.com). Who's in: `select * from public.plan_leads order by created_at desc;`
+- **The ride fee**: `update public.app_settings set value = '12' where key = 'ride_fee_pct';` changes what the page shows. `fee_live` stays false until payments go through Hi8ctane.
 
 ## The pilot rules (`supabase/migrations/0005_pilot.sql`)
 
@@ -26,8 +38,8 @@ What runs at hi8ctane.com. Two things to do: **JOIN A CREW** or **START A CREW**
 - **At the spot**: on the crew's day, "I'm at the spot" and a quick report (ON / MEH / OFF, the kite you're on, or the ground). The crew sees names and notes; the map and everyone else see the report without names.
 - **Alerts**: "email me when someone posts a kite crew in Barcelona" (at most 3 a day, every email has a one-click stop link). People with no account get one with a single email field (and a founding plate).
 - **Settle up with Bizum**: drivers add what the car cost and their Bizum number (shown only to the riders in their car) or a payment link.
-- **Barcelona spots**: kite at Castelldefels, Sant Pere Pescador, Trabucador and Riumar; MTB at Collserola, Garraf and Sant Llorenç del Munt; MX at Rocco's Ranch (Montmeló), ParcMotor Vallgorguina and Bellpuig. Pick-up points: Sants, La Sagrera, Zona Universitària, Gràcia. Every spot has its rules and a place name for directions. Edit them in Table Editor (`spots`, `hubs`); the app has a built-in copy in `hi8.js` for when Supabase can't be reached.
-- **Settings the app reads** (`hi8_settings`): `open_posting`, `pilot_city`, `live_sports` (kite, mtb, mx), `soon_sports` (wing, surf, sup show as "coming soon").
+- **Barcelona spots**: kite at Castelldefels, Sant Pere Pescador, Trabucador and Riumar; MTB at Collserola, Garraf and Sant Llorenç del Munt; MX at Moto Club Martorelles, Rocco's Ranch (Montmeló), ParcMotor Vallgorguina and Bellpuig. Pick-up points: Sants, La Sagrera, Zona Universitària, Gràcia. Every spot has its rules and a place name for directions. Edit them in Table Editor (`spots`, `hubs`); the app has a built-in copy in `hi8.js` for when Supabase can't be reached.
+- **Settings the app reads** (`hi8_settings`): `open_posting`, `pilot_city`, `live_sports` (kite, mtb, mx), `soon_sports` (wing, surf, sup show as "coming soon"), `ride_fee_pct` (15) and `fee_live` (false).
 
 ## The core loop (2.7.3, still in place)
 

@@ -2,9 +2,10 @@
 
 They run the real thing locally: Postgres 16 with both migrations, PostgREST (the same REST server Supabase uses) in front of it, and a headless Chromium clicking through the screens.
 
-- `app_e2e.py`: 55 checks on the 2.8 app in a browser: the live map and forecast, START A CREW and JOIN A CREW for people with no account, the WhatsApp message, the duplicate warning, the chat, settling up with Bizum, checking in and reporting, alerts and their stop link, Me, the spot tables, old links forwarding, the desktop layout, the landing iterations, and Open-Meteo being down.
+- `app_e2e.py`: 70 checks on the 2.9 app in a browser: the 2.7 look (logo, headline, tiles), the live map, the week ahead and the best window, ride with a buddy, the savings with the 15% fee (free in the pilot), plans and "I'm in", START A CREW and JOIN A CREW for people with no account, the WhatsApp message, the duplicate warning, the chat, settling up with Bizum, checking in and reporting, alerts and their stop link, Me, the 7-day spot tables, old links forwarding, the desktop layout, and Open-Meteo being down.
 - `pilot_api.py`: 57 checks on 0005: open posting and its switch, rookie crews for captains only, coming-soon sports, duplicates, start-and-sign-up in one go, alerts (at most 3 a day, the stop link), Bizum only for your car, check-ins and reports, the live map feed without names, rate limits, erase.
-- `../unit/fx_test.mjs`: 26 checks on the forecast engine (`site/fx.js`): kite, MTB and MX ratings, shore classes, kite size, windows, models, the map grid.
+- `plans_api.py`: 26 checks on 0006: the ride fee setting, the Martorelles MX spot, plans and their counts, "I'm in" with or without an account, updates not counted twice, the team email, switched-off plans, rate limits, erase.
+- `../unit/fx_test.mjs`: 31 checks on the forecast engine (`site/fx.js`): kite, MTB and MX ratings, shore classes, kite size, windows, a week ahead, a day's numbers (rain chance, cloud, waves, water, light), model agreement, the map grid.
 - `e2e.py`: 63 checks. The old landing link → Get In → onboarding; the Founding Night RSVP without an account (Get In, then straight back); "I'm in" and "I'll captain" for a new city; the schools form; a sign-up made offline that goes out on the next page; the email-link sign-in; and that the website can't read tables, call internal functions, skip the waiver or flood the list.
 - `crews_api.py`: 42 checks on the crews functions in 0003: captains only, seats and cars, full crews, leaving, calling off, chat for members only, erase.
 - `core_api.py`: 49 checks on 0004: captains in any city, the one-go join, settling up and payment links, every email the outbox queues, sending through Resend (pg_net stubbed), error reports, access.
@@ -23,6 +24,7 @@ psql -h 127.0.0.1 -p 5440 -U postgres -d hi8 -f supabase/migrations/0002_live_si
 psql -h 127.0.0.1 -p 5440 -U postgres -d hi8 -f supabase/migrations/0003_crews.sql
 psql -h 127.0.0.1 -p 5440 -U postgres -d hi8 -f supabase/migrations/0004_core_loop.sql
 psql -h 127.0.0.1 -p 5440 -U postgres -d hi8 -f supabase/migrations/0005_pilot.sql
+psql -h 127.0.0.1 -p 5440 -U postgres -d hi8 -f supabase/migrations/0006_plans.sql
 
 # PostgREST 12 (static binary from github.com/PostgREST/postgrest/releases)
 postgrest test/live/postgrest.conf &
@@ -33,7 +35,7 @@ node test/live/serve.mjs site 8802 off &
 
 pip install playwright pillow && playwright install chromium   # crews_api/core_api run in captains-only mode, pilot_api and app_e2e with open posting
 python3 test/live/e2e.py                      # wipes the test database's tables first
-python3 test/live/crews_api.py && python3 test/live/core_api.py && python3 test/live/pilot_api.py
+python3 test/live/crews_api.py && python3 test/live/core_api.py && python3 test/live/pilot_api.py && python3 test/live/plans_api.py
 python3 test/live/app_e2e.py                  # serve.mjs also stands in for Open-Meteo
 node test/unit/fx_test.mjs                    # needs serve.mjs on 8801
 python3 test/live/pixdiff.py 8802 <port of another copy of the site> out/
