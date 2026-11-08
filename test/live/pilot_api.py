@@ -40,7 +40,7 @@ bcn = {x['slug']: x for x in pl['spots'] if x['city'] == 'barcelona'}
 check(all(k in bcn for k in ('castelldefels', 'sant-pere-pescador', 'trabucador', 'riumar', 'collserola', 'garraf-park', 'sant-llorenc', 'roccos-ranch', 'vallgorguina-mx', 'bellpuig-mx')),
       'Barcelona has kite, MTB and MX spots')
 check(bcn['trabucador']['lake'] is True and bcn['castelldefels']['face'] == 160 and bcn['vallgorguina-mx']['maps'] == 'ParcMotor Vallgorguina', 'lagoon, beach direction and directions are right')
-check(sum(1 for x in pl['spots'] if x['city'] == 'barcelona' and 'mx' in x['sports']) == 3, 'three MX tracks')
+check(sum(1 for x in pl['spots'] if x['city'] == 'barcelona' and 'mx' in x['sports']) == 4, 'four MX tracks (Martorelles since 0006)')
 check(any(h['slug'] == 'zona-uni' for h in pl['hubs']), 'Zona Universitària is a meeting point')
 
 print('anyone with a plate starts a crew')

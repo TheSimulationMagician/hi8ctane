@@ -26,18 +26,20 @@ function fakeMeteo(url) {
     const days = fdays + past, time = [], H = {};
     // yesterday (dry), today (rain before dawn, then a SW breeze), tomorrow (light, rainy), then strong W, then calm
     const plan = [{ w: 14, gd: 6, dir: 240, p: 30, r: 0, t: 12, c: 60 }, { w: 19, gd: 5, dir: 235, p: 10, r: 1.0, night: true, t: 13, c: 20 }, { w: 7, gd: 3, dir: 270, p: 75, r: 0.8, t: 11, c: 85 },
-      { w: 24, gd: 9, dir: 280, p: 20, r: 0, t: 12, c: 40 }, { w: 4, gd: 2, dir: 90, p: 5, r: 0, t: 10, c: 10 }];
+      { w: 24, gd: 9, dir: 280, p: 20, r: 0, t: 12, c: 40 }, { w: 4, gd: 2, dir: 90, p: 5, r: 0, t: 10, c: 10 },
+      // the rest of the week: a sea breeze, a wet day, then a building SW
+      { w: 16, gd: 4, dir: 200, p: 10, r: 0, t: 14, c: 30 }, { w: 9, gd: 5, dir: 250, p: 80, r: 2.5, t: 10, c: 90 }, { w: 21, gd: 6, dir: 225, p: 15, r: 0, t: 13, c: 35 }];
     const coast = lat < 45 ? -4 : 0, inland = lon > 5 || (lat > 52.3 && lat < 52.37 && lon > 4.7) ? -5 : 0;
     for (let d = 0; d < days; d++) for (let h = 0; h < 24; h++) {
       const t = new Date(start.getTime() + (d * 24 + h) * 3600e3).toISOString().slice(0, 13) + ':00';
       time.push(t);
-      const P = plan[Math.max(0, Math.min(4, d - past + 1))], aft = h >= 12 && h <= 16 ? 2 : 0;
+      const P = plan[Math.max(0, Math.min(plan.length - 1, d - past + 1))], aft = h >= 12 && h <= 16 ? 2 : 0;
       const push = (k, v) => (H[k] ||= []).push(v);
       // the map's grid (many points at once) gets some shape: more wind out at sea and in the north-east
       const shape = lats.length >= 20 ? Math.round(6 * Math.sin(lat * 2.1 + lon * 1.3) + 5 * Math.cos(lon * 2.7 - lat) + (lon - 1.8) * 3) : 0;
       const w = Math.max(0, P.w + aft + coast + inland + shape), rain = P.night ? (h >= 2 && h <= 6 ? P.r : 0) : P.r;
       if (marine) {
-        const waves = [[1.8, 7], [1.2, 9], [1.4, 10], [2.4, 7], [0.5, 6]][Math.max(0, Math.min(4, d - past + 1))];
+        const waves = [[1.8, 7], [1.2, 9], [1.4, 10], [2.4, 7], [0.5, 6], [0.8, 6], [1.6, 8], [1.1, 7]][Math.max(0, Math.min(7, d - past + 1))];
         push('wave_height', waves[0]); push('wave_period', waves[1]); push('wave_direction', 280); push('sea_surface_temperature', lat < 45 ? 18.4 : 12.6);
         push('sea_level_height_msl', lat < 45 ? 0.05 * Math.cos(h / 2) : Math.round(0.9 * Math.cos(2 * Math.PI * (h - 15.5 - d * 0.8) / 12.42) * 100) / 100);
       } else if (models) {
@@ -47,6 +49,7 @@ function fakeMeteo(url) {
           if (vars.includes('wind_speed_10m')) push('wind_speed_10m_' + m, mw);
           if (vars.includes('wind_gusts_10m')) push('wind_gusts_10m_' + m, mw + P.gd);
           if (vars.includes('wind_direction_10m')) push('wind_direction_10m_' + m, P.dir + (m === 'gfs_seamless' ? 10 : 0));
+          if (vars.includes('precipitation')) push('precipitation_' + m, m === 'gfs_seamless' && di === 5 ? 0 : rain);
         }
       } else {
         push('wind_speed_10m', w); push('wind_gusts_10m', w + P.gd); push('wind_direction_10m', (P.dir + (lats.length >= 20 ? Math.round(25 * Math.sin(lat * 3 - lon * 2)) : 0) + 360) % 360);

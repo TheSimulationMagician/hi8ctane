@@ -180,6 +180,7 @@
       ['collserola', 'barcelona', 'Collserola', 41.418, 2.115, ['mtb'], null, null, null, false, 'Trails off the Carretera de les Aigües. Walkers have priority.', 'Carretera de les Aigües, Barcelona'],
       ['garraf-park', 'barcelona', 'Garraf park', 41.290, 1.870, ['mtb'], null, null, null, false, 'Rocky, technical trails and little shade: bring water.', 'Parc del Garraf'],
       ['sant-llorenc', 'barcelona', 'Sant Llorenç del Munt', 41.625, 2.020, ['mtb'], null, null, null, false, 'Natural park: ride the marked tracks only. Most loops start from Matadepera.', 'Matadepera'],
+      ['martorelles-mx', 'barcelona', 'MX Martorelles', 41.537, 2.231, ['mx'], null, null, null, false, 'Moto Club Martorelles, Carrer Verneda. Open Saturday 9:00-14:00 and Wednesday 16:00-20:00 (check with the club). Licence or day insurance needed.', 'Moto Club Martorelles'],
       ['roccos-ranch', 'barcelona', "Rocco's Ranch", 41.570, 2.261, ['mx'], null, null, null, false, 'Motocross, TT and flat track at the Circuit de Barcelona-Catalunya. Check open days at roccosranch.es.', "Rocco's Ranch, Montmeló"],
       ['vallgorguina-mx', 'barcelona', 'ParcMotor Vallgorguina', 41.640, 2.505, ['mx'], null, null, null, false, 'C-61 km 15.7. Hard-pack track, 16 jumps, kids track. Bring ID and licence, or buy day insurance there.', 'ParcMotor Vallgorguina'],
       ['bellpuig-mx', 'barcelona', 'Bellpuig', 41.617, 1.019, ['mx'], null, null, null, false, 'World Championship track, about 1 h 30 from Barcelona. Open days vary: check before you drive.', 'Circuit de Motocròs de Bellpuig'],

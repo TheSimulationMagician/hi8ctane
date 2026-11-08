@@ -32,7 +32,7 @@ const spots = [Object.assign({ lat: 41.268, lon: 1.985 }, cdf), { slug: 'trabuca
   { slug: 'collserola', lat: 41.418, lon: 2.115, face: null, lake: false }, { slug: 'vallgorguina-mx', lat: 41.64, lon: 2.505, face: null, lake: false }];
 const D = await FX.fetchCity('barcelona', spots);
 const sp = D.castelldefels;
-check(sp && sp.hours.length === 96 && sp.model === 'meteofrance_seamless', '4 days of hours (yesterday + 3), the sharp model');
+check(sp && sp.hours.length === 192 && sp.model === 'meteofrance_seamless', '8 days of hours (yesterday + a week), the sharp model');
 const today = FX.localNow(sp.offset).slice(0, 10);
 const noon = sp.hours.find((x) => x.t === today + 'T13:00');
 check(noon.w === 18 && noon.m && noon.m.ecmwf_ifs025.w === 17 && noon.m.gfs_seamless.w === 15 && noon.wv === 1.2, 'merged: sharp model wind, three other models, waves');
@@ -52,6 +52,14 @@ const mx = FX.windows(D['vallgorguina-mx'], FX.addDays(today, 0), 'mx', spots[3]
 check(mx.length === 0 || mx[0].ground === 'tacky', 'MX today: tacky after the dawn rain');
 const rank = FX.rankSpots('barcelona', spots.slice(0, 2), 'kite', FX.addDays(today, 2), 11, 15, { kg: 75 });
 check(rank[0].spot.slug === 'trabucador' && rank[1].fx.score === 0, 'ranking spots for a window: the lagoon first, offshore last');
+const week = FX.bestDays('barcelona', spots.slice(0, 2), 'kite', { kg: 75 }, 7);
+check(week.length === 7 && week[4] && !week[4].none && week[4].w >= 14 && week[5].none && !week[6].none && week[6].w >= 18, 'a week ahead: sea breeze on day 5, a wet day, then the SW');
+check(week[6].models && week[6].models.of === 3 && week[6].models.label === 'SURE', 'day 7: the three other models agree');
+const info = FX.dayInfo(sp, FX.addDays(today, 5));
+check(info && info.pop === 80 && info.mm > 10 && info.cloud === 90 && info.tmax === 17 && info.wave === 1.6 && info.period === 8 && info.sst === 18.4 && info.sunset === '17:32', 'a day\'s numbers: rain chance, rain, cloud, temperature, waves, water');
+const wet = FX.agreement(sp.hours.filter((x) => x.d === FX.addDays(today, 5) && x.h >= 10 && x.h < 14), 'mtb');
+check(wet.of === 3 && wet.n === 2 && wet.label === 'LIKELY', 'rain: GFS sees it dry, two models agree with the main one');
+check(FX.sourceFor('barcelona', today, today) === 'AROME' && FX.sourceFor('barcelona', FX.addDays(today, 3), today) === 'ECMWF · ICON · GFS', 'which models a day comes from');
 const G = await FX.grid('barcelona', true);
 check(G && G.w.length === 48 && G.w[0].length === 72 && G.d[0].length === 72 && G.rows === 6 && G.cols === 8, 'the map grid: 48 points x 72 hours');
 console.log(`\nALL ${ok} FORECAST CHECKS PASSED`);

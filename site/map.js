@@ -139,12 +139,14 @@
         ctx.fillStyle = 'rgba(243,239,227,0.82)'; ctx.fillText(label, q[0] + 5, q[1]);
       });
     }
-    var TONE = { epic: '#C8FF3D', good: '#7DF2C2', ok: '#FFE14D', no: '#9AA3AE', none: '#9AA3AE', dark: '#5C6672' };
+    // the 2.7 verdict colours: EPIC pink, GOOD lime, OK yellow, NO GO sand
+    var TONE = { epic: '#FF2D78', good: '#C8FF3D', ok: '#FFE14D', no: '#E7E2D4', none: '#C9C4B6', dark: '#5C6672' };
+    var INK = { epic: '#FFFFFF' };
     // where each marker and its label go: markers that would overlap move apart a little; a label goes right of
     // its marker, or left, whichever is clear (and loses its second line when neither is)
     function layoutSpots() {
       var out = [], placed = [], done = [];
-      ctx.font = '700 10.5px "Space Mono", ui-monospace, monospace';
+      ctx.font = '400 11px "Archivo Black", "Arial Black", sans-serif';
       spots.forEach(function (s) {
         var q = px(s.lat, s.lon), x = q[0], y = q[1];
         done.forEach(function (o) { var dx = x - o[0], dy = y - o[1], d = Math.hypot(dx, dy); if (d < 26) { var k = (26 - d) / (d || 1); x += (dx || 0.5) * k * 0.6; y += (dy || 1) * k; } });
@@ -177,24 +179,28 @@
         if (s.live || s.here) { // pulsing: a crew is there now
           var ph = ((now - t0) % 1600) / 1600;
           ctx.strokeStyle = 'rgba(255,45,120,' + (0.85 * (1 - ph)).toFixed(3) + ')'; ctx.lineWidth = 3;
-          ctx.beginPath(); ctx.arc(x, y, r + 4 + ph * 16, 0, 7); ctx.stroke();
+          var e = r + 3 + ph * 14; ctx.strokeRect(x - e, y - e, e * 2, e * 2);
         }
-        ctx.fillStyle = '#111111'; ctx.beginPath(); ctx.arc(x, y, r + 1, 0, 7); ctx.fill();
-        ctx.strokeStyle = col; ctx.lineWidth = s.sel ? 4 : 3; ctx.beginPath(); ctx.arc(x, y, r - 1, 0, 7); ctx.stroke();
-        ctx.fillStyle = col; ctx.font = '700 11px "Space Mono", ui-monospace, monospace'; ctx.textAlign = 'center';
-        ctx.fillText(s.big == null ? '–' : String(s.big), x, y + 0.5);
+        // a square sticker: hard black shadow, black border, the verdict colour, the number in Anton
+        ctx.fillStyle = '#111111'; ctx.fillRect(x - r + 3, y - r + 3, r * 2, r * 2);
+        ctx.fillRect(x - r - 1.5, y - r - 1.5, r * 2 + 3, r * 2 + 3);
+        ctx.fillStyle = col; ctx.fillRect(x - r + 1, y - r + 1, r * 2 - 2, r * 2 - 2);
+        if (s.sel) { ctx.strokeStyle = '#F3EFE3'; ctx.lineWidth = 2; ctx.strokeRect(x - r - 3.5, y - r - 3.5, r * 2 + 7, r * 2 + 7); }
+        ctx.fillStyle = INK[s.tone] || '#111111'; ctx.font = '400 15px Anton, Impact, sans-serif'; ctx.textAlign = 'center';
+        ctx.fillText(s.big == null ? '–' : String(s.big), x, y + 1);
         ctx.textAlign = 'left';
-        ctx.font = '700 10.5px "Space Mono", ui-monospace, monospace';
-        ctx.lineWidth = 3.5; ctx.strokeStyle = 'rgba(10,14,20,0.85)'; ctx.strokeText(o.nm, o.lx, y - (o.small ? 5 : 0));
-        ctx.fillStyle = '#F3EFE3'; ctx.fillText(o.nm, o.lx, y - (o.small ? 5 : 0));
+        ctx.font = '400 11px "Archivo Black", "Arial Black", sans-serif';
+        ctx.fillStyle = '#111111'; ctx.fillText(o.nm, o.lx + 1.5, y - (o.small ? 5 : 0) + 1.5);
+        ctx.fillStyle = '#FFFFFF'; ctx.fillText(o.nm, o.lx, y - (o.small ? 5 : 0));
         if (o.small) {
-          ctx.font = '400 9.5px "Space Mono", ui-monospace, monospace';
-          ctx.strokeText(o.small, o.lx, y + 7); ctx.fillStyle = col; ctx.fillText(o.small, o.lx, y + 7);
+          ctx.font = '700 9.5px "Space Mono", ui-monospace, monospace';
+          ctx.lineWidth = 3; ctx.strokeStyle = '#111111'; ctx.strokeText(o.small, o.lx, y + 8); ctx.fillStyle = col === TONE.no || col === TONE.none ? '#F3EFE3' : col; ctx.fillText(o.small, o.lx, y + 8);
         }
-        if (s.crews) { // a pink badge with the number of crews
-          var bx = x + r - 2, by = y - r - 2, txt = String(s.crews);
-          ctx.fillStyle = '#FF2D78'; ctx.beginPath(); ctx.arc(bx, by, 8, 0, 7); ctx.fill();
-          ctx.fillStyle = '#111111'; ctx.font = '700 10px "Space Mono", ui-monospace, monospace'; ctx.textAlign = 'center'; ctx.fillText(txt, bx, by + 0.5); ctx.textAlign = 'left';
+        if (s.crews) { // a yellow tag with the number of crews
+          var bx = x + r - 1, by = y - r - 1, txt = String(s.crews);
+          ctx.fillStyle = '#111111'; ctx.fillRect(bx - 8, by - 8, 17, 17);
+          ctx.fillStyle = '#FFE14D'; ctx.fillRect(bx - 6.5, by - 6.5, 14, 14);
+          ctx.fillStyle = '#111111'; ctx.font = '400 11px Anton, Impact, sans-serif'; ctx.textAlign = 'center'; ctx.fillText(txt, bx + 0.5, by + 1); ctx.textAlign = 'left';
         }
         hits.push({ slug: s.slug, x: x, y: y, r: r + 10, lx: o.lx, w: o.tw });
       });

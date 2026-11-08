@@ -1,7 +1,9 @@
 /*
- * Hi8ctane forecast engine (2.8). The real forecast from Open-Meteo, rated hour by hour per sport.
+ * Hi8ctane forecast engine (2.9). The real forecast from Open-Meteo, rated hour by hour per sport.
  *
- *   FX.load(city, spots)      weather + three other models + sea, per spot, 3 days hourly (cached 30 min)
+ *   FX.load(city, spots)      weather + three other models + sea, per spot, 7 days hourly (cached 30 min)
+ *   FX.dayInfo(...)           a day's numbers (rain chance, cloud, temperatures, waves, water, light)
+ *   FX.agreement(rows)        how many of ECMWF, ICON and GFS see the same as the main model
  *   FX.grid(city)             wind on a grid over the region, for the live map (cached 30 min)
  *   FX.rate(sport, spot, h)   one hour: score 0-10, label, why, kite size, shore, ground
  *   FX.windows(...)           the good stretches of a day; FX.bestDays(...) the best window per day
@@ -21,7 +23,8 @@
   var MARINE = String(CFG.marineApi || (MKEY ? 'https://customer-marine-api.open-meteo.com' : 'https://marine-api.open-meteo.com')).replace(/\/+$/, '');
   var KEYQ = MKEY ? '&apikey=' + encodeURIComponent(MKEY) : '';
   var TTL = 30 * 60e3;
-  var V = 3; // cache version
+  var V = 4; // cache version
+  var DAYS = 7; // the spots: a week ahead (the sharp model covers the first two days, best_match the rest)
 
   // the sharpest model per city, with best_match filling anything it doesn't give
   var CITY_MODEL = { amsterdam: 'knmi_seamless', barcelona: 'meteofrance_seamless', berlin: 'icon_seamless' };
@@ -109,11 +112,11 @@
     return {
       wx: METEO + '/v1/forecast?latitude=' + lat + '&longitude=' + lon +
         '&hourly=wind_speed_10m,wind_gusts_10m,wind_direction_10m,temperature_2m,precipitation,precipitation_probability,cloud_cover,weather_code' +
-        '&daily=sunrise,sunset&wind_speed_unit=kn&timezone=auto&forecast_days=3&past_days=1' + (m ? '&models=' + m + ',best_match' : '') + KEYQ,
+        '&daily=sunrise,sunset&wind_speed_unit=kn&timezone=auto&forecast_days=' + DAYS + '&past_days=1' + (m ? '&models=' + m + ',best_match' : '') + KEYQ,
       models: METEO + '/v1/forecast?latitude=' + lat + '&longitude=' + lon +
-        '&hourly=wind_speed_10m,wind_gusts_10m,wind_direction_10m&models=' + OTHER.join(',') + '&wind_speed_unit=kn&timezone=auto&forecast_days=3' + KEYQ,
+        '&hourly=wind_speed_10m,wind_gusts_10m,wind_direction_10m,precipitation&models=' + OTHER.join(',') + '&wind_speed_unit=kn&timezone=auto&forecast_days=' + DAYS + KEYQ,
       sea: sea.length ? MARINE + '/v1/marine?latitude=' + sea.map(function (s) { return s.lat; }).join(',') + '&longitude=' + sea.map(function (s) { return s.lon; }).join(',') +
-        '&hourly=wave_height,wave_period,wave_direction,sea_surface_temperature&timezone=auto&forecast_days=3' + KEYQ : null,
+        '&hourly=wave_height,wave_period,wave_direction,sea_surface_temperature&timezone=auto&forecast_days=' + DAYS + KEYQ : null,
       seaSpots: sea
     };
   };
@@ -133,7 +136,7 @@
         row.m = {};
         OTHER.forEach(function (mm) {
           var w = g(M['wind_speed_10m_' + mm], j);
-          if (w != null) row.m[mm] = { w: num(w), g: num(g(M['wind_gusts_10m_' + mm], j)), dir: num(g(M['wind_direction_10m_' + mm], j)) };
+          if (w != null) row.m[mm] = { w: num(w), g: num(g(M['wind_gusts_10m_' + mm], j)), dir: num(g(M['wind_direction_10m_' + mm], j)), mm: num(g(M['precipitation_' + mm], j)) };
         });
       }
       return row;
@@ -342,7 +345,7 @@
         w: Math.round(avg(ws)), g: Math.round(Math.max.apply(null, R.map(function (r) { return r.g || 0; }))), dir: vecDir(R.map(function (r) { return r.dir; }), ws),
         kite: R[0].rate.kite != null ? FX.kiteSize(avg(ws), opts && opts.kg) : null,
         shore: R[Math.floor(R.length / 2)].rate.shore || null, ground: R[0].rate.ground || null,
-        temp: Math.round(avg(R.map(function (r) { return r.temp; })) || 0), why: R[Math.floor(R.length / 2)].rate.why };
+        temp: Math.round(avg(R.map(function (r) { return r.temp; })) || 0), why: R[Math.floor(R.length / 2)].rate.why, models: FX.agreement(R, sport) };
     }).sort(function (a, b) { return b.score * Math.sqrt(b.hours) - a.score * Math.sqrt(a.hours); });
   };
 
@@ -361,25 +364,63 @@
     return { rows: rows, score: Math.round(sc * 10) / 10, label: FX.label(sc), w: Math.round(avg(ws)), g: Math.round(Math.max.apply(null, rows.map(function (r) { return r.g || 0; }))),
       dir: vecDir(rows.map(function (r) { return r.dir; }), ws), kite: rows[0].rate && rows[0].rate.kite != null ? FX.kiteSize(avg(ws), opts && opts.kg) : null,
       shore: rows[0].rate ? rows[0].rate.shore : null, ground: rows[0].rate ? rows[0].rate.ground : null, models: models, spread: spread,
-      agree: spread == null ? null : spread <= 4 ? 'agree' : spread <= 8 ? 'roughly' : 'disagree',
+      agree: spread == null ? null : spread <= 4 ? 'agree' : spread <= 8 ? 'roughly' : 'disagree', check: FX.agreement(rows, sport),
       temp: Math.round(avg(rows.map(function (r) { return r.temp; })) || 0), why: rows[Math.floor(rows.length / 2)].rate ? rows[Math.floor(rows.length / 2)].rate.why : [] };
   };
 
   // for a sport in a city: the best window per day across its spots (for "WHEN" and the landing)
-  FX.bestDays = function (city, spots, sport, opts) {
+  FX.bestDays = function (city, spots, sport, opts, n) {
     var D = FX.data[city]; if (!D) return [];
     var any = spots.map(function (s) { return D.spots[s.slug]; }).filter(Boolean)[0];
     if (!any) return [];
     var today = FX.localNow(any.offset).slice(0, 10), out = [];
-    [0, 1, 2].forEach(function (n) {
-      var date = FX.addDays(today, n), best = null;
+    for (var k = 0; k < (n || 3); k++) {
+      var date = FX.addDays(today, k), best = null;
       spots.forEach(function (s) {
         var ws = FX.windows(D.spots[s.slug], date, sport, s, opts);
         if (ws[0] && (!best || ws[0].score * Math.sqrt(ws[0].hours) > best.score * Math.sqrt(best.hours))) best = Object.assign({ spot: s }, ws[0]);
       });
-      out.push(best || { date: date, none: true });
-    });
+      if (!best && !spots.some(function (s) { var sp = D.spots[s.slug]; return sp && sp.days[date]; })) out.push({ date: date, none: true, nodata: true });
+      else out.push(best || { date: date, none: true });
+    }
     return out;
+  };
+
+  // do the other three models (ECMWF, ICON, GFS) see the same thing over these hours?
+  // kite: average wind within 4 kt of the main model; MTB/MX: rain (1 mm or more over the hours) or not
+  FX.agreement = function (rows, sport) {
+    if (!rows || !rows.length) return null;
+    var windy = sport === 'kite' || sport === 'wing', main, n = 0, of = 0, names = [];
+    main = windy ? avg(rows.map(function (r) { return r.w; })) : rows.reduce(function (t, r) { return t + (r.mm || 0); }, 0);
+    OTHER.forEach(function (m) {
+      var vals = rows.map(function (r) { return r.m && r.m[m] ? (windy ? r.m[m].w : r.m[m].mm) : null; });
+      if (vals.some(function (x) { return x == null; })) return;
+      of++;
+      var v = windy ? avg(vals) : vals.reduce(function (t, x) { return t + x; }, 0);
+      var same = windy ? Math.abs(v - main) <= 4 : (v >= 1) === (main >= 1);
+      if (same) { n++; names.push(MODEL_NAME[m]); }
+    });
+    if (!of) return null;
+    return { n: n, of: of, names: names, label: n === of ? 'SURE' : n >= of - 1 && of >= 2 ? 'LIKELY' : 'UNSURE' };
+  };
+
+  // one day at one spot, daylight hours: the numbers behind the rating
+  FX.dayInfo = function (sp, date) {
+    if (!sp) return null;
+    var day = sp.days[date] || {}, rows = sp.hours.filter(function (r) { return r.d === date && !dark(r, day) && r.w != null; });
+    if (!rows.length) return null;
+    var mx = function (k) { var v = rows.map(function (r) { return r[k]; }).filter(function (x) { return x != null; }); return v.length ? Math.max.apply(null, v) : null; };
+    var mn = function (k) { var v = rows.map(function (r) { return r[k]; }).filter(function (x) { return x != null; }); return v.length ? Math.min.apply(null, v) : null; };
+    var rnd = function (x, d) { return x == null ? null : Math.round(x * (d || 1)) / (d || 1); };
+    return { date: date, sunrise: day.sunrise || null, sunset: day.sunset || null, light: rows.length,
+      w: rnd(avg(rows.map(function (r) { return r.w; }))), g: rnd(mx('g')), dir: vecDir(rows.map(function (r) { return r.dir; }), rows.map(function (r) { return r.w; })),
+      tmin: rnd(mn('temp')), tmax: rnd(mx('temp')), pop: rnd(mx('pop')), mm: rnd(rows.reduce(function (t, r) { return t + (r.mm || 0); }, 0), 10),
+      cloud: rnd(avg(rows.map(function (r) { return r.cc; }))), wave: rnd(mx('wv'), 10), period: rnd(mx('per')), sst: rnd(avg(rows.map(function (r) { return r.sst; })), 10) };
+  };
+  // where a day's numbers come from: the sharp regional model for two days, then the global models
+  FX.sourceFor = function (city, date, today) {
+    var m = CITY_MODEL[city];
+    return m && date < FX.addDays(today, 2) ? MODEL_NAME[m] : 'ECMWF · ICON · GFS';
   };
 
   // spots for a sport ranked for a window (date, from, to)
