@@ -26,6 +26,7 @@ def rpc(fn, body, ip='10.4.4.4'):
 sql("create schema if not exists net; create table if not exists net.sent (id bigint generated always as identity, url text, body jsonb, headers jsonb);"
     "create or replace function net.http_post(url text, body jsonb default '{}', params jsonb default '{}', headers jsonb default '{}', timeout_milliseconds int default 5000) returns bigint language sql as $$ insert into net.sent (url, body, headers) values (url, body, headers) returning id $$;")
 sql("truncate public.signups, public.night_rsvps, public.rider_keys, public.crews, public.crew_members, public.crew_messages, public.rate_hits, public.outbox, public.client_errors, net.sent cascade; delete from public.app_secrets where name = 'resend_api_key'")
+sql("update public.app_settings set value = 'false' where key = 'open_posting'")  # these checks are for captains-only mode (0005 switches open posting on)
 tmrw = (datetime.date.today() + datetime.timedelta(days=1)).isoformat()
 
 print('captains: approved once, any city')
@@ -89,7 +90,7 @@ check(sql("select count(*) from outbox where kind = 'welcome'") == '4', 'a welco
 check(sql("select subject from outbox where kind = 'welcome' and to_email = 'sam@example.com'") == 'Your founding plate: #003 in Amsterdam', 'the welcome has the plate')
 check(sql("select count(*) from outbox where kind = 'joined' and to_email = 'cap@example.com'") == '2', 'the captain hears about each rider who joins')
 check(sql("select count(*) from outbox where kind = 'in'") == '2', 'each rider gets "you\'re in" with the link')
-check('B27-Crew.dc.html?c=' + code in sql("select body from outbox where kind = 'in' and to_email = 'noor@example.com'"), 'with the crew link')
+check('/?c=' + code in sql("select body from outbox where kind = 'in' and to_email = 'noor@example.com'"), 'with the crew link')
 rpc('hi8_send', {'p_key': sam, 'p_code': code, 'p_body': 'Bringing a pump'})
 rpc('hi8_send', {'p_key': sam, 'p_code': code, 'p_body': 'And snacks'})
 check(sql("select count(*) from outbox where kind = 'chat'") == '2', 'chat: the other two get one email, not one per message')

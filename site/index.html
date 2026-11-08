@@ -2,21 +2,31 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Hi8ctane · same-day crews for kite, wing, surf, SUP, MTB and MX</title>
-<meta name="description" content="The good days, the right people, a seat in the car. Same-day crews for kite, wing, surf, SUP, MTB and MX.">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hi8ctane · ride together</title>
+<meta name="description" content="Live crews for kite, MTB and MX in Barcelona. See the wind, join a crew or start one in 20 seconds. Seats in the car, the forecast, the chat and splitting the fuel, in one link.">
+<meta name="theme-color" content="#111111">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Hi8ctane">
+<meta property="og:title" content="Hi8ctane · ride together">
+<meta property="og:description" content="Live crews for kite, MTB and MX. Join one or start one in 20 seconds.">
+<meta property="og:url" content="https://hi8ctane.com/">
+<meta property="og:image" content="https://hi8ctane.com/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
-<script>
-// phones get the phone site, everything else the web page
-location.replace(window.matchMedia('(max-width: 760px)').matches ? 'B27-Landing.dc.html' : 'B27-Web.dc.html');
-</script>
-<style>body{margin:0;background:#F3EFE3;color:#111111;font:400 15px/1.5 monospace}main{max-width:560px;margin:80px auto;padding:0 24px}a{color:#111111;font-weight:700}</style>
+<link rel="preload" href="fonts/Anton-Regular.woff" as="font" type="font/woff" crossorigin>
+<link rel="preload" href="fonts/SpaceMono-Bold.woff" as="font" type="font/woff" crossorigin>
+<link rel="stylesheet" href="app.css">
 </head>
 <body>
-<main>
-<h1>Hi8ctane</h1>
-<p>The good days, the right people, a seat in the car.</p>
-<p><a href="B27-Web.dc.html">Open the website</a> · <a href="B27-Landing.dc.html">Phone version</a> · <a href="B27-Schools.dc.html">For schools + rental shops</a></p>
-</main>
+<div id="app" class="app"><noscript><p style="padding:24px;font:15px/1.5 monospace;background:#F3EFE3">Hi8ctane needs JavaScript to show the live map and the crews.</p></noscript></div>
+<script src="config.js"></script>
+<script src="hi8.js"></script>
+<script src="geo.js"></script>
+<script src="fx.js"></script>
+<script src="map.js"></script>
+<script src="app.js"></script>
 </body>
 </html>

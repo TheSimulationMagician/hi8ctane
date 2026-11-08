@@ -1,11 +1,13 @@
-# Tests for the live sign-ups (`site/live.js` + `supabase/migrations/0002_live_signups.sql`)
+# Tests for the live site (`site/` + `supabase/migrations/`)
 
 They run the real thing locally: Postgres 16 with both migrations, PostgREST (the same REST server Supabase uses) in front of it, and a headless Chromium clicking through the screens.
 
-- `e2e.py`: 66 checks. Landing → Get In → onboarding; the Founding Night RSVP without an account (Get In, then straight back); "I'm in" and "I'll captain" for a new city; the schools form; a sign-up made offline that goes out on the next page; the email-link sign-in; and that the website can't read tables, call internal functions, skip the waiver or flood the list.
+- `app_e2e.py`: 55 checks on the 2.8 app in a browser: the live map and forecast, START A CREW and JOIN A CREW for people with no account, the WhatsApp message, the duplicate warning, the chat, settling up with Bizum, checking in and reporting, alerts and their stop link, Me, the spot tables, old links forwarding, the desktop layout, the landing iterations, and Open-Meteo being down.
+- `pilot_api.py`: 57 checks on 0005: open posting and its switch, rookie crews for captains only, coming-soon sports, duplicates, start-and-sign-up in one go, alerts (at most 3 a day, the stop link), Bizum only for your car, check-ins and reports, the live map feed without names, rate limits, erase.
+- `../unit/fx_test.mjs`: 26 checks on the forecast engine (`site/fx.js`): kite, MTB and MX ratings, shore classes, kite size, windows, models, the map grid.
+- `e2e.py`: 63 checks. The old landing link → Get In → onboarding; the Founding Night RSVP without an account (Get In, then straight back); "I'm in" and "I'll captain" for a new city; the schools form; a sign-up made offline that goes out on the next page; the email-link sign-in; and that the website can't read tables, call internal functions, skip the waiver or flood the list.
 - `crews_api.py`: 42 checks on the crews functions in 0003: captains only, seats and cars, full crews, leaving, calling off, chat for members only, erase.
 - `core_api.py`: 49 checks on 0004: captains in any city, the one-go join, settling up and payment links, every email the outbox queues, sending through Resend (pg_net stubbed), error reports, access.
-- `crews_e2e.py`: 53 checks in a browser: no sample people or numbers on any screen with an empty database; the forecast is real or says it's missing; a captain posts a crew; a rider finds it, signs up, joins with a seat; chat; home and Me; leave and call off.
 - `pixdiff.py`: screenshots every screen from two servers and compares them pixel for pixel. Used to prove the screens look exactly as designed with live.js in place.
 - `serve.mjs`: serves `site/` like GitHub Pages and stands in for Supabase's gateway (`/rest/v1` → PostgREST, `/auth/v1` recorded). In `live` mode it serves a test `config.js`.
 - `supabase_like.sql`: the roles and the bit of `auth.users` a fresh Supabase project has.
@@ -20,6 +22,7 @@ psql -h 127.0.0.1 -p 5440 -U postgres -d hi8 -f supabase/migrations/0001_day_zer
 psql -h 127.0.0.1 -p 5440 -U postgres -d hi8 -f supabase/migrations/0002_live_signups.sql
 psql -h 127.0.0.1 -p 5440 -U postgres -d hi8 -f supabase/migrations/0003_crews.sql
 psql -h 127.0.0.1 -p 5440 -U postgres -d hi8 -f supabase/migrations/0004_core_loop.sql
+psql -h 127.0.0.1 -p 5440 -U postgres -d hi8 -f supabase/migrations/0005_pilot.sql
 
 # PostgREST 12 (static binary from github.com/PostgREST/postgrest/releases)
 postgrest test/live/postgrest.conf &
@@ -28,8 +31,10 @@ postgrest test/live/postgrest.conf &
 node test/live/serve.mjs site 8801 live &
 node test/live/serve.mjs site 8802 off &
 
-pip install playwright pillow && playwright install chromium
+pip install playwright pillow && playwright install chromium   # crews_api/core_api run in captains-only mode, pilot_api and app_e2e with open posting
 python3 test/live/e2e.py                      # wipes the test database's tables first
-python3 test/live/crews_api.py && python3 test/live/core_api.py && python3 test/live/crews_e2e.py   # serve.mjs also stands in for Open-Meteo
+python3 test/live/crews_api.py && python3 test/live/core_api.py && python3 test/live/pilot_api.py
+python3 test/live/app_e2e.py                  # serve.mjs also stands in for Open-Meteo
+node test/unit/fx_test.mjs                    # needs serve.mjs on 8801
 python3 test/live/pixdiff.py 8802 <port of another copy of the site> out/
 ```

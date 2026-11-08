@@ -64,7 +64,7 @@
           try { b = t ? JSON.parse(t) : null; } catch (e) { b = null; }
           if (!r.ok) {
             var err = new Error((b && b.message) || ('HTTP ' + r.status));
-            err.status = r.status; err.hint = b && b.hint; err.code = b && b.code;
+            err.status = r.status; err.hint = b && b.hint; err.code = b && b.code; err.details = b && b.details;
             throw err;
           }
           return b;
@@ -161,9 +161,10 @@
       { city: 'amsterdam', slug: 'cs', name: 'CENTRAAL', sub: 'THE CENTRE', lat: 52.3791, lon: 4.9003 },
       { city: 'amsterdam', slug: 'zuid', name: "A'DAM ZUID", sub: 'ZUID + AMSTELVEEN', lat: 52.3389, lon: 4.8730 },
       { city: 'amsterdam', slug: 'hlm', name: 'HAARLEM', sub: 'HAARLEM STATION', lat: 52.3874, lon: 4.6383 },
-      { city: 'barcelona', slug: 'sants', name: 'SANTS', sub: 'SANTS STATION', lat: 41.3793, lon: 2.1400 },
-      { city: 'barcelona', slug: 'gracia', name: 'GRÀCIA', sub: 'PASSEIG DE GRÀCIA', lat: 41.3926, lon: 2.1648 },
-      { city: 'barcelona', slug: 'sagrera', name: 'LA SAGRERA', sub: 'SANT ANDREU', lat: 41.4220, lon: 2.1890 }],
+      { city: 'barcelona', slug: 'sants', name: 'SANTS', sub: 'SANTS STATION · SOUTH + WEST', lat: 41.3793, lon: 2.1400 },
+      { city: 'barcelona', slug: 'sagrera', name: 'LA SAGRERA', sub: 'SANT ANDREU · NORTH', lat: 41.4220, lon: 2.1890 },
+      { city: 'barcelona', slug: 'zona-uni', name: 'ZONA UNI', sub: 'ZONA UNIVERSITÀRIA · WEST', lat: 41.3848, lon: 2.1124 },
+      { city: 'barcelona', slug: 'gracia', name: 'GRÀCIA', sub: 'PASSEIG DE GRÀCIA · CENTRE', lat: 41.3926, lon: 2.1648 }],
     spots: [
       ['wijk-aan-zee', 'amsterdam', 'Wijk aan Zee', 52.496, 4.582, ['kite', 'wing', 'surf'], 280, 200, 320],
       ['ijmuiden', 'amsterdam', 'IJmuiden', 52.460, 4.555, ['kite', 'wing', 'sup'], 275, 200, 340],
@@ -172,13 +173,19 @@
       ['schoorl', 'amsterdam', 'Schoorl dunes', 52.701, 4.687, ['mtb']],
       ['amsterdamse-bos', 'amsterdam', 'Amsterdamse Bos', 52.330, 4.840, ['mtb']],
       ['lelystad-mx', 'amsterdam', 'Lelystad MX', 52.490, 5.510, ['mx'], null, null, null, false, "Check the track's opening days before you go"],
-      ['castelldefels', 'barcelona', 'Castelldefels', 41.268, 1.985, ['kite', 'wing'], 170, 90, 250, false, 'Kite is banned in bathing zones 1 June to 30 September'],
-      ['sant-pere-pescador', 'barcelona', 'Sant Pere Pescador', 42.190, 3.110, ['kite', 'wing'], 100, 350, 190],
+      ['castelldefels', 'barcelona', 'Castelldefels', 41.268, 1.985, ['kite', 'wing'], 160, 60, 250, false, 'Bathing season (about June to September): kite only in the marked zones. Keep clear of swimmers. N-NW is offshore: stay out.', 'Platja de Castelldefels'],
+      ['sant-pere-pescador', 'barcelona', 'Sant Pere Pescador', 42.190, 3.110, ['kite', 'wing'], 95, 340, 200, false, 'Kite only in the marked zones. Tramuntana (N) is strong and gusty. Beach access through the campsites can cost a fee.', 'Platja de Sant Pere Pescador'],
+      ['trabucador', 'barcelona', 'Trabucador', 40.620, 0.733, ['kite', 'wing'], null, null, null, true, 'Flat, shallow lagoon for every level. Power lines run along the beach: launch well away from them.', 'Platja del Trabucador'],
+      ['riumar', 'barcelona', 'Riumar', 40.730, 0.866, ['kite', 'wing'], 50, 290, 140, false, 'Mestral (NW) is side-shore and gusty. Shallow water, small waves. Give the windsurfers room.', 'Platja de Riumar'],
+      ['collserola', 'barcelona', 'Collserola', 41.418, 2.115, ['mtb'], null, null, null, false, 'Trails off the Carretera de les Aigües. Walkers have priority.', 'Carretera de les Aigües, Barcelona'],
+      ['garraf-park', 'barcelona', 'Garraf park', 41.290, 1.870, ['mtb'], null, null, null, false, 'Rocky, technical trails and little shade: bring water.', 'Parc del Garraf'],
+      ['sant-llorenc', 'barcelona', 'Sant Llorenç del Munt', 41.625, 2.020, ['mtb'], null, null, null, false, 'Natural park: ride the marked tracks only. Most loops start from Matadepera.', 'Matadepera'],
+      ['roccos-ranch', 'barcelona', "Rocco's Ranch", 41.570, 2.261, ['mx'], null, null, null, false, 'Motocross, TT and flat track at the Circuit de Barcelona-Catalunya. Check open days at roccosranch.es.', "Rocco's Ranch, Montmeló"],
+      ['vallgorguina-mx', 'barcelona', 'ParcMotor Vallgorguina', 41.640, 2.505, ['mx'], null, null, null, false, 'C-61 km 15.7. Hard-pack track, 16 jumps, kids track. Bring ID and licence, or buy day insurance there.', 'ParcMotor Vallgorguina'],
+      ['bellpuig-mx', 'barcelona', 'Bellpuig', 41.617, 1.019, ['mx'], null, null, null, false, 'World Championship track, about 1 h 30 from Barcelona. Open days vary: check before you drive.', 'Circuit de Motocròs de Bellpuig'],
       ['masnou', 'barcelona', 'Masnou', 41.476, 2.318, ['surf'], 150, 60, 220],
       ['barceloneta', 'barcelona', 'Barceloneta', 41.378, 2.193, ['sup', 'surf'], 140, 60, 220],
       ['garraf', 'barcelona', 'Garraf', 41.250, 1.900, ['sup'], 200, 120, 280],
-      ['collserola', 'barcelona', 'Collserola', 41.418, 2.115, ['mtb']],
-      ['garraf-park', 'barcelona', 'Garraf park', 41.290, 1.870, ['mtb']],
       ['carcavelos', 'lisbon', 'Carcavelos', 38.678, -9.335, ['surf'], 200, 120, 280],
       ['guincho', 'lisbon', 'Guincho', 38.730, -9.473, ['kite', 'surf'], 270, 300, 30],
       ['costa-da-caparica', 'lisbon', 'Costa da Caparica', 38.640, -9.240, ['surf'], 260, 180, 340],
@@ -194,7 +201,7 @@
       ['teufelsberg', 'berlin', 'Teufelsberg', 52.497, 13.241, ['mtb']]
     ].map(function (x) {
       return { slug: x[0], city: x[1], name: x[2], lat: x[3], lon: x[4], sports: x[5], face: x[6] == null ? null : x[6],
-        good_from: x[7] == null ? null : x[7], good_to: x[8] == null ? null : x[8], lake: !!x[9], note: x[10] || null };
+        good_from: x[7] == null ? null : x[7], good_to: x[8] == null ? null : x[8], lake: !!x[9], note: x[10] || null, maps: x[11] || x[2] };
     })
   };
   HI8.placesNow = function () { return HI8.places && HI8.places.spots && HI8.places.spots.length ? HI8.places : BUILT_IN; };
@@ -206,8 +213,9 @@
     var x = Math.sin(dLat / 2) * Math.sin(dLat / 2) + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
     return 2 * R * Math.asin(Math.sqrt(x));
   };
-  // driving time, roughly: roads are 1.3x the straight line at about 60 km/h, plus 8 minutes of town
-  HI8.driveMin = function (a, b) { return Math.max(5, Math.round(HI8.km(a, b) * 1.3 / 60 * 60 + 8)); };
+  // driving time, roughly: roads are 1.25x the straight line; the first 20 km at about 55 km/h (town), the rest
+  // at about 100 (motorway), plus 10 minutes to get going
+  HI8.driveMin = function (a, b) { var r = HI8.km(a, b) * 1.25; return Math.max(5, Math.round(10 + Math.min(r, 20) / 55 * 60 + Math.max(0, r - 20) / 100 * 60)); };
   // fuel for the round trip (6.5 l/100 km at €1.95) split by everyone in the car, rounded up to 10 cents
   HI8.fuelEach = function (a, b, people) { var e = HI8.km(a, b) * 1.3 * 2 * 0.065 * 1.95 / Math.max(1, people || 1); return '€' + (Math.ceil(e * 10) / 10).toFixed(2); };
 
