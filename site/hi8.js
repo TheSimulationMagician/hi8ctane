@@ -165,7 +165,8 @@
     cities: [
       { slug: 'amsterdam', name: 'Amsterdam', status: 'open', tz: 'Europe/Amsterdam' }, { slug: 'barcelona', name: 'Barcelona', status: 'open', tz: 'Europe/Madrid' },
       { slug: 'berlin', name: 'Berlin', status: 'soon', tz: 'Europe/Berlin' }, { slug: 'lisbon', name: 'Lisbon', status: 'soon', tz: 'Europe/Lisbon' },
-      { slug: 'tarifa', name: 'Tarifa', status: 'soon', tz: 'Europe/Madrid' }],
+      { slug: 'tarifa', name: 'Tarifa', status: 'open', tz: 'Europe/Madrid', region: 'Tarifa' },
+      { slug: 'tatajuba', name: 'Tatajuba', status: 'soon', tz: 'America/Fortaleza', region: 'Ceará, Brazil' }],
     hubs: [
       { city: 'amsterdam', slug: 'west', name: 'SLOTERDIJK', sub: 'AMSTERDAM WEST', lat: 52.3889, lon: 4.8378 },
       { city: 'amsterdam', slug: 'cs', name: 'CENTRAAL', sub: 'THE CENTRE', lat: 52.3791, lon: 4.9003 },
@@ -174,7 +175,10 @@
       { city: 'barcelona', slug: 'sants', name: 'SANTS', sub: 'SANTS STATION · SOUTH + WEST', lat: 41.3793, lon: 2.1400 },
       { city: 'barcelona', slug: 'sagrera', name: 'LA SAGRERA', sub: 'SANT ANDREU · NORTH', lat: 41.4220, lon: 2.1890 },
       { city: 'barcelona', slug: 'zona-uni', name: 'ZONA UNI', sub: 'ZONA UNIVERSITÀRIA · WEST', lat: 41.3848, lon: 2.1124 },
-      { city: 'barcelona', slug: 'gracia', name: 'GRÀCIA', sub: 'PASSEIG DE GRÀCIA · CENTRE', lat: 41.3926, lon: 2.1648 }],
+      { city: 'barcelona', slug: 'gracia', name: 'GRÀCIA', sub: 'PASSEIG DE GRÀCIA · CENTRE', lat: 41.3926, lon: 2.1648 },
+      { city: 'tarifa', slug: 'town', name: 'TARIFA', sub: 'TARIFA TOWN', lat: 36.0143, lon: -5.6044 },
+      { city: 'tarifa', slug: 'alg', name: 'ALGECIRAS', sub: 'ALGECIRAS STATION', lat: 36.1290, lon: -5.4535 },
+      { city: 'tarifa', slug: 'cadiz', name: 'CÁDIZ', sub: 'CÁDIZ STATION', lat: 36.5292, lon: -6.2894 }],
     spots: [
       ['wijk-aan-zee', 'amsterdam', 'Wijk aan Zee', 52.496, 4.582, ['kite', 'wing', 'surf'], 280, 200, 320],
       ['ijmuiden', 'amsterdam', 'IJmuiden', 52.460, 4.555, ['kite', 'wing', 'sup'], 275, 200, 340],
@@ -202,8 +206,8 @@
       ['costa-da-caparica', 'lisbon', 'Costa da Caparica', 38.640, -9.240, ['surf'], 260, 180, 340],
       ['lagoa-albufeira', 'lisbon', 'Lagoa de Albufeira', 38.510, -9.170, ['wing', 'sup'], null, null, null, true],
       ['sintra', 'lisbon', 'Sintra', 38.790, -9.390, ['mtb']],
-      ['los-lances', 'tarifa', 'Los Lances', 36.030, -5.630, ['kite'], 200, 60, 300],
-      ['valdevaqueros', 'tarifa', 'Valdevaqueros', 36.070, -5.680, ['kite', 'wing'], 200, 60, 300],
+      ['los-lances', 'tarifa', 'Los Lances', 36.031, -5.623, ['kite'], 200, 60, 300, false, 'Long beach west of town. In summer, kite only in the marked zones. Strong Levante gets gusty: know your limits.', 'Playa de Los Lances, Tarifa'],
+      ['valdevaqueros', 'tarifa', 'Valdevaqueros', 36.067, -5.693, ['kite', 'wing'], 200, 60, 300, false, 'The Levante spot, busy in summer: use the marked kite zone. Strong Levante gets gusty: know your limits.', 'Playa de Valdevaqueros, Tarifa'],
       ['el-palmar', 'tarifa', 'El Palmar', 36.240, -6.070, ['surf'], 250, 170, 330],
       ['alcornocales', 'tarifa', 'Alcornocales', 36.400, -5.600, ['mtb']],
       ['muggelsee', 'berlin', 'Müggelsee', 52.440, 13.650, ['wing', 'sup'], null, null, null, true],

@@ -33,7 +33,7 @@ check(reg['amsterdam'] == 'Netherlands' and reg['barcelona'] == 'Catalonia', 'Am
 check(all('kind' in h and 'crews' in h for h in pl['hubs']) and all(h['kind'] == 'hub' for h in pl['hubs']), 'every pick-up point says what it is and how many crews leave from it')
 
 print('adding where you start')
-s, b = rpc('hi8_add_start', {'p_city': 'tarifa', 'p_name': 'Tarifa', 'p_lat': 36.01, 'p_lon': -5.6})
+s, b = rpc('hi8_add_start', {'p_city': 'lisbon', 'p_name': 'Lisboa', 'p_lat': 38.72, 'p_lon': -9.14})
 check(s == 400 and b['message'] == 'unknown_city', 'a region that isn\'t open: no')
 s, b = rpc('hi8_add_start', {'p_city': 'amsterdam', 'p_name': 'x', 'p_lat': 52.09, 'p_lon': 5.12})
 check(s == 400 and b['message'] == 'bad_name', 'a one-letter name: no')
