@@ -208,7 +208,7 @@
       '<div class="tl"><label class="sr" for="hour">Forecast time</label><input type="range" id="hour" min="0" max="0" value="0"><div class="days" id="tlDays"></div></div>' +
       '<div class="when" id="when"></div></div></section>' +
       '<main class="panel" id="panel">' +
-      '<section class="hero ht" id="hero"><span class="hdots"></span>' +
+      '<section class="hero ht" id="hero">' +
       '<div class="kick"><span class="blink pdot"></span><span id="heroKick">LIVE CREWS · KITE · MTB · MX</span></div>' +
       '<h1 class="hl">THE GOOD DAYS.<br>THE RIGHT PEOPLE.<br><span>A SEAT IN THE CAR.</span></h1>' +
       '<p class="lede0">The forecast for your spots, who\'s going, a seat in the car. Join a crew or start one in 20 seconds: no app to install.</p>' +
@@ -491,7 +491,7 @@
         stat('RAIN', info.pop != null ? info.pop + '%' : '', info.cloud != null ? 'cloud ' + info.cloud + '%' : ''), stat('WIND', info.w != null ? info.w + ' KT' : '', 'gusts ' + (info.g || '–'))];
     stats.push(stat('LIGHT', info.sunrise || '', info.sunset ? 'to ' + info.sunset : ''));
     stats.push(stat('MODELS', m ? m.n + ' OF ' + m.of : '', m ? m.label : ''));
-    el.innerHTML = head + '<div class="bw"><div class="bw-t ht"><span class="hdots"></span><div class="kick" style="color:#C8FF3D">' + esc(FX.dayName(good.date, S.today)) + ' · ' + esc(dayLong(good.date)) + '</div>' +
+    el.innerHTML = head + '<div class="bw"><div class="bw-t ht"><div class="kick" style="color:#C8FF3D">' + esc(FX.dayName(good.date, S.today)) + ' · ' + esc(dayLong(good.date)) + '</div>' +
       '<span class="stamp t-' + FX.tone(good.score) + '">' + esc(good.label) + '</span>' +
       '<div class="bw-v">' + pad(good.from) + ':00-' + pad(good.to) + ':00<br><span>' + esc(good.spot.name.toUpperCase()) + '</span></div>' +
       (good.runTo - good.runFrom > good.to - good.from ? '<div class="bw-s">' + (good.shore ? esc(title(good.shore)) + '. ' : '') + 'Good from ' + pad(good.runFrom) + ' to ' + pad(good.runTo) + '. ' : '<div class="bw-s">' + (good.shore ? esc(title(good.shore)) + '. ' : '')) + esc((good.why || []).join(' · ')) + '</div></div>' +
@@ -646,7 +646,7 @@
       return '<div class="ss' + (c ? ' has' : '') + '">' +
         '<div class="ss-t"><span class="ss-d">' + esc(dayRel(o.date)) + ' <b>' + pad(o.from) + '–' + pad(o.to) + '</b></span>' + (f ? '<span class="vd t-' + FX.tone(f.score != null ? f.score : f.s) + '">' + esc(f.label) + '</span>' : '') + (c && c.live ? '<span class="vd t-live">LIVE</span>' : '') + '</div>' +
         '<button class="ss-n" data-act="spotat" data-spot="' + o.spot.slug + '" data-date="' + o.date + '">' + esc(o.spot.name.toUpperCase()) + ' <small>' + (o.min ? o.min + ' MIN' : '') + ' ›</small></button>' +
-        '<div class="ss-m"><span class="ss-k">' + esc(key) + (f && f.kite && kite ? ' · ' + f.kite + ' M KITE' : '') + (f && f.models ? ' · ' + f.models.label : '') + '</span>' + hourBars(o) + '</div>' +
+        '<div class="ss-m"><span class="ss-k">' + esc(key) + (f && f.kite && kite ? ' · ' + f.kite + ' M KITE' : '') + (f && f.models && f.models.label ? ' · ' + f.models.label : '') + '</span>' + hourBars(o) + '</div>' +
         '<div class="ss-f">' + crewLine + (c ? '<button class="jn lm" data-act="crew" data-code="' + esc(c.code) + '">JOIN</button>'
           : '<button class="jn pk" data-act="startwin" data-date="' + o.date + '" data-from="' + o.from + '" data-to="' + o.to + '" data-spot="' + o.spot.slug + '">START IT</button>') + '</div></div>';
     }).join('') + '</div>' + (L.some(function (o) { return o.crews.length; }) ? '' : '<div class="alertw">' + alertBox() + '</div>') + '<div class="two2"><button class="hbtn" data-act="join">ALL CREWS</button><button class="hbtn lime" data-act="start">ANOTHER TIME</button></div>';
