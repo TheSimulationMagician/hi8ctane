@@ -234,8 +234,12 @@
   // driving time, roughly: roads are 1.25x the straight line; the first 20 km at about 55 km/h (town), the rest
   // at about 100 (motorway), plus 10 minutes to get going
   HI8.driveMin = function (a, b) { var r = HI8.km(a, b) * 1.25; return Math.max(5, Math.round(10 + Math.min(r, 20) / 55 * 60 + Math.max(0, r - 20) / 100 * 60)); };
-  // fuel for the round trip (6.5 l/100 km at €1.95) split by everyone in the car, rounded up to 10 cents
-  HI8.fuelEach = function (a, b, people) { var e = HI8.km(a, b) * 1.3 * 2 * 0.065 * 1.95 / Math.max(1, people || 1); return '€' + (Math.ceil(e * 10) / 10).toFixed(2); };
+  // fuel for the round trip: 7 l/100 km for a car with boards on, at the pump price where the crew is (update with the prices),
+  // roads 30% longer than the crow flies. NL: ANWB average, Nov 2026. Spain: EU Weekly Oil Bulletin, 12 Oct 2026.
+  HI8.FUEL = { l100: 7, eur: { amsterdam: 2.18, barcelona: 1.79, tarifa: 1.79 }, other: 2.0 };
+  HI8.tripCost = function (a, b, city) { if (!a || !b) return null; var c = city || a.city || b.city, eur = HI8.FUEL.eur[c] || HI8.FUEL.other; return HI8.km(a, b) * 1.3 * 2 * HI8.FUEL.l100 / 100 * eur; };
+  // split by everyone in the car, rounded up to 10 cents
+  HI8.fuelEach = function (a, b, people, city) { var e = HI8.tripCost(a, b, city) / Math.max(1, people || 1); return '€' + (Math.ceil(e * 10) / 10).toFixed(2); };
 
   // ---------------------------------------------------------------- the real forecast (Open-Meteo)
   var FX_TTL = 30 * 60e3;
