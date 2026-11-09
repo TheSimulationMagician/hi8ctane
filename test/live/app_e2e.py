@@ -45,7 +45,7 @@ with sync_playwright() as p:
     A.goto(BASE + '/?ref=kaiwave')
     A.wait_for_selector('.map-canvas'); A.wait_for_timeout(2500)
     check(A.locator('.dock .big.join').inner_text() == 'JOIN A CREW' and A.locator('.dock .big.start').inner_text() == 'START A CREW', 'two options, always on screen')
-    check([x.inner_text() for x in A.locator('#sports .stile[data-act=sport]').all()] == ['KITE', 'MTB', 'MX'] and A.locator('#sports .soon').count() == 3 and 'SOON' in A.locator('#sports .soon').first.inner_text(), 'kite, MTB and MX live; the rest coming soon')
+    check([x.inner_text() for x in A.locator('#sports .stile[data-act=sport]').all()] == ['KITE', 'MTB', 'MX'] and A.locator('#sports .soon').count() == 4 and 'SOON' in A.locator('#sports .soon').first.inner_text(), 'kite, MTB and MX live; wing, surf, SUP and windsurf coming soon')
     check('CATALONIA' in A.locator('.tbcity').inner_text().upper() and 'PILOT' in A.locator('.tbcity').inner_text(), 'opens on the Barcelona pilot (Catalonia)')
     check(A.locator('.ransom span').count() == 8 and A.locator('.hero .hl').inner_text().startswith('THE GOOD DAYS.'), 'the 2.7 look: the ransom-note logo, the headline')
     A.locator('.mapsec').scroll_into_view_if_needed(); A.wait_for_timeout(1200)
