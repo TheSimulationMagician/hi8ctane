@@ -146,7 +146,7 @@
 
   // ---------------------------------------------------------------- where you start from (it stays on this phone)
   // A region has its spots; crews leave from wherever riders live. The first crew from a town puts it on the list.
-  var REGION = { amsterdam: 'Netherlands', barcelona: 'Catalonia' };
+  var REGION = { amsterdam: 'Netherlands', barcelona: 'Catalonia', tarifa: 'Tarifa' };
   function regionName(slug) { var c = cityObj(slug || S.city); return c.region || REGION[c.slug] || c.name || slug; }
   function home() { var h = HI8.store.get('home29.' + S.city, null); return h && h.lat != null ? h : null; }
   function setHome(h) { if (h) HI8.store.set('home29.' + S.city, h); else HI8.store.del('home29.' + S.city); }
@@ -275,6 +275,7 @@
     return '<a class="night" href="B27-Night.dc.html"><div class="k">THE LAUNCH · SAT 23 JAN · BARCELONA · FREE</div><div class="t">FOUNDING NIGHT</div>' +
       '<p>Crews out by day, a party by night, the first 100 founding plates as patches.</p><div class="f"><span class="pill">150 SPOTS · FREE</span><span class="jn pk">RSVP FREE</span></div></a>' +
       '<div id="towns"></div>' +
+      '<div id="where"></div>' +
       '<a class="ycard sch" href="B27-Schools.dc.html"><span class="kick"><span class="blink pdot"></span>FOR SCHOOLS + RENTAL SHOPS</span><span class="t">We send you riders who already have a crew.</span>' +
       '<span class="p">Students keep riding after the course, and beginners and renters find you on every good day. Free to start.</span><span class="go">PARTNER WITH US →</span></a>';
   }
@@ -539,6 +540,34 @@
     el.style.display = '';
     el.innerHTML = sec('PLANS', 'DAYS OUT · BETTER WITH OTHERS') + '<p class="lede">Something different for a day: say you\'re in, pick a day, and we put you together with the others going.</p><div class="rail">' + P.map(planCard).join('') + '</div>';
   }
+  // WHERE NEXT? Tarifa (live), the regions coming soon, kite trips any partner lists, and how to list one
+  var WHERE = {
+    tarifa: { tag: 'OPEN NOW', place: 'Andalusia, Spain', blurb: "Europe's kite capital: Levante and Poniente at Los Lances and Valdevaqueros, surf at El Palmar. Crews from Tarifa, Algeciras and Cádiz.", chips: ['KITE', 'WING', 'SURF'] },
+    tatajuba: { tag: 'COMING SOON', place: 'Ceará, Brazil', blurb: 'Flat lagoons and steady trade winds, roughly July to January. Tell us you want in and you hear first when trips and crews open.', chips: ['KITE', 'LAGOONS', 'TRIPS'] }
+  };
+  function whereCard(c) {
+    var w = WHERE[c.slug] || { tag: c.status === 'open' ? 'OPEN NOW' : 'COMING SOON', place: c.region || '', blurb: '', chips: [] }, open = c.status === 'open';
+    var head = '<span class="pc-h art a-' + (c.slug === 'tatajuba' ? 'surf' : 'kite') + '"><span class="rib ' + (open ? 'y' : '') + '">' + esc(w.tag) + '</span><span class="pc-k">' + tile('kite', 30) + '<i>' + esc(open ? 'LIVE REGION' : 'WAITLIST') + '</i></span>' +
+      '<span class="pc-n">' + esc(c.name.toUpperCase()) + '</span><span class="pc-p">' + esc(w.place) + '</span></span>';
+    var chips = '<span class="chips">' + w.chips.map(function (x, i) { return '<span class="chip" style="background:' + ['#FFFFFF', '#8DF5E8', '#FFE14D'][i % 3] + '">' + esc(x) + '</span>'; }).join('') + '</span>';
+    if (open) return '<button class="pc" data-act="setcity" data-city="' + esc(c.slug) + '" aria-label="Go to ' + esc(c.name) + '">' + head + '<span class="pc-b"><span class="pc-d">' + esc(w.blurb) + '</span>' + chips +
+      '<span class="pc-f"><span class="pc-pr">CREWS · SPOTS · FORECAST</span><span class="jn lm">' + (S.city === c.slug ? "YOU'RE HERE" : 'GO') + '</span></span></span></button>';
+    var on = (S.waitlisted || {})[c.slug];
+    return '<div class="pc">' + head + '<span class="pc-b"><span class="pc-d">' + esc(w.blurb) + '</span>' + chips + '<span class="pc-f" style="flex-direction:column;align-items:stretch">' +
+      (on ? '<span class="jn wh">YOU\'RE ON THE LIST</span>'
+        : signedIn() ? '<button class="jn lm" data-act="waitlist" data-city="' + esc(c.slug) + '">' + (S.wlBusy === c.slug ? '<span class="spin"></span>' : 'TELL ME FIRST') + '</button>'
+        : '<form class="send" data-form="where" data-city="' + esc(c.slug) + '"><label class="sr" for="wl-' + esc(c.slug) + '">Email</label><input class="inp" id="wl-' + esc(c.slug) + '" type="email" inputmode="email" autocomplete="email" placeholder="you@email.com" required><button type="submit">TELL ME</button></form>') +
+      '</span></span></div>';
+  }
+  function drawWhere() {
+    var el = $('#where'); if (!el) return;
+    var cs = (HI8.placesNow().cities || []).filter(function (c) { return WHERE[c.slug] && (c.slug !== S.city); });
+    var trips = (S.trips || []);
+    var list = '<a class="pc" href="mailto:hello@hi8ctane.com?subject=List%20our%20trip%20on%20Hi8ctane"><span class="pc-h art a-mx"><span class="pc-k">' + tile('kite', 30) + '<i>FOR TRIP OPERATORS</i></span><span class="pc-n">LIST YOUR TRIP</span><span class="pc-p">Kite camps, surf trips, MTB and moto tours</span></span>' +
+      '<span class="pc-b"><span class="pc-d">Run trips? Put them in front of riders who already ride together. Free to list; we take 10% only on bookings we send.</span><span class="pc-f"><span class="pc-pr">HELLO@HI8CTANE.COM</span><span class="jn lm">GET LISTED</span></span></span></a>';
+    el.innerHTML = sec('WHERE NEXT?', 'TRIPS · NEW REGIONS') + '<p class="lede">Ride further: a new region, a trip with your crew, or a spot on the list for the next one.</p>' +
+      '<div class="rail">' + cs.map(whereCard).join('') + trips.map(planCard).join('') + list + '</div>';
+  }
   // ---------------------------------------------------------------- iteration 3: set up inline, conditions now, one list
   // MAKE IT YOURS: where you start (once). Shown until it's set; nothing pops up.
   function drawSetup() {
@@ -634,7 +663,7 @@
       '<a class="go2" href="B27-City.dc.html">Outside the Netherlands and Catalonia? Ask for your region →</a></div>';
   }
   function drawAll() {
-    refreshToday(); drawTop(); drawTime(); drawMapSpots(); drawSetup(); drawNow(); drawSessions(); drawCrews(); drawLive(); drawWeek(); drawBest(); drawSave(); drawPlans(); drawTowns();
+    refreshToday(); drawTop(); drawTime(); drawMapSpots(); drawSetup(); drawNow(); drawSessions(); drawCrews(); drawLive(); drawWeek(); drawBest(); drawSave(); drawPlans(); drawTowns(); drawWhere();
     if (S.view) renderSheet();
   }
 
@@ -1073,7 +1102,7 @@
   }
 
   // ---- A PLAN: a day out, "I'm in", with the others going
-  function planBy(slug) { return (S.plans || []).filter(function (p) { return p.slug === slug; })[0] || null; }
+  function planBy(slug) { return (S.plans || []).concat(S.trips || []).filter(function (p) { return p.slug === slug; })[0] || null; }
   function sheetPlan() {
     var p = planBy(S.pf.slug), f = S.pf;
     if (!p) return shell('PLAN', S.plans ? '<div class="err">That plan isn\'t on any more.</div>' : '<div class="sec"><div class="skel"></div></div>', '', true);
@@ -1119,6 +1148,7 @@
   }
   function loadPlans() {
     if (!HI8.live) return Promise.resolve();
+    HI8.rpc('hi8_plans', { p_city: null, p_key: HI8.me().key || null }).then(function (P) { S.trips = (P || []).filter(function (p) { return p.trip; }); drawWhere(); }, noop);
     return HI8.rpc('hi8_plans', { p_city: S.city, p_key: HI8.me().key || null }).then(function (P) { S.plans = P || []; drawPlans(); if (S.view === 'plan' || S.view === 'me') renderSheet(); }, function () { S.plans = S.plans || []; });
   }
 
@@ -1335,6 +1365,11 @@
       case 'startspot': if (d.sport !== S.sport) setSport(d.sport); newStart({ spot: d.spot, sport: d.sport }); go('#start'); break;
       case 'me': go('#me'); break;
       case 'city': go('#city'); break;
+      case 'waitlist':
+        if (S.wlBusy) break;
+        S.wlBusy = d.city; drawWhere();
+        after(HI8.withKey('hi8_waitlist', { p_city: d.city }, { noQueue: true }), function (out) { S.wlBusy = null; S.waitlisted = Object.assign({}, S.waitlisted, (function () { var o = {}; o[d.city] = 1; return o; })()); drawWhere(); toast(out.already ? "You're already on the " + esc(out.name) + ' list.' : "You're on the " + esc(out.name) + ' list. You hear first.'); }).catch(function () { S.wlBusy = null; drawWhere(); });
+        break;
       case 'setcity': S.city = d.city; HI8.store.set('city28', d.city); S.hi = null; closeSheet(); initMap(); loadForecast(); loadLive(); loadPlans(); drawAll(); break;
       case 'sport': setSport(d.sport); break;
       case 'soon': go('#soon/' + d.sport); break;
@@ -1453,6 +1488,14 @@
       var inp = $('#chatIn'), body = inp.value.trim(); if (!body) return;
       inp.value = '';
       after(HI8.withKey('hi8_send', { p_code: S.crew.code, p_body: body }, { noQueue: true }), function () { pollChat(); }).catch(function () { inp.value = body; });
+    }
+    if (kind === 'where') {
+      var wem = fm.querySelector('input[type=email]').value.trim(), wc = fm.getAttribute('data-city');
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(wem)) { toast("That email doesn't look right."); return; }
+      after(HI8.rpc('hi8_waitlist', { p_city: wc, p_email: wem, p_source: src().source || 'where-next' }), function (out) {
+        var o = {}; o[wc] = 1; S.waitlisted = Object.assign({}, S.waitlisted, o); drawWhere();
+        toast(out.already ? "You're already on the " + esc(out.name) + ' list.' : "You're on the " + esc(out.name) + ' list. You hear first.', 5000);
+      }).catch(noop);
     }
     if (kind === 'alert') {
       var em = fm.querySelector('input[type=email]').value.trim(), sp = fm.getAttribute('data-sport') || S.sport;

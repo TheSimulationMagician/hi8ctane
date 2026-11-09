@@ -22,6 +22,13 @@ The 2.7 identity, kept on purpose: surf mag meets 90s music TV. Cream paper, 3px
 - Links: `/?c=CODE` a crew (`#chat` scrolls to its chat), `/#join`, `/#start` (`?spot=…&sport=…` preselects), `/#spot/<slug>` a spot's hourly forecast, `/#plan/<slug>` a plan, `/#me`, `/?city=amsterdam`, `/?sport=mtb`, `/?stop=TOKEN` (the stop link in alert emails).
 - The 2.7 app screens (`B27-Landing`, `Web`, `Home`, `Map`, `Spot`, `Start`, `Crew`, `Chat`, `Me`) forward to the app, so old links in emails and chats keep working. Founding Night, Schools, City, Get In and onboarding are the 2.7 screens as before. **The radio is off for now**: `B27-Radio` forwards to the app and the radio button is gone from the other screens. `hi8ctane.com/join` opens JOIN A CREW.
 
+## Tarifa, Tatajuba and trips (`supabase/migrations/0010_tarifa_trips.sql`, 2.12)
+
+- Tarifa is a live region: Los Lances, Valdevaqueros (kite, wing), El Palmar (surf), Alcornocales (MTB), with pick-ups in Tarifa town, Algeciras and Cádiz.
+- Tatajuba (Ceará, Brazil) is coming soon: "Where next?" on the website takes an email (or the signed-in rider) onto its list (`hi8_waitlist`). See who's on it: `select email, plate, created_at from signups where city = 'tatajuba' order by created_at;`
+- Trips: any plan with `trip = true` shows in "Where next?" for every region. Add a partner's trip: Table Editor > plans > Insert row (slug, city = where it happens, kind = kite, title, place, blurb, price_from, trip = true). "I'm in" on a trip lands in `plan_leads` and emails the team, like any plan.
+- Trip operators who want in: the "List your trip" card emails hello@hi8ctane.com.
+
 ## Smart pick-ups and routes (`supabase/migrations/0009_routes.sql`, 2.11)
 
 - Each rider in a crew can say roughly where they start (rounded to about 1 km, never an address). The app sends it after joining or starting if "where you start" is set.

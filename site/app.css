@@ -538,3 +538,6 @@ table.fx tr.rate td { color: var(--ink); }
 .stops b { font-family: var(--word); font-weight: 400; }
 .alertw { margin: -2px 0 16px; padding: 10px 12px 12px; border: 2px dashed var(--ink); background: #fff; }
 .alertw .ab { margin-top: 0; }
+
+/* 2.12 where next: the waitlist form inside a card */
+#where .pc .send { display: flex; gap: 6px; } #where .pc .send .inp { flex: 1; min-width: 0; height: 36px; font-size: 12px; } #where .pc .send button { height: 36px; padding: 0 10px; font: 400 12px/1 var(--word); background: var(--lime); border: 2.5px solid var(--ink); }

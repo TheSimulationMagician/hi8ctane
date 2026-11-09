@@ -7,6 +7,7 @@ They run the real thing locally: Postgres 16 with both migrations, PostgREST (th
 - `plans_api.py`: 26 checks on 0006: the ride fee setting, the Martorelles MX spot, plans and their counts, "I'm in" with or without an account, updates not counted twice, the team email, switched-off plans, rate limits, erase.
 - `starts_api.py`: 19 checks on 0007: regions, starting points riders add (validation, reuse within 1.5 km, about 100 m precision), hidden until a crew leaves from them, crews from them, the rate limit, the MX day at €180.
 - `wallet_api.py`: 26 checks on 0008: the wallet off and on, only the service role credits it, paying a seat (held, twice refused, not enough money says how much), the fee (pilot, live, waived by the Pass), refunds (left, called off), release to the driver the day after (once), withdrawals (all out first, back on failure, from €5), erase keeps the books anonymised.
+- `where_api.py`: 13 checks on 0010: Tarifa open with pick-ups in Tarifa, Algeciras and Cádiz and its spot notes, starting from a nearby town, the Tatajuba list (email, key, twice is once, open regions and bad emails refused), trips back from every region and "I'm in" on a trip.
 - `routes_api.py`: 14 checks on 0009: only crew members set where they start, too far refused, kept to about 1 km, the best car for a rider who needs a seat, the best pick-up per rider, stops in order with times before the start, a Google Maps route, nobody's start leaks, paid seats stay put.
 - `../unit/money_test.mjs`: 23 checks on the Stripe functions against the real database and a fake Stripe: signatures, top-up checkout and webhook (once), unpaid not credited, the €100 cap, the Pass subscription on and off, withdrawals through Connect.
 - `../unit/fx_test.mjs`: 31 checks on the forecast engine (`site/fx.js`): kite, MTB and MX ratings, shore classes, kite size, windows, a week ahead, a day's numbers (rain chance, cloud, waves, water, light), model agreement, the map grid.
@@ -41,7 +42,7 @@ node test/live/serve.mjs site 8802 off &
 
 pip install playwright pillow && playwright install chromium   # crews_api/core_api run in captains-only mode, pilot_api and app_e2e with open posting
 python3 test/live/e2e.py                      # wipes the test database's tables first
-python3 test/live/crews_api.py && python3 test/live/core_api.py && python3 test/live/pilot_api.py && python3 test/live/plans_api.py && python3 test/live/starts_api.py && python3 test/live/wallet_api.py && python3 test/live/routes_api.py && node test/unit/money_test.mjs
+python3 test/live/crews_api.py && python3 test/live/core_api.py && python3 test/live/pilot_api.py && python3 test/live/plans_api.py && python3 test/live/starts_api.py && python3 test/live/wallet_api.py && python3 test/live/routes_api.py && python3 test/live/where_api.py && node test/unit/money_test.mjs
 python3 test/live/app_e2e.py                  # serve.mjs also stands in for Open-Meteo
 node test/unit/fx_test.mjs                    # needs serve.mjs on 8801
 python3 test/live/pixdiff.py 8802 <port of another copy of the site> out/
