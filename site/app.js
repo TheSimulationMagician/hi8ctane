@@ -13,8 +13,8 @@
   var noop = function () {};
 
   // ---------------------------------------------------------------- words
-  var SPORT = { kite: { name: 'Kite', em: '🪁' }, mtb: { name: 'MTB', em: '🚵' }, mx: { name: 'MX', em: '🏍️' }, wing: { name: 'Wing', em: '🪽' }, surf: { name: 'Surf', em: '🏄' }, sup: { name: 'SUP', em: '🛶' } };
-  var LIVE_SPORTS = ['kite', 'mtb', 'mx'], SOON = ['wing', 'surf', 'sup'];
+  var SPORT = { kite: { name: 'Kite', em: '🪁' }, mtb: { name: 'MTB', em: '🚵' }, mx: { name: 'MX', em: '🏍️' }, wing: { name: 'Wing', em: '🪽' }, surf: { name: 'Surf', em: '🏄' }, sup: { name: 'SUP', em: '🛶' }, windsurf: { name: 'Windsurf', em: '🏄' } };
+  var LIVE_SPORTS = ['kite', 'mtb', 'mx'], SOON = ['wing', 'surf', 'sup', 'windsurf'];
   var LEVEL = { rookie: 'LEARNING', regular: 'RIDER', ripper: 'RIPPER' };
   var LEVEL_SUB = { rookie: "can't ride on my own yet", regular: 'I ride on my own', ripper: 'strong, any conditions' };
   var CREW_LEVELS = { regular: 'RIDERS WHO RIDE SOLO', all: 'ALL LEVELS · ROOKIES WELCOME', rookie: 'ROOKIE SESSION' };
@@ -94,7 +94,7 @@
   }
 
   // ---------------------------------------------------------------- the 2.7 look: tiles, ribbons, verdicts
-  var SCOL = { kite: '#2A6F86', wing: '#5B3F99', surf: '#2297AA', sup: '#2A8C74', mtb: '#1F4FA0', mx: '#5C6B2F', wake: '#0E7A8C', other: '#4A4538' };
+  var SCOL = { kite: '#2A6F86', wing: '#5B3F99', surf: '#2297AA', sup: '#2A8C74', mtb: '#1F4FA0', mx: '#5C6B2F', windsurf: '#B4472E', wake: '#0E7A8C', other: '#4A4538' };
   var ICON = {
     kite: '<path d="M3 11l18-8-8 18-2-8z"/>',
     wing: '<path d="M3.5 16 C5 9 11 5 20 4.5 C17 9 15.5 13.5 15.5 19.5 C12 17.5 8 16.3 3.5 16 Z"/><path d="M9.8 10.4 L15.5 19.5"/>',
@@ -102,6 +102,7 @@
     sup: '<circle cx="12.6" cy="4.4" r="2"/><path d="M12.2 7.4 L9.6 16.4 M12.2 7.4 L15.4 11 M17.6 6.2 L13.4 21"/><path d="M3 17.4 C7.4 19.4 14.6 19.6 21 16"/>',
     mtb: '<circle cx="5.5" cy="16" r="3.5"/><circle cx="18.5" cy="16" r="3.5"/><path d="M5.5 16 L9.5 8.5 L15.5 8.5 L18.5 16 M9.5 8.5 L12 16"/>',
     mx: '<circle cx="5.5" cy="16.5" r="3.6"/><circle cx="18.5" cy="16.5" r="3.6"/><path d="M5.5 16.5 L8.8 11.4 H14 L18.5 16.5 M7.2 9 H12.2 L14 11.4 L16.2 6.2 M14.6 6.2 H18.2 M16.8 9.6 L20.8 10.6"/>',
+    windsurf: '<path d="M12 3 V17 H19 Z"/><path d="M12 3 C8 7 7.4 12 8.6 17"/><path d="M3 20 H21"/>',
     wake: '<path d="M3 19.5 C8 21.5 16 21.5 21 19.5"/><circle cx="8.5" cy="6.5" r="2"/><path d="M8.5 9.5 L9.5 16.5 M9 11.5 L15 8 M13.5 4 L20.5 10"/>',
     other: '<circle cx="12" cy="12" r="8"/><path d="M12 7 V12 L15 14"/>'
   };
