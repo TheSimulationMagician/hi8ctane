@@ -570,7 +570,7 @@ table.fx tr.rate td { color: var(--ink); }
 .more summary span, .more a.mo span { font-size: 10.5px; line-height: 1.35; color: var(--mute); }
 .more details > .blk, .more details > div { margin: 14px 12px 16px; }
 .more details > .blk:first-of-type { margin-top: 14px; }
-.more .mapbox { margin: 12px; }
+.mapsec .mapwrap { height: 40vh; min-height: 280px; max-height: 340px; }
 .soonr { flex-wrap: wrap; overflow: visible; }
 .qsum { padding: 12px 14px 8px; background: var(--ink); color: var(--cream); border: 3px solid var(--ink); box-shadow: 5px 5px 0 var(--lime); }
 .qs-k { display: flex; align-items: center; gap: 8px; font: 700 11px/1.2 var(--mono); color: var(--lime); }
