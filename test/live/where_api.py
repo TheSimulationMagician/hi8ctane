@@ -32,6 +32,8 @@ s, j = rpc('hi8_join', {'p_email': 'tar@example.com', 'p_city': 'tarifa'}, ip='1
 s, c = rpc('hi8_add_start', {'p_city': 'tarifa', 'p_name': 'Vejer', 'p_lat': 36.2526, 'p_lon': -5.9676}, ip='10.12.0.2')
 check(s == 200, 'a rider can start from a town near Tarifa (Vejer)')
 
+check({sp['slug'] for sp in P['spots'] if sp['city'] == 'amsterdam' and 'kite' in sp['sports']} >= {'wijk-aan-zee', 'ijmuiden', 'zandvoort', 'noordwijk', 'muiderberg', 'schellinkhout'}, 'six kite spots around Amsterdam, with Noordwijk, Muiderberg and Schellinkhout')
+
 print('Tatajuba: the list')
 check(cities['tatajuba']['status'] == 'soon', 'Tatajuba: coming soon')
 s, w = rpc('hi8_waitlist', {'p_city': 'tatajuba', 'p_email': 'Lagoon@Example.com'})
