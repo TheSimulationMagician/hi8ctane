@@ -34,6 +34,14 @@ jobs:
       - name: Set up Pages
         uses: actions/configure-pages@v5
 
+      # Every deploy gets its own ?v= on the scripts and styles, so phones fetch the new version
+      # instead of an old copy they kept.
+      - name: Stamp this deploy on the scripts and styles
+        run: |
+          v="${GITHUB_SHA::7}"
+          find site -name '*.html' -print0 | xargs -0 sed -i -E "s#((src|href)=\"[^\":?]+\.(js|css))\"#\1?v=$v\"#g"
+          grep -c "?v=$v" site/index.html
+
       - name: Upload the live site
         uses: actions/upload-pages-artifact@v4
         with:
