@@ -219,11 +219,11 @@
       '<div class="pg">' +
       (V === 1 ? '<section class="blk" id="crews"></section>' : '<section class="blk" id="sessions"></section>') +
       '<section class="blk" id="live"></section>' +
+      '<section class="blk mapsec" id="mapsec"><div class="sec2"><b>THE LIVE MAP</b><span>WIND · CREWS · WHO\'S THERE</span></div><div class="mapbox" id="mapslot"></div></section>' +
       (V !== 2 ? '<section class="blk" id="now"></section>' : '') +
       '<section class="blk" id="how">' + howHtml() + '</section>' +
       '<section class="blk" id="night"></section>' +
       '<section class="blk more" id="more"><div class="sec2"><b>MORE</b><span>WHEN YOU WANT IT</span></div>' +
-      '<details class="mo mapsec" id="moMap"><summary><b>THE LIVE MAP</b><span>Wind, crews and who\'s there, hour by hour</span></summary><div class="mapbox" id="mapslot"></div></details>' +
       '<details class="mo" id="moWeek"><summary><b>THE WEEK AHEAD</b><span>Every sport, every day, and the best window</span></summary><section class="blk" id="week"></section><section class="blk" id="best"></section></details>' +
       '<details class="mo" id="moSafe"><summary><b>SAFETY AND THE SPLIT</b><span>The buddy rule, riding with people you don\'t know yet, the fuel</span></summary><section class="blk" id="buddy">' + buddyHtml() + '</section><section class="blk" id="save"></section><section class="blk" id="trust">' + trustHtml() + '</section></details>' +
       '<details class="mo" id="moPlans"><summary><b>DAYS OUT</b><span>Plans with our partners</span></summary><section class="blk" id="plans"></section></details>' +
@@ -254,8 +254,6 @@
     if (mw.parentNode !== want) { want.appendChild(mw); if (map) setTimeout(fitMap, 30); }
   }
   if (wide.addEventListener) wide.addEventListener('change', placeMap);
-  // the map on a phone lives folded under MORE: fit it to the spots when it opens
-  document.addEventListener('toggle', function (e) { if (e.target && e.target.id === 'moMap' && e.target.open && map) setTimeout(fitMap, 40); }, true);
 
   function buddyHtml() {
     var col = function (k, head, bg, icbg) {
@@ -652,7 +650,7 @@
   function drawSessions() {
     var el = $('#sessions'); if (!el) return;
     var h = home(), L = sessions();
-    var head = '<div class="h2"><span class="pdot"></span>NEXT GOOD SESSIONS</div><div class="h2s">' + esc(SPORT[S.sport].name.toUpperCase()) + ' · ' + (h ? 'FROM ' + esc(h.name) : esc(regionName().toUpperCase())) + ' · TAP I\'M GOING</div>';
+    var head = '<div class="h2"><span class="pdot"></span>NEXT GOOD SESSIONS</div><div class="h2s">' + esc(SPORT[S.sport].name.toUpperCase()) + ' · ' + (h ? 'FROM ' + esc(h.name) : esc(regionName().toUpperCase())) + ' · JOIN THE CREW GOING, OR BE THE FIRST</div>';
     if (!FX.data[S.city] && !L.length) { el.innerHTML = head + '<div class="sess"><div class="skel" style="height:150px"></div></div>'; return; }
     if (!L.length) { el.innerHTML = head + '<div class="sess">' + emptyCrews() + '</div>'; return; }
     var shown = S.allSess ? L : L.slice(0, 4);
@@ -669,7 +667,7 @@
         '<div class="ss-f">' + crewLine + (c ? '<button class="jn lm" data-act="going" data-code="' + esc(c.code) + '">I\'M GOING</button>'
           : '<button class="jn lm" data-act="startwin" data-date="' + o.date + '" data-from="' + o.from + '" data-to="' + o.to + '" data-spot="' + o.spot.slug + '">I\'M GOING</button>') + '</div></div>';
     }).join('') + '</div>' + (L.length > shown.length ? '<button class="hbtn wide" data-act="allsess">MORE GOOD SESSIONS · +' + (L.length - shown.length) + '</button>' : '') +
-      '<div class="quiet"><button data-act="join">ALL CREWS</button><button data-act="start">ANOTHER DAY OR SPOT</button></div>' +
+      '<div class="two2"><button class="hbtn" data-act="join">ALL CREWS</button><button class="hbtn" data-act="start">START A CREW</button></div>' +
       (L.some(function (o) { return o.crews.length; }) ? '' : '<div class="alertw">' + alertBox() + '</div>');
     drawDock(L);
   }
