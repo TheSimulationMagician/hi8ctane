@@ -484,7 +484,7 @@
     }
     var sp = fxSpot(good.spot.slug), info = FX.dayInfo(sp, good.date) || {}, m = good.models, kite = S.sport === 'kite';
     var stat = function (k, v, s) { return v == null || v === '' ? '' : '<div class="st"><span>' + k + '</span><b>' + v + '</b>' + (s ? '<small>' + s + '</small>' : '') + '</div>'; };
-    var stats = kite ? [stat('WIND', good.w + ' KT', FX.compass(good.dir)), stat('GUSTS', good.g + ' KT', '+' + Math.max(0, good.g - good.w)), stat('YOUR KITE', good.kite ? good.kite + ' M' : '', kg() + ' KG'),
+    var stats = kite ? [stat('WIND', good.w + ' KT', FX.compass(good.dir)), stat('GUSTS', good.g + ' KT', '+' + Math.max(0, good.g - good.w)), (good.kite ? '<button class="st st-kg" data-act="kg" aria-label="Your kite: ' + good.kite + ' metres for ' + kg() + ' kilos. Change your weight"><span>YOUR KITE</span><b>' + good.kite + ' M</b><small>' + kg() + ' KG · CHANGE</small></button>' : ''),
       stat('WAVES', info.wave != null ? info.wave + ' M' : '', info.period ? info.period + ' S' : ''), stat('WATER', info.sst != null ? info.sst + '°C' : '', info.sst != null ? (info.sst < 15 ? '4/3 + boots' : info.sst < 18 ? '4/3 wetsuit' : info.sst < 21 ? '3/2 wetsuit' : 'shorty') : ''),
       stat('RAIN', info.pop != null ? info.pop + '%' : '', info.cloud != null ? 'cloud ' + info.cloud + '%' : '')]
       : [stat('GROUND', (good.ground || '').toUpperCase(), 'rain 24 h: ' + ((rowAt(good.spot.slug, good.date + 'T' + pad(good.from) + ':00') || {}).r24 || 0) + ' mm'), stat('TEMP', info.tmin != null ? (info.tmin === info.tmax ? info.tmax : info.tmin + '-' + info.tmax) + '°' : '', ''),
@@ -694,13 +694,14 @@
     else if (/^spot\//.test(h)) { S.view = 'spot'; S.spotSlug = h.slice(5); S.spotDay = S.spotDay || 0; }
     else if (/^soon\//.test(h)) { S.view = 'soon'; S.soonSport = h.slice(5); }
     else if (h === 'from') { S.view = 'from'; }
+    else if (h === 'kg') { S.view = 'kg'; }
     else if (/^plan\//.test(h)) { S.view = 'plan'; if (!S.pf || S.pf.slug !== h.slice(5)) S.pf = { slug: h.slice(5), day: null, people: 1, busy: false, err: null }; }
     else { if (S.view) closeSheet(); return; }
     renderSheet();
   }
   function renderSheet() {
     if (!S.view) return;
-    var fn = { join: sheetJoin, start: sheetStart, crew: sheetCrew, spot: sheetSpot, me: sheetMe, city: sheetCity, soon: sheetSoon, plan: sheetPlan, from: sheetFrom }[S.view];
+    var fn = { join: sheetJoin, start: sheetStart, crew: sheetCrew, spot: sheetSpot, me: sheetMe, city: sheetCity, soon: sheetSoon, plan: sheetPlan, from: sheetFrom, kg: sheetKg }[S.view];
     if (!fn) return;
     var keep = sheet.querySelector('.sh-body'), top = keep ? keep.scrollTop : 0, focus = document.activeElement && document.activeElement.id;
     var vals = {}; sheet.querySelectorAll('input[id],textarea[id]').forEach(function (i) { vals[i.id] = i.value; });
@@ -1072,6 +1073,7 @@
         ['ecmwf_ifs025', 'icon_seamless', 'gfs_seamless'].forEach(function (m) {
           if (rows.some(function (r) { return r.m && r.m[m]; })) T.push(tr(FX.MODEL_NAME[m], function (r) { var x = r.m && r.m[m]; return cell(r, x ? Math.round(x.w) : '', x ? windCell(x.w) + ';opacity:.8' : ''); }));
         });
+        T.push(tr('<button class="kgth" data-act="kg">KITE M · ' + kg() + ' KG ✎</button>', function (r) { var k = FX.kiteSize(r.w, kg()); return cell(r, k || ''); }));
         if (rows.some(function (r) { return r.wv != null; })) T.push(tr('WAVES M', function (r) { return cell(r, r.wv != null ? r.wv.toFixed(1) : ''); }));
       } else {
         T.push(tr('GROUND', function (r) { return cell(r, r.rate && r.rate.ground ? r.rate.ground.slice(0, 5).toUpperCase() : ''); }));
@@ -1236,6 +1238,14 @@
       '<button class="opt" data-act="signout">' + (S.confirmOut ? 'TAP AGAIN: FORGET ME ON THIS PHONE' : 'NOT YOU? FORGET ME ON THIS PHONE') + '</button></div>';
     return shell('ME', body, '');
   }
+  // ---- KITE SIZE: your weight, from any kite size on the page
+  function sheetKg() {
+    var w = kg();
+    return shell('KITE SIZE', '<div class="sec"><p class="lede">Your weight sets the kite size we suggest for every spot and hour. It stays on this phone.</p>' +
+      '<div class="row" style="margin:12px 0">' + [55, 65, 75, 85, 95].map(function (v) { return '<button class="opt" data-act="kgset" data-v="' + v + '" aria-pressed="' + (v === w) + '">' + v + ' KG</button>'; }).join('') + '</div></div>' + kgBox() +
+      '<p class="hint" style="padding:0 16px">At ' + w + ' kg: about a ' + (FX.kiteSize(12, w) || '–') + ' m in 12 knots, a ' + (FX.kiteSize(18, w) || '–') + ' m in 18, a ' + (FX.kiteSize(24, w) || '–') + ' m in 24.</p>',
+      '<button class="big join" data-act="close">DONE</button>', !!S.kgBack);
+  }
   function kgBox() {
     return '<div class="box"><h3>KITE SIZE</h3><div class="two" style="align-items:center"><label for="kgIn" style="font-size:12.5px">Your weight (kg), for the kite size in the forecast. Stays on this phone.</label>' +
       '<input class="inp" id="kgIn" data-fixed type="number" inputmode="numeric" min="35" max="140" value="' + kg() + '" data-change="kg"></div></div>';
@@ -1359,7 +1369,9 @@
     if (t.tagName === 'A' && (a === 'shared' || t.target === '_blank')) { if (a === 'shared') toast('Paste it in your group chats. Every share brings riders.'); return; }
     if (t.tagName === 'A' || t.tagName === 'BUTTON') e.preventDefault();
     switch (a) {
-      case 'close': if (S.view === 'from' && S.fromBack) { var back = S.fromBack; S.fromBack = null; closeSheet(); go(back); } else closeSheet(); break;
+      case 'kg': S.kgBack = S.view ? location.hash : null; go('#kg'); break;
+      case 'kgset': HI8.store.set('kg', Number(d.v)); drawAll(); renderSheet(); break;
+      case 'close': if (S.view === 'kg' && S.kgBack) { var kb = S.kgBack; S.kgBack = null; closeSheet(); go(kb); } else if (S.view === 'from' && S.fromBack) { var back = S.fromBack; S.fromBack = null; closeSheet(); go(back); } else closeSheet(); break;
       case 'join': if (S.view === 'crew') closeSheet(); go('#join'); break;
       case 'start': if (S.view === 'crew') closeSheet(); newStart({}); go('#start'); break;
       case 'startwin': newStart({ date: d.date, from: d.from, to: d.to, spot: d.spot }); go('#start'); break;
@@ -1478,7 +1490,7 @@
     if (a === 'sffrom') { S.sf.from = Number(t.value); if (S.sf.to <= S.sf.from) S.sf.to = S.sf.from + 2; rerank(); }
     if (a === 'sfto') { S.sf.to = Number(t.value); rerank(); }
     if (a === 'sfmeet') { S.sf.meet = t.value; S.sf.meetAuto = false; }
-    if (a === 'kg') { var v = Math.max(35, Math.min(140, Number(t.value) || 75)); HI8.store.set('kg', v); drawAll(); }
+    if (a === 'kg') { var v = Math.max(35, Math.min(140, Number(t.value) || 75)); HI8.store.set('kg', v); drawAll(); if (S.view === 'kg') renderSheet(); }
   });
   document.addEventListener('input', function (e) { if (e.target.id === 'hour') { S.hi = Number(e.target.value); stopPlay(); drawTime(); drawMapSpots(); } });
   document.addEventListener('submit', function (e) {

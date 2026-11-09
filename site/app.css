@@ -218,6 +218,12 @@ a:hover { color: var(--pink); }
 .bw-g { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border-bottom: 2px dashed rgba(17,17,17,.25); }
 .bw-g .st { padding: 8px 8px 9px; border-right: 1.5px solid var(--ink); border-bottom: 1.5px solid var(--ink); background: #fff; min-width: 0; }
 .bw-g .st:nth-child(4n) { border-right: 0; }
+.bw-g button.st { font: inherit; color: inherit; text-align: left; cursor: pointer; border-top: 0; border-left: 0; border-radius: 0; }
+.bw-g button.st small { color: var(--ink); text-decoration: underline; }
+.kgth { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; text-align: left; }
+/* a mouse can't swipe a rail: show its scrollbar where there's no touch */
+@media (hover: hover) and (pointer: fine) { .rail { scrollbar-width: thin; scrollbar-color: var(--ink) transparent; } .rail::-webkit-scrollbar { display: block; height: 8px; } .rail::-webkit-scrollbar-thumb { background: var(--ink); }
+  .nowr { flex-wrap: wrap; overflow: visible; } /* every spot at once: no hidden cards off to the side */ }
 .bw-g .st span { display: block; font: 700 8.5px/1 var(--mono); color: var(--mute); letter-spacing: .4px; }
 .bw-g .st b { display: block; margin-top: 4px; font: 400 18px/1 var(--big); font-weight: 400; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .bw-g .st small { display: block; margin-top: 2px; font-size: 9px; color: var(--mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

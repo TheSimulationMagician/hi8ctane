@@ -275,7 +275,7 @@
         zoomAt(drag.z + Math.log2(d / drag.pinch), drag.mx, drag.my); moved = true;
       } else if (drag && !drag.pinch) {
         var dx = e.offsetX - drag.x, dy = e.offsetY - drag.y;
-        if (Math.abs(dx) + Math.abs(dy) > 4) moved = true;
+        if (Math.hypot(dx, dy) > (e.pointerType === 'mouse' ? 4 : 12)) moved = true; // a finger wobbles on a tap: only a real drag pans
         if (moved) { cx = drag.cx - dx; cy = drag.cy - dy; fieldDirty = true; kick(); }
       }
     });
