@@ -210,11 +210,11 @@
       '<div class="tl"><label class="sr" for="hour">Forecast time</label><input type="range" id="hour" min="0" max="0" value="0"><div class="days" id="tlDays"></div></div>' +
       '<div class="when" id="when"></div></div></section>' +
       '<main class="panel" id="panel">' +
-      '<section class="hero ht" id="hero">' +
+      '<section class="hero ht" id="hero"><canvas class="herofx" id="heroFx" aria-hidden="true"></canvas>' +
       '<div class="kick"><span class="blink pdot"></span><span id="heroKick">LIVE CREWS · KITE · MTB · MX</span></div>' +
       '<h1 class="hl">THE FORECAST SAYS GO.<br><span>WE GET YOU THERE.</span></h1>' +
       '<p class="lede0">Good sessions near you, a crew at your level and a seat in the car. Tap <b>I\'M GOING</b>. No app to install.</p>' +
-      '<div class="herostat" id="heroStat"></div></section>' +
+      '<div class="herowind" id="heroWind"></div><div class="herostat" id="heroStat"></div></section>' +
       '<div class="ctx" id="ctx"><div class="sps" id="sports"></div><button class="ctxfrom" data-act="from" id="ctxFrom"></button></div>' +
       '<div class="pg">' +
       (V === 1 ? '<section class="blk" id="crews"></section>' : '<section class="blk" id="sessions"></section>') +
@@ -289,10 +289,51 @@
     el.innerHTML = '<a class="night" href="B27-Night.dc.html"><div class="k">THE LAUNCH · SAT 23 JAN · BARCELONA · FREE</div><div class="t">FOUNDING NIGHT</div>' +
       '<p>Crews out by day, a party by night, the first 100 founding plates as patches.</p><div class="f"><span class="pill">150 SPOTS · FREE</span><span class="jn pk">RSVP FREE</span></div></a>';
   }
+  // ---------------------------------------------------------------- the hero moves with the real wind
+  // Streaks cross the hero in the direction and at the pace of the forecast wind of the next good session.
+  var HW = { dir: 250, kt: 0, parts: [], raf: 0, on: true, still: !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) };
+  function heroWind(o) {
+    var f = o && o.fx, el = $('#heroWind'), has = f && f.w != null && f.dir != null;
+    HW.kt = has ? f.w : 6; if (has) HW.dir = f.dir;
+    if (el) el.innerHTML = has ? '<b>' + f.w + '</b> KT ' + esc(FX.compass(f.dir)) + '<i style="transform:rotate(' + ((f.dir + 180) % 360) + 'deg)">↑</i><span>' + esc(o.spot.name.toUpperCase()) + ' · ' + esc(dayRel(o.date)) + ' ' + pad(o.from) + '–' + pad(o.to) + '</span>' : '';
+    heroFx();
+  }
+  function heroFx() {
+    var cv = $('#heroFx'), box = $('#hero'); if (!cv || !box || !cv.getContext) return;
+    var dpr = Math.min(2, window.devicePixelRatio || 1), w = box.clientWidth, h = box.clientHeight;
+    if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); HW.parts = []; }
+    var n = Math.round(Math.min(90, w * h / 2600));
+    while (HW.parts.length < n) HW.parts.push({ x: Math.random() * w, y: Math.random() * h, l: 14 + Math.random() * 46, s: .55 + Math.random() * .9, a: .2 + Math.random() * .4, lime: Math.random() < .2 });
+    HW.parts.length = n;
+    if (!HW.io && window.IntersectionObserver) { HW.io = new IntersectionObserver(function (e) { HW.on = e[0].isIntersecting; if (HW.on) heroKick(); }); HW.io.observe(box); }
+    if (HW.still) heroFrame(true); else heroKick();
+  }
+  function heroKick() { if (!HW.raf && !HW.still) HW.raf = requestAnimationFrame(function () { HW.raf = 0; heroFrame(); }); }
+  function heroFrame(once) {
+    var cv = $('#heroFx'); if (!cv) return;
+    var ctx = cv.getContext('2d'), dpr = cv.width / Math.max(1, cv.clientWidth), w = cv.clientWidth, h = cv.clientHeight;
+    var th = (HW.dir + 180) * Math.PI / 180, dx = Math.sin(th), dy = -Math.cos(th), v = .5 + Math.min(40, HW.kt) * .13;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0); ctx.clearRect(0, 0, w, h); ctx.lineCap = 'round';
+    for (var i = 0; i < HW.parts.length; i++) {
+      var p = HW.parts[i], len = p.l * (.5 + Math.min(40, HW.kt) / 30);
+      if (!once) { p.x += dx * v * p.s; p.y += dy * v * p.s; }
+      if (p.x < -70) p.x = w + 60; else if (p.x > w + 70) p.x = -60;
+      if (p.y < -70) p.y = h + 60; else if (p.y > h + 70) p.y = -60;
+      var g = ctx.createLinearGradient(p.x - dx * len, p.y - dy * len, p.x, p.y), c = p.lime ? '200,255,61' : '255,255,255';
+      g.addColorStop(0, 'rgba(' + c + ',0)'); g.addColorStop(1, 'rgba(' + c + ',' + p.a + ')');
+      ctx.strokeStyle = g; ctx.lineWidth = p.lime ? 2.4 : 1.6;
+      ctx.beginPath(); ctx.moveTo(p.x - dx * len, p.y - dy * len); ctx.lineTo(p.x, p.y); ctx.stroke();
+    }
+    if (!once && HW.on && !document.hidden) heroKick();
+  }
+  document.addEventListener('visibilitychange', function () { if (!document.hidden && HW.on) heroKick(); });
+  window.addEventListener('resize', function () { if ($('#heroFx')) heroFx(); });
+
   // the one button at the bottom: I'M GOING on the next good session
   function drawDock(L) {
     var b = $('#dockGo'); if (!b) return;
     var o = (L || sessions())[0];
+    heroWind(o);
     b.innerHTML = 'I\'M GOING<small>' + (o ? 'NEXT: ' + esc(dayRel(o.date)) + ' ' + pad(o.from) + '–' + pad(o.to) + ' · ' + esc(o.spot.name.toUpperCase()) : 'PICK A DAY AND A SPOT') + '</small>';
   }
 
@@ -417,7 +458,7 @@
     var hm0 = home(); $('#ctxFrom').innerHTML = hm0 ? 'FROM <b>' + esc(hm0.name) + '</b> ▾' : '<b>WHERE FROM?</b> ▸';
     $('#heroKick').textContent = 'LIVE CREWS · ' + live.map(function (k) { return (SPORT[k] || { name: k }).name.toUpperCase(); }).join(' · ') + ' · ' + regionName().toUpperCase();
     var all = upcoming(null, 7), riders = all.reduce(function (n, x) { return n + (x.going || 0); }, 0);
-    $('#heroStat').innerHTML = all.length ? '<b>' + all.length + '</b> CREW' + (all.length > 1 ? 'S' : '') + ' THIS WEEK · <b>' + riders + '</b> RIDER' + (riders === 1 ? '' : 'S') + ' GOING' : 'FREE · NO APP · FOUNDING PLATES OPEN';
+    $('#heroStat').innerHTML = all.length >= 5 ? '<b>' + all.length + '</b> CREW' + (all.length > 1 ? 'S' : '') + ' THIS WEEK · <b>' + riders + '</b> RIDER' + (riders === 1 ? '' : 'S') + ' GOING' : 'FREE · NO APP · FOUNDING PLATES OPEN';
   }
   function drawCrews() {
     var el = $('#crews'), h = home(); if (!el) return;
