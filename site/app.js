@@ -741,6 +741,9 @@
   function route() {
     var h = location.hash.replace(/^#/, ''), c = new URLSearchParams(location.search).get('c');
     if (c) { if (!S.crew || S.crew.code !== c.toUpperCase()) openCrew(c, h === 'chat'); return; }
+    // from the home-screen widget: ?go=<date>.<from>.<to>.<spot> opens I'M GOING on that window
+    var g = new URLSearchParams(location.search).get('go');
+    if (g && !S.goDone) { S.goDone = true; var ga = g.split('.'); if (ga.length === 4 && /^\d{4}-\d\d-\d\d$/.test(ga[0]) && HI8.spot(ga[3])) { newStart({ date: ga[0], from: Number(ga[1]), to: Number(ga[2]), spot: ga[3], quick: true }); if (h !== 'start') { go('#start'); return; } } }
     if (h === 'join') { S.view = 'join'; }
     else if (h === 'start') {
       S.view = 'start';
