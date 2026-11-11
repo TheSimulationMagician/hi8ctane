@@ -10,9 +10,9 @@ built: that needs a Mac with Xcode. Nothing here changes the live site.
 
 | File | What it is | State |
 | --- | --- | --- |
-| `widget/feed.mjs` | Builds the widget's JSON from the site's own forecast engine and the crews | Tested: `node test/unit/widget_test.mjs` (9 checks) |
+| `widget/feed.mjs` | Builds the widget's JSON from the site's own forecast engine and the crews | Tested: `node test/unit/widget_test.mjs` (11 checks) |
 | `supabase/functions/widget/index.ts` | Serves that JSON, cached 15 minutes | Written, not deployed |
-| `ios/Hi8Widget/Hi8Widget.swift` | The widget: small, medium, large and lock screen | Written, not built |
+| `ios/Hi8Widget/Hi8Widget.swift` | The widget: a countdown to the next good session, the week as bars, who's going. Small, medium, large, and two lock-screen sizes | Written, not built |
 | `ios/Hi8Widget/Hi8Bridge.swift` | Lets the app tell the widget your region, sport and weight | Written, not built |
 | `capacitor.config.json` | The native shell's settings | Written |
 | `site/app.js` (`?go=`) | A widget tap opens I'M GOING on that session | Live-tested in a browser |

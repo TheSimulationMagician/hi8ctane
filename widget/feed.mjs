@@ -32,7 +32,7 @@ export async function widgetFeed({ FX, spots, crews = [], city, sport = 'kite', 
       if (!best || w.score > best.w.score) best = { spot, w };
     }
     const going = live.filter((c) => c.day === date).reduce((n, c) => n + (c.going || 0), 0);
-    week.push({ date, day: FX.dayShort(date), label: best ? FX.label(best.w.score) : 'NO GO', tone: best ? FX.tone(best.w.score) : 'no', kt: best && best.w.w != null ? Math.round(best.w.w) : null, going });
+    week.push({ date, day: FX.dayShort(date), score: best ? best.w.score : 0, label: best ? FX.label(best.w.score) : 'NO GO', tone: best ? FX.tone(best.w.score) : 'no', kt: best && best.w.w != null ? Math.round(best.w.w) : null, going });
     if (best && best.w.score >= 6) found.push({ date, ...best });
   }
   const f = found[0];
@@ -40,7 +40,7 @@ export async function widgetFeed({ FX, spots, crews = [], city, sport = 'kite', 
   if (f) {
     const w = f.w, c = live.filter((x) => x.day === f.date && x.spot === f.spot.slug).sort((a, b) => (b.going || 0) - (a.going || 0))[0] || null;
     next = {
-      date: f.date, day: f.date === t.date ? 'TODAY' : f.date === FX.addDays(t.date, 1) ? 'TOMORROW' : FX.dayShort(f.date),
+      date: f.date, start: `${f.date}T${pad(w.from)}:00`, end: `${f.date}T${pad(w.to)}:00`, day: f.date === t.date ? 'TODAY' : f.date === FX.addDays(t.date, 1) ? 'TOMORROW' : FX.dayShort(f.date),
       from: w.from, to: w.to, time: `${pad(w.from)}–${pad(w.to)}`,
       spot: f.spot.name, slug: f.spot.slug, label: FX.label(w.score), tone: FX.tone(w.score),
       kt: w.w != null ? Math.round(w.w) : null, gust: w.g != null ? Math.round(w.g) : null, dir: w.dir != null ? Math.round(w.dir) : null, compass: w.dir != null ? FX.compass(w.dir) : null,
@@ -49,5 +49,6 @@ export async function widgetFeed({ FX, spots, crews = [], city, sport = 'kite', 
       url: c ? `https://hi8ctane.com/?c=${encodeURIComponent(c.code)}` : `https://hi8ctane.com/?city=${city}&sport=${sport}&go=${f.date}.${w.from}.${w.to}.${f.spot.slug}`
     };
   }
-  return { v: 1, updated: now.toISOString(), city, sport, next, week };
+  if (next) next.at = week.findIndex((d) => d.date === next.date); // the bar the countdown points to
+  return { v: 1, updated: now.toISOString(), city, sport, tz: TZ[city] || 'UTC', next, week };
 }

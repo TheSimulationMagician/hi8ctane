@@ -25,6 +25,8 @@ if (out.next) {
   const w2 = await widgetFeed({ FX, spots, crews, city: 'amsterdam', sport: 'kite', now });
   check(w2.next.going === 3 && w2.next.seats === 2 && w2.next.crew === 'KAI1' && w2.next.url.endsWith('?c=KAI1'), 'a crew at that spot and day: who\'s going, the seats, and a link to the crew');
   check(w2.week.find((d) => d.date === out.next.date).going === 3, 'the week strip counts riders going, cancelled crews left out');
+  check(out.next.start === out.next.date + 'T' + String(out.next.from).padStart(2, '0') + ':00' && out.tz === 'Europe/Amsterdam' && out.week[out.next.at].date === out.next.date, 'the session\'s local start time and time zone for the countdown, and which bar it is');
+  check(out.week.every((d) => typeof d.score === 'number' && d.score >= 0 && d.score <= 10), 'each day carries its score for the bar height');
   check(out.next.kite == null || typeof out.next.kite === 'number' || typeof out.next.kite === 'string', 'kite size for the rider\'s weight');
 }
 const none = await widgetFeed({ FX, spots: [], city: 'amsterdam', sport: 'kite', now });
