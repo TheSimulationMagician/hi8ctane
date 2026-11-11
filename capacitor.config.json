@@ -1,0 +1,6 @@
+{
+  "appId": "com.hi8ctane.app",
+  "appName": "Hi8ctane",
+  "webDir": "site",
+  "ios": { "contentInset": "automatic" }
+}
