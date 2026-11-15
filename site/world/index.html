@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hi8ctane · Open World</title>
+<meta name="description" content="Fly to every spot: kite, MTB and rentals around Amsterdam, Barcelona and Tarifa, on a real 3D map with this week's wind.">
+<meta name="theme-color" content="#111111">
+<meta name="robots" content="noindex">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="preload" href="../fonts/Anton-Regular.woff" as="font" type="font/woff" crossorigin>
+<link rel="preload" href="../fonts/SpaceMono-Bold.woff" as="font" type="font/woff" crossorigin>
+<link rel="preload" href="../fonts/ArchivoBlack-Regular.woff" as="font" type="font/woff" crossorigin>
+<link rel="stylesheet" href="../vendor/maplibre/maplibre-gl.css">
+<link rel="stylesheet" href="world.css">
+</head>
+<body>
+<div id="map" class="map" aria-label="3D map of the spots"></div>
+<div class="veil" aria-hidden="true"></div>
+<header class="top">
+  <a class="logo" href="../" aria-label="Hi8ctane home"><span class="ransom" aria-hidden="true"><span class="r1">H</span><span class="r2">I</span><span class="r3">8</span><span class="r4">c</span><span class="r5">T</span><span class="r6">A</span><span class="r7">N</span><span class="r8">E</span></span></a>
+  <div class="looks" role="group" aria-label="Map look">
+    <button type="button" data-look="day" aria-pressed="true">DAYLIGHT</button>
+    <button type="button" data-look="topo" aria-pressed="false">TOPO</button>
+  </div>
+  <button type="button" class="add" id="addBtn">+ ADD A SPOT</button>
+</header>
+<div class="title" id="title"><span class="k">OPEN WORLD</span><b>THE WORLD<br>IS YOUR PARK.</b></div>
+<nav class="pick" aria-label="Spots">
+  <div class="regs" id="regs"></div>
+  <div class="chips" id="chips"></div>
+</nav>
+<section class="card" id="card" aria-live="polite"></section>
+<div class="hint" id="hint" hidden></div>
+<div class="sheet" id="sheet" hidden></div>
+<noscript><p class="nojs">The Open World map needs JavaScript. <a href="../">Back to Hi8ctane</a></p></noscript>
+<script src="../config.js"></script>
+<script src="../vendor/maplibre/maplibre-gl.js"></script>
+<script src="world.js"></script>
+</body>
+</html>
