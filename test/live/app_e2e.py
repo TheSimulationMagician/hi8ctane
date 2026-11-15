@@ -50,7 +50,7 @@ with sync_playwright() as p:
     check(A.locator('.dock .big').count() == 1 and A.locator('#dockGo').inner_text().startswith("I'M GOING") and 'NEXT:' in A.locator('#dockGo').inner_text(), "one action, always on screen: I'M GOING on the next good session")
     check([x.inner_text() for x in A.locator('#sports .stile[data-act=sport]').all()] == ['KITE', 'MTB', 'MX'] and A.locator('#sports .soon').count() == 0 and A.locator('#soonSports .soon').count() == 4 and 'SOON' in A.locator('#soonSports .soon').first.text_content(), 'kite, MTB and MX live; wing, surf, SUP and windsurf coming soon')
     check('CATALONIA' in A.locator('.tbcity').inner_text().upper() and 'PILOT' in A.locator('.tbcity').inner_text(), 'opens on the Barcelona pilot (Catalonia)')
-    check(A.locator('.ransom span').count() == 8 and A.locator('#verdict .vbig').inner_text().startswith('GO') and A.locator('#verdict .vrow .jn').first.inner_text() == "I'M GOING", "the ransom-note logo, and the call up top: go now or go then, with I'M GOING")
+    check(A.locator('.ransom span').count() == 8 and 'THE FORECAST SAYS GO.' in txt(A, '.hero .hl') and A.locator('#verdict').count() == 0, "the ransom-note logo and the 2.14 hero: the forecast says go")
     A.locator('.mapsec').scroll_into_view_if_needed(); A.wait_for_timeout(1200)
     check(A.locator('.mapsec .mapwrap').bounding_box()['height'] <= 345, 'on a phone the live map sits under the crews, smaller')
     px = A.evaluate("""(() => { const c = document.querySelector('.map-canvas'), x = c.getContext('2d').getImageData(0, 0, c.width, c.height).data, seen = new Set();
@@ -205,7 +205,7 @@ with sync_playwright() as p:
     F.locator('#sheet [data-act=sethome][data-name=UTRECHT]').click(); F.wait_for_timeout(300)
     check(json.loads(F.evaluate("localStorage.getItem('hi8.home29.amsterdam')"))['name'] == 'UTRECHT' and sql("select count(*) from hubs where kind = 'town'") == '0', 'kept on the phone only: nothing sent yet')
     F.locator('.sh-foot .big').click(); F.wait_for_timeout(300)
-    check('NEAREST TO UTRECHT' in txt(F, '#sessions') and 'FROM UTRECHT' in txt(F, '#verdict') and 'FROM UTRECHT' in txt(F, '#ctx') and F.locator('#setup .setupc').count() == 0 and 'NO CREW FROM UTRECHT YET?' in txt(F, '#towns') and 'START ONE FROM UTRECHT' in txt(F, '#towns'), 'crews near you, from Utrecht; start the first one from there')
+    check('NEAREST TO UTRECHT' in txt(F, '#sessions') and 'FROM UTRECHT' in txt(F, '#ctx') and F.locator('#setup .setupc').count() == 0 and 'NO CREW FROM UTRECHT YET?' in txt(F, '#towns') and 'START ONE FROM UTRECHT' in txt(F, '#towns'), 'crews near you, from Utrecht; start the first one from there')
     F.locator('#moWhere summary').click(); F.locator('#towns [data-act=startfrom]').click(); F.wait_for_selector('#sheet.on'); F.wait_for_timeout(600)
     check('UTRECHT' in F.locator('[data-act=sfhub][aria-pressed=true]').inner_text() and 'NEW' in F.locator('[data-act=sfhub][aria-pressed=true]').inner_text(), 'START picks Utrecht as the pick-up, new')
     F.fill('#sfEmail', 'ruud@example.com'); F.fill('#sfName', 'Ruud'); F.locator('.sh-foot .big.start').click(); F.wait_for_selector('text=YOUR CREW IS UP', timeout=8000)
@@ -262,7 +262,7 @@ with sync_playwright() as p:
     check(D.locator('.hero').bounding_box()['height'] > 200, 'computer: the hero keeps its full height')
     ctxV, V = fresh()
     V.goto(BASE + '/'); V.wait_for_timeout(1500)
-    check(V.locator('#verdict').bounding_box()['y'] < V.locator('#sessions').bounding_box()['y'] < V.locator('.mapwrap').bounding_box()['y'] < V.locator('#moHow').bounding_box()['y'] < V.locator('#moWeek').bounding_box()['y'] and V.evaluate('document.documentElement.scrollHeight') < 3200, 'phone: the call, the board, the live map, and the rest folded under MORE (a short page)')
+    check(V.locator('.hero .hl').bounding_box()['y'] < V.locator('#sessions').bounding_box()['y'] < V.locator('.mapwrap').bounding_box()['y'] < V.locator('#how').bounding_box()['y'] < V.locator('#moWeek').bounding_box()['y'] and V.locator('#night').count() == 0, 'phone: the hero, the board, the live map, how it works, then MORE; no Founding Night')
     V.goto(BASE + '/?v=1'); V.wait_for_timeout(1500)
     check(V.locator('#crews').count() == 1 and V.locator('#sessions').count() == 0, 'iteration 1 (?v=1): the crew cards')
     V.goto(BASE + '/?v=2'); V.wait_for_timeout(1500)
@@ -301,7 +301,7 @@ with sync_playwright() as p:
     ctxN, N = fresh()
     N.route(re.compile(r'.*/v1/(forecast|marine).*'), lambda r: r.abort())
     N.goto(BASE + '/'); N.wait_for_timeout(2500)
-    check('No forecast right now'.upper() in txt(N, '#week') and 'ALL SPOTS · THIS WEEK' in txt(N, '#sessions') and 'NO FORECAST' in txt(N, '#verdict') and not N.errs, 'Open-Meteo down: says so, crews still work, nothing breaks')
+    check('No forecast right now'.upper() in txt(N, '#week') and 'ALL SPOTS · THIS WEEK' in txt(N, '#sessions') and not N.errs, 'Open-Meteo down: says so, crews still work, nothing breaks')
 
     for name, pg in (('A', A), ('B', B), ('C', C), ('D', D), ('E', E), ('F', F), ('G', G), ('W', Wp), ('V', V)):
         check(not pg.errs, f'no script errors ({name}): {pg.errs[:2]}')
