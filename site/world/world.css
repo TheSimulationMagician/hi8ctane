@@ -26,7 +26,20 @@ body.topo {
 html, body { margin: 0; height: 100%; overflow: hidden; background: #0B2233; color: var(--ink); font: 400 13px/1.45 var(--mono); -webkit-text-size-adjust: 100%; overscroll-behavior: none; }
 button { font: inherit; cursor: pointer; }
 :focus-visible { outline: 3px solid var(--pink); outline-offset: 2px; }
-.map { position: fixed; inset: 0; }
+.map { position: fixed; inset: 0; background:
+  radial-gradient(1.5px 1.5px at 12% 18%, rgba(255,255,255,.9), transparent 60%), radial-gradient(1px 1px at 72% 12%, rgba(255,255,255,.8), transparent 60%),
+  radial-gradient(1.2px 1.2px at 38% 72%, rgba(255,255,255,.7), transparent 60%), radial-gradient(1px 1px at 86% 64%, rgba(255,255,255,.75), transparent 60%),
+  radial-gradient(1.4px 1.4px at 22% 88%, rgba(255,255,255,.6), transparent 60%), radial-gradient(1px 1px at 58% 34%, rgba(255,255,255,.7), transparent 60%),
+  radial-gradient(1px 1px at 93% 28%, rgba(255,255,255,.6), transparent 60%), radial-gradient(1.2px 1.2px at 6% 52%, rgba(255,255,255,.7), transparent 60%),
+  radial-gradient(ellipse at 50% 45%, #14365A 0%, #0A1A2E 45%, #04080F 100%); }
+body.topo .map { background-color: #04080F; }
+/* out in space: every spot is a dot, the chosen one keeps its flag */
+.space .pin:not(.on) .nm, .space .pin:not(.on) .st { display: none; }
+.space .pin:not(.on) .bx { font-size: 0; padding: 4px; border-radius: 50%; border-width: 1.5px; box-shadow: 0 0 0 3px rgba(255,255,255,.25); }
+.space .pin .ft { display: none; }
+.regs button[data-act=globe] { background: #111; color: var(--lime); border-color: #111; }
+body.topo .regs button[data-act=globe] { background: #0E2A4A; color: #FFE14D; border-color: #E6F4FF; }
+.regs button[data-act=globe][aria-pressed=true] { background: var(--lime); color: #111; }
 .veil { position: fixed; inset: 0; pointer-events: none; z-index: 1;
   background: linear-gradient(rgba(0,0,0,.28), rgba(0,0,0,0) 22%, rgba(0,0,0,0) 62%, rgba(0,0,0,.32)); }
 body.topo .veil { background:
@@ -96,11 +109,11 @@ body.day .title b { color: #fff; text-shadow: 3px 3px 0 #111; }
 .card .src { font: 400 10px/1.3 var(--mono); color: var(--sub); }
 
 /* pins */
-.pin { position: relative; display: flex; flex-direction: column; align-items: center; background: none; border: 0; padding: 0; cursor: pointer; transform-origin: bottom center; }
+.pin { display: flex; flex-direction: column; align-items: center; background: none; border: 0; padding: 0; cursor: pointer; transform-origin: bottom center; }
 .pin .nm { font: 700 10px/1 var(--mono); letter-spacing: .5px; background: var(--label); color: var(--labelInk); padding: 3px 5px; white-space: nowrap; margin-bottom: 2px; }
 .pin .bx { font: 400 20px/1 var(--big); padding: 3px 7px 2px; border: 2px solid #111; box-shadow: 3px 3px 0 #111; color: #111; background: var(--lime); }
 .pin .st { width: 2px; height: 34px; background: var(--stem); }
-.pin .ft { width: 12px; height: 5px; border-radius: 50%; background: rgba(0,0,0,.45); }
+.pin .ft { position: relative; width: 12px; height: 5px; border-radius: 50%; background: rgba(0,0,0,.45); }
 .pin.t-epic .bx { background: var(--pink); color: #fff; } .pin.t-good .bx { background: var(--lime); } .pin.t-ok .bx { background: var(--yellow); }
 .pin.t-no .bx { background: #E7E2D4; color: #555; } .pin.t-mtb .bx { background: var(--orange); } .pin.t-rent .bx { background: var(--sky); }
 .pin.on { z-index: 3; }
