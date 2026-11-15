@@ -212,18 +212,17 @@
       '<main class="panel" id="panel">' +
       '<section class="hero ht" id="hero"><canvas class="herofx" id="heroFx" aria-hidden="true"></canvas>' +
       '<div class="kick"><span class="blink pdot"></span><span id="heroKick">LIVE CREWS · KITE · MTB · MX</span></div>' +
-      '<h1 class="hl">THE FORECAST SAYS GO.<br><span>WE GET YOU THERE.</span></h1>' +
-      '<p class="lede0">Good sessions near you, a crew at your level and a seat in the car. Tap <b>I\'M GOING</b>. No app to install.</p>' +
-      '<div class="herowind" id="heroWind"></div><div class="herostat" id="heroStat"></div></section>' +
+      '<h1 class="sr">Hi8ctane: the forecast says go, we get you there</h1><div class="verdict" id="verdict"></div>' +
+      '<p class="lede0">A crew at your level and a seat in the car. No app to install.</p>' +
+      '<div class="herostat" id="heroStat"></div></section>' +
       '<div class="ctx" id="ctx"><div class="sps" id="sports"></div><button class="ctxfrom" data-act="from" id="ctxFrom"></button></div>' +
       '<div class="pg">' +
       (V === 1 ? '<section class="blk" id="crews"></section>' : '<section class="blk" id="sessions"></section>') +
       '<section class="blk" id="live"></section>' +
       '<section class="blk mapsec" id="mapsec"><div class="sec2"><b>THE LIVE MAP</b><span>WIND · CREWS · WHO\'S THERE</span></div><div class="mapbox" id="mapslot"></div></section>' +
-      (V !== 2 ? '<section class="blk" id="now"></section>' : '') +
-      '<section class="blk" id="how">' + howHtml() + '</section>' +
       '<section class="blk" id="night"></section>' +
       '<section class="blk more" id="more"><div class="sec2"><b>MORE</b><span>WHEN YOU WANT IT</span></div>' +
+      '<details class="mo" id="moHow"><summary><b>HOW IT WORKS</b><span>Three steps. No app, no account until you go</span></summary><section class="blk" id="how">' + howHtml() + '</section></details>' +
       '<details class="mo" id="moWeek"><summary><b>THE WEEK AHEAD</b><span>Every sport, every day, and the best window</span></summary><section class="blk" id="week"></section><section class="blk" id="best"></section></details>' +
       '<details class="mo" id="moSafe"><summary><b>SAFETY AND THE SPLIT</b><span>The buddy rule, riding with people you don\'t know yet, the fuel</span></summary><section class="blk" id="buddy">' + buddyHtml() + '</section><section class="blk" id="save"></section><section class="blk" id="trust">' + trustHtml() + '</section></details>' +
       '<details class="mo" id="moPlans"><summary><b>DAYS OUT</b><span>Plans with our partners</span></summary><section class="blk" id="plans"></section></details>' +
@@ -688,14 +687,8 @@
       return '<i class="t-' + t + (inw ? ' in' : '') + '" style="height:' + Math.max(8, Math.round(v * 30)) + 'px" title="' + pad(r.h) + ':00' + (S.sport === 'kite' ? ' · ' + Math.round(r.w) + ' kt' : '') + '"></i>';
     }).join('') + '</span><span class="hbl"><span>' + pad(Math.max(6, o.from - 2)) + '</span><span>' + pad(Math.min(21, o.to + 1)) + '</span></span>';
   }
-  function drawSessions() {
-    var el = $('#sessions'); if (!el) return;
-    var h = home(), L = sessions();
-    var head = '<div class="h2"><span class="pdot"></span>NEXT GOOD SESSIONS</div><div class="h2s">' + esc(SPORT[S.sport].name.toUpperCase()) + ' · ' + (h ? 'FROM ' + esc(h.name) : esc(regionName().toUpperCase())) + ' · JOIN THE CREW GOING, OR BE THE FIRST</div>';
-    if (!FX.data[S.city] && !L.length) { el.innerHTML = head + '<div class="sess"><div class="skel" style="height:150px"></div></div>'; return; }
-    if (!L.length) { el.innerHTML = head + '<div class="sess">' + emptyCrews() + '</div>'; return; }
-    var shown = S.allSess ? L : L.slice(0, 4);
-    el.innerHTML = head + '<div class="sess">' + shown.map(function (o, i) {
+  // one session as a card (used for the sessions that already have a crew)
+  function sessCard(o, i) {
       var f = o.fx, c = o.crews[0], kite = S.sport === 'kite';
       var key = f ? (kite ? f.w + ' KT ' + FX.compass(f.dir) + (f.g ? ' · G' + f.g : '') : (f.ground || '').toUpperCase() + (f.temp != null ? ' · ' + f.temp + '°C' : '')) : 'FORECAST SOON';
       var crewLine = c ? (function () { var hub = hubOf(c), cost = hub ? tripCost(hub, o.spot) : null, m = cost ? seatMath(cost, 4) : null, more = o.crews.length - 1;
@@ -707,10 +700,61 @@
         '<div class="ss-m"><span class="ss-k">' + esc(key) + (f && f.kite && kite ? ' · ' + f.kite + ' M KITE' : '') + (f && f.models && f.models.label ? ' · ' + f.models.label : '') + '</span>' + hourBars(o) + '</div>' +
         '<div class="ss-f">' + crewLine + (c ? '<button class="jn lm" data-act="going" data-code="' + esc(c.code) + '">I\'M GOING</button>'
           : '<button class="jn lm" data-act="startwin" data-date="' + o.date + '" data-from="' + o.from + '" data-to="' + o.to + '" data-spot="' + o.spot.slug + '">I\'M GOING</button>') + '</div></div>';
-    }).join('') + '</div>' + (L.length > shown.length ? '<button class="hbtn wide" data-act="allsess">MORE GOOD SESSIONS · +' + (L.length - shown.length) + '</button>' : '') +
-      '<div class="two2"><button class="hbtn" data-act="join">ALL CREWS</button><button class="hbtn" data-act="start">START A CREW</button></div>' +
-      (L.some(function (o) { return o.crews.length; }) ? '' : '<div class="alertw">' + alertBox() + '</div>');
-    drawDock(L);
+  }
+  function goBtn(o, cls) {
+    var c = o.crews[0];
+    return c ? '<button class="jn ' + cls + '" data-act="going" data-code="' + esc(c.code) + '">I\'M GOING</button>'
+      : '<button class="jn ' + cls + '" data-act="startwin" data-date="' + o.date + '" data-from="' + o.from + '" data-to="' + o.to + '" data-spot="' + o.spot.slug + '">I\'M GOING</button>';
+  }
+  function sessLine(o, now) {
+    var f = o.fx, kite = S.sport === 'kite', going = o.crews.reduce(function (n, c) { return n + (c.going || 0); }, 0);
+    return (now ? 'until ' + pad(o.to) + ':00' : dayRel(o.date) + ' ' + pad(o.from) + '–' + pad(o.to)) +
+      (f ? ' · ' + (kite ? f.w + ' kt ' + FX.compass(f.dir) : (f.ground || '') + (f.temp != null ? ' ' + f.temp + '°C' : '')) + ' · ' + f.label : '') +
+      ' · ' + (going ? going + ' going' : 'nobody yet');
+  }
+  // THE CALL: go now, or go then. The first thing on the page.
+  function drawVerdict(L) {
+    var el = $('#verdict'); if (!el) return;
+    var kick = '<div class="vk">' + esc(SPORT[S.sport].name.toUpperCase()) + ' · ' + (home() ? 'FROM ' + esc(home().name) : esc(regionName().toUpperCase())) + '</div>';
+    if (!FX.data[S.city]) { el.innerHTML = kick + (FX.error ? '<div class="vbig">NO FORECAST</div><p class="vs">Open-Meteo can\'t be reached right now. Crews still work.</p>' : '<div class="skel" style="height:96px;opacity:.35"></div>'); return; }
+    var nowMin = S.nowH * 60 + S.nowM, now = L.filter(function (o) { return o.fx && o.date === S.today && o.from * 60 - nowMin <= 120; })[0] || null;
+    var rest = L.filter(function (o) { return o !== now && o.fx; }), first = now || rest[0], then = now ? rest[0] : rest[1];
+    if (!first) { el.innerHTML = kick + '<div class="vbig no">NOT THIS WEEK</div><p class="vs">Nothing good for your level in the next 7 days. We\'ll email you the evening before the next good day.</p>'; return; }
+    var big = now ? 'GO NOW' : 'GO ' + (first.date === S.today ? 'AT ' + pad(first.from) + ':00' : dayRel(first.date));
+    el.innerHTML = kick + (now ? '' : '<div class="vnot">NOT RIGHT NOW</div>') + '<div class="vbig' + (now ? ' on' : '') + '">' + esc(big) + '</div>' +
+      '<div class="vrow"><button class="vinfo" data-act="spotat" data-spot="' + first.spot.slug + '" data-date="' + first.date + '"><b>' + esc(first.spot.name.toUpperCase()) + (first.min ? ' <small>' + first.min + ' MIN</small>' : '') + '</b><span>' + esc(sessLine(first, !!now)) + '</span></button>' + goBtn(first, 'lm') + '</div>' +
+      (then ? '<div class="vrow then"><button class="vinfo" data-act="spotat" data-spot="' + then.spot.slug + '" data-date="' + then.date + '"><b><i>THEN</i> ' + esc(then.spot.name.toUpperCase()) + '</b><span>' + esc(sessLine(then, false)) + '</span></button>' + goBtn(then, 'wh') + '</div>' : '');
+  }
+  // ALL SPOTS, THIS WEEK: every nearby spot against now and the next 7 days. A cell is the best hours of that day.
+  function boardHtml(crews) {
+    var kite = S.sport === 'kite', days = [], t = S.today + 'T' + pad(S.nowH) + ':00';
+    for (var i = 0; i < 7; i++) days.push(FX.addDays(S.today, i));
+    var head = '<div class="bd-r bd-h"><span class="bd-n">' + (kite ? 'KNOTS' : 'SCORE /10') + '</span><span class="bd-c now">NOW</span>' + days.map(function (d, i) { return '<span class="bd-c' + (i === 0 ? ' td' : '') + '">' + esc(FX.dayShort(d)) + '</span>'; }).join('') + '</div>';
+    return '<div class="board" role="table" aria-label="All spots, this week">' + head + spotsNear().map(function (x) {
+      var sp = x.spot, fs = fxSpot(sp.slug), r0 = rowAt(sp.slug, t), rt0 = r0 ? rateAt(sp, t) : null;
+      var nowCell = '<button class="bd-c now t-' + (rt0 ? (rt0.dark ? 'none' : FX.tone(rt0.s)) : 'none') + '" data-act="spot" data-spot="' + sp.slug + '" aria-label="' + esc(sp.name + ' now: ' + (rt0 ? rt0.label : 'no forecast')) + '">' + (r0 && rt0 ? (kite ? Math.round(r0.w) : Math.round(rt0.s)) : '–') + '</button>';
+      return '<div class="bd-r"><button class="bd-n" data-act="spot" data-spot="' + sp.slug + '">' + esc(sp.name.toUpperCase()) + (x.min ? '<small>' + x.min + ' MIN</small>' : '') + '</button>' + nowCell + days.map(function (d, i) {
+        var w = fs ? FX.windows(fs, d, S.sport, sp, { kg: kg() })[0] : null, val = '–', tone = 'none', lab = 'no forecast';
+        if (i === 0 && w && S.nowH * 60 + S.nowM + (x.min || 0) > w.to * 60 - 90) w = null; // today: too late for it
+        if (w) { val = kite ? Math.round(w.w) : Math.round(w.score); tone = FX.tone(w.score); lab = w.label + ' ' + pad(w.from) + '–' + pad(w.to); }
+        else if (fs) { var best = null; FX.dayRows(fs, d, S.sport, sp, { kg: kg() }, 9, 19).forEach(function (r) { if (r.rate && !r.rate.dark && (!best || r.rate.s > best.rate.s)) best = r; }); if (best) { val = kite ? Math.round(best.w) : Math.round(best.rate.s); tone = 'no'; lab = 'NO GO'; } }
+        var c = crews.filter(function (q) { return q.day === d && q.spot === sp.slug; }).sort(function (a, b) { return (b.going || 0) - (a.going || 0); })[0];
+        var act = c ? 'data-act="going" data-code="' + esc(c.code) + '"' : w && w.score >= 6 ? 'data-act="startwin" data-date="' + d + '" data-from="' + w.from + '" data-to="' + w.to + '" data-spot="' + sp.slug + '"' : 'data-act="spotat" data-spot="' + sp.slug + '" data-date="' + d + '"';
+        return '<button class="bd-c t-' + tone + (c ? ' has' : '') + '" ' + act + ' aria-label="' + esc(sp.name + ' ' + dayRel(d) + ': ' + lab + (c ? ', ' + c.going + ' going' : '')) + '">' + val + (c ? '<i>' + (c.going || 1) + '</i>' : '') + '</button>';
+      }).join('') + '</div>';
+    }).join('') + '</div><p class="bd-k"><span class="t-epic">EPIC</span><span class="t-good">GOOD</span><span class="t-ok">OK</span><span class="t-no">NO GO</span> for your level. Tap a day to go. <i>3</i> = riders going.</p>';
+  }
+  function drawSessions() {
+    var el = $('#sessions'); if (!el) return;
+    var h = home(), L = sessions();
+    drawVerdict(L); drawDock(L);
+    var head = '<div class="h2"><span class="pdot"></span>ALL SPOTS · THIS WEEK</div><div class="h2s">' + esc(SPORT[S.sport].name.toUpperCase()) + ' · ' + (h ? 'NEAREST TO ' + esc(h.name) + ' FIRST' : 'NEAREST FIRST') + '</div>';
+    var foot = '<div class="two2"><button class="hbtn" data-act="join">ALL CREWS</button><button class="hbtn" data-act="start">START A CREW</button></div>';
+    if (!FX.data[S.city]) { el.innerHTML = head + (FX.error ? '<div class="nocrew">No forecast right now: Open-Meteo can\'t be reached. You can still start or join a crew.</div>' : '<div class="skel" style="height:220px"></div>') + (L.length ? '<div class="sess">' + L.slice(0, 3).map(sessCard).join('') + '</div>' : '') + foot; return; }
+    var withCrew = L.filter(function (o) { return o.crews.length; });
+    el.innerHTML = head + boardHtml(upcoming(S.sport, 14)) +
+      (withCrew.length ? '<div class="h2 sub"><span class="pdot"></span>CREWS GOING</div><div class="sess">' + withCrew.slice(0, 3).map(sessCard).join('') + '</div>' : '') + foot +
+      (withCrew.length ? '' : '<div class="alertw">' + alertBox() + '</div>');
   }
 
   // NO CREW FROM YOUR TOWN YET? Crews leave from wherever riders live: the first one from a town puts it on the list
