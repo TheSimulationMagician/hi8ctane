@@ -48,8 +48,15 @@
       var r = host.getBoundingClientRect();
       W = Math.max(50, Math.round(r.width)); H = Math.max(50, Math.round(r.height));
       [cv, trail].forEach(function (c) { c.width = W * dpr; c.height = H * dpr; });
-      cv.style.width = W + 'px'; cv.style.height = H + 'px';
+      cv.style.width = W + 'px'; cv.style.height = H + 'px'; clamp();
       fieldDirty = true; seed();
+    }
+    // Never look past the region we have outlines for: the land would just end. Zoom and pan stop at its box.
+    function clamp() {
+      var B = geo && geo.bbox; if (!B) return;
+      for (var i = 0; i < 80 && (lonX(B[2], z) - lonX(B[0], z) < W || latY(B[1], z) - latY(B[3], z) < H); i++) z += 0.05;
+      var x0 = lonX(B[0], z) + W / 2, x1 = lonX(B[2], z) - W / 2, y0 = latY(B[3], z) + H / 2, y1 = latY(B[1], z) - H / 2;
+      cx = x1 < x0 ? (x0 + x1) / 2 : Math.max(x0, Math.min(x1, cx)); cy = y1 < y0 ? (y0 + y1) / 2 : Math.max(y0, Math.min(y1, cy));
     }
     function px(lat, lon) { return [lonX(lon, z) - cx + W / 2, latY(lat, z) - cy + H / 2]; }
     function ll(x, y) { return [yLat(y - H / 2 + cy, z), xLon(x - W / 2 + cx, z)]; }
@@ -251,7 +258,7 @@
       nz = Math.max(6.4, Math.min(11.5, nz));
       var g = ll(sx, sy);
       z = nz;
-      var q = px(g[0], g[1]); cx += q[0] - sx; cy += q[1] - sy;
+      var q = px(g[0], g[1]); cx += q[0] - sx; cy += q[1] - sy; clamp();
       fieldDirty = true; seed(); kick();
     }
     cv.style.touchAction = 'none';
@@ -276,7 +283,7 @@
       } else if (drag && !drag.pinch) {
         var dx = e.offsetX - drag.x, dy = e.offsetY - drag.y;
         if (Math.hypot(dx, dy) > (e.pointerType === 'mouse' ? 4 : 12)) moved = true; // a finger wobbles on a tap: only a real drag pans
-        if (moved) { cx = drag.cx - dx; cy = drag.cy - dy; fieldDirty = true; kick(); }
+        if (moved) { cx = drag.cx - dx; cy = drag.cy - dy; clamp(); fieldDirty = true; kick(); }
       }
     });
     function up(e) {
@@ -327,7 +334,7 @@
         z = Math.min(z, 10.5);
         // centre the box inside the free area
         var bx = (lonX(w0, z) + lonX(e0, z)) / 2, by = (latY(s, z) + latY(n, z)) / 2;
-        cx = bx + (pad.r + lab - pad.l) / 2; cy = by + (pad.b - pad.t) / 2;
+        cx = bx + (pad.r + lab - pad.l) / 2; cy = by + (pad.b - pad.t) / 2; clamp();
         fieldDirty = true; seed(); kick();
       },
       zoom: function (d) { zoomAt(z + d, W / 2, H / 2); },
