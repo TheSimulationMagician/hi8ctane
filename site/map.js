@@ -215,24 +215,24 @@
 
     // ---------------------------------------------------------------- particles
     function seed() {
-      var n = still ? 0 : Math.round(Math.min(2200, W * H / 260));
+      var n = still ? 0 : Math.round(Math.min(420, W * H / 1900));
       parts = [];
-      for (var i = 0; i < n; i++) parts.push({ x: Math.random() * W, y: Math.random() * H, a: Math.floor(Math.random() * 80) });
+      for (var i = 0; i < n; i++) parts.push({ x: Math.random() * W, y: Math.random() * H, a: Math.floor(Math.random() * 160) });
       tctx.setTransform(1, 0, 0, 1, 0, 0); tctx.clearRect(0, 0, trail.width, trail.height);
     }
     function stepParticles() {
       tctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      tctx.globalCompositeOperation = 'destination-in'; tctx.fillStyle = 'rgba(0,0,0,0.90)'; tctx.fillRect(0, 0, W, H);
+      tctx.globalCompositeOperation = 'destination-in'; tctx.fillStyle = 'rgba(0,0,0,0.955)'; tctx.fillRect(0, 0, W, H);
       tctx.globalCompositeOperation = 'source-over';
       if (!grid) return;
       // speed on screen: grows with zoom, so the flow looks the same at every scale
       var k = 0.022 * Math.pow(2, z - 7.6);
-      tctx.lineWidth = 1.1; tctx.strokeStyle = layer === 'rain' ? 'rgba(255,255,255,0.55)' : 'rgba(255,255,255,0.8)';
+      tctx.lineWidth = 1.2; tctx.strokeStyle = layer === 'rain' ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.45)';
       tctx.beginPath();
       for (var i = 0; i < parts.length; i++) {
         var p = parts[i], g = ll(p.x, p.y), wv = windAt(g[0], g[1], hour);
-        if (!wv || p.a++ > 90) { p.x = Math.random() * W; p.y = Math.random() * H; p.a = 0; continue; }
-        var nx = p.x + wv.u * k * 3, ny = p.y - wv.v * k * 3;
+        if (!wv || p.a++ > 170) { p.x = Math.random() * W; p.y = Math.random() * H; p.a = 0; continue; }
+        var nx = p.x + wv.u * k * 1.3, ny = p.y - wv.v * k * 1.3; // slow, long trails: a flow, not rain
         tctx.moveTo(p.x, p.y); tctx.lineTo(nx, ny);
         p.x = nx; p.y = ny;
         if (nx < 0 || nx > W || ny < 0 || ny > H) { p.x = Math.random() * W; p.y = Math.random() * H; p.a = 0; }
