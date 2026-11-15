@@ -1,5 +1,5 @@
 # TEST ONLY. 0008 (2.10) through the real API: the wallet, paying a seat from it, the money held until the crew
-# has ridden, refunds (called off, left, changed cars), the Hi8 fee (pilot, live, waived by the Pass), and that
+# has ridden, refunds (called off, left, changed cars), the Hi8 fee (pilot, live, 10% with the Pass), and that
 # only the Stripe functions (service role) can credit a wallet.
 import json, os, subprocess, urllib.request, datetime, hmac, hashlib, base64, time
 
@@ -48,7 +48,7 @@ bal = lambda e: int(sql(f"select public.hi8_balance('{e}')"))
 
 print('switched off until the Stripe keys are in')
 s, w = rpc('hi8_wallet', {'p_key': sam})
-check(s == 200 and w['live'] is False and w['balance_cents'] == 0 and w['topups'] == [1000, 2000, 5000] and w['pass_month_cents'] == 399, 'the wallet: off, empty, top-ups of €10, €20, €50, the Pass at €3.99')
+check(s == 200 and w['live'] is False and w['balance_cents'] == 0 and w['topups'] == [1000, 2000, 5000] and w['pass_month_cents'] == 1699, 'the wallet: off, empty, top-ups of €10, €20, €50, the Pass at €16.99 (0013)')
 s, b = rpc('hi8_pay_seat', {'p_key': sam, 'p_code': code})
 check(s == 400 and b['message'] == 'payments_off', 'paying a seat: not yet')
 sql("update public.app_settings set value = 'true' where key = 'payments_live'")
@@ -78,7 +78,7 @@ check(s == 400 and b['message'] == 'no_funds' and b['details'] == '600', 'Joost 
 s, w = rpc('hi8_wallet', {'p_key': marta})
 check(w['pending_cents'] == 600 and w['balance_cents'] == 0, 'Marta sees €6 on its way')
 
-print('the Hi8 fee: live, or waived by the Pass')
+print('the Hi8 fee: live, or 10% with the Pass')
 sql("update public.app_settings set value = 'true' where key = 'fee_live'")
 rpc('hi8_topup_paid', {'p_email': 'joost@example.com', 'p_cents': 1000, 'p_ref': 'cs_test_2'}, service=True)
 s, c = rpc('hi8_pay_seat', {'p_key': joost, 'p_code': code})
@@ -87,7 +87,8 @@ check(sql("select fee_cents from seat_payments where rider_email = 'joost@exampl
 rpc('hi8_pass_update', {'p_email': 'joost@example.com', 'p_plan': 'month', 'p_status': 'active', 'p_until': (datetime.datetime.utcnow() + datetime.timedelta(days=30)).isoformat() + 'Z', 'p_sub': 'sub_1', 'p_cus': 'cus_1'}, service=True)
 s, w = rpc('hi8_wallet', {'p_key': joost})
 check(w['pass']['active'] is True and w['pass']['plan'] == 'month', 'Joost takes the Hi8 Pass')
-check(json.loads(sql("select public.hi8_seat_price(c.id, 'joost@example.com') from crews c where code = '" + code + "'"))['waived'] == 'pass', 'with the Pass, no fee on his next seats')
+pj = json.loads(sql("select public.hi8_seat_price(c.id, 'joost@example.com') from crews c where code = '" + code + "'"))
+check(pj['member'] is True and pj['fee_pct'] == 10, 'with the Pass, his seats carry the 10% member fee instead of 15% (0013)')
 sql("update public.app_settings set value = 'false' where key = 'fee_live'")
 
 print('refunds and paying the driver')

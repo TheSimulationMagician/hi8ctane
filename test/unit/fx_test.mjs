@@ -27,6 +27,19 @@ check(FX.rate('mtb', {}, hr({ mm: 2 }), day).s <= 2, 'riding in the rain: no');
 check(FX.shore(160, 160) === 'onshore' && FX.shore(160, 250) === 'side-shore' && FX.shore(160, 340) === 'offshore' && FX.shore(95, 0) === 'side-shore', 'shore classes');
 check(FX.compass(225) === 'SW' && FX.compass(350) === 'N', 'compass');
 
+console.log('safety caps (2.15)');
+const zvt = { slug: 'zandvoort', face: 292, good_from: 180, good_to: 360, lake: false };
+const zv = FX.rate('kite', zvt, hr({ w: 18, g: 32, dir: 270 }), day, { kg: 84 });
+check(zv.label === 'NO GO' && zv.caps.includes('GUSTY') && zv.caps.includes('ONSHORE'), 'Zandvoort 18 kt gusting 32, W: no longer GOOD (gusty, onshore)');
+const zvR = FX.rate('kite', zvt, hr({ w: 18, g: 26, dir: 270 }), day, { kg: 84 });
+check(zvR.label === 'OK' && zvR.caps.includes('ONSHORE'), '18 kt gusting 26, straight onshore: OK at most for a rider');
+check(FX.rate('kite', zvt, hr({ w: 18, g: 26, dir: 270 }), day, { kg: 84, level: 'rookie' }).label === 'NO GO', 'the same for a rookie: no go');
+const ij = FX.rate('kite', { slug: 'ijmuiden', face: 270, good_from: 180, good_to: 360 }, hr({ w: 20, g: 35, dir: 225 }), day, { kg: 84 });
+check(ij.label === 'NO GO' && FX.reason(ij) === 'GUSTY', 'IJmuiden 20 kt gusting 35: no go for a rider, reason GUSTY');
+check(FX.rate('kite', zvt, hr({ w: 20, g: 35, dir: 225 }), day, { level: 'ripper' }).label === 'OK', 'a ripper may still go in it: OK');
+check(FX.rate('kite', cdf, hr({}), day, { kg: 75 }).caps.length === 0 && FX.rate('kite', cdf, hr({}), day).label !== 'OK', 'a clean cross-on 18 kt: no caps, still good');
+check(FX.reason(FX.rate('kite', cdf, hr({ w: 8, g: 11 }), day)) === 'TOO LIGHT', 'reason: too light');
+
 console.log('from the (stand-in) API');
 const spots = [Object.assign({ lat: 41.268, lon: 1.985 }, cdf), { slug: 'trabucador', lat: 40.62, lon: 0.733, lake: true, face: null },
   { slug: 'collserola', lat: 41.418, lon: 2.115, face: null, lake: false }, { slug: 'vallgorguina-mx', lat: 41.64, lon: 2.505, face: null, lake: false }];
