@@ -9,11 +9,11 @@
 // deps: { fetch, uuid } (the tests pass fakes)
 
 export const PROMPT = [
-  'Redraw the person in this photo as a hand-drawn cartoon portrait: head and shoulders, facing the viewer, centred, with space around the head.',
-  'Style: a flat 2D illustration from a 1990s surf magazine comic. Clean dark-brown ink outlines of even weight, flat colour fills with no gradients,',
-  'simple confident shapes, slightly windswept hair, a light grainy print texture, a warm sunny palette.',
-  "Keep the person recognisable: same face shape, same skin tone, same hair colour and style, same facial hair, glasses and visible accessories.",
-  'A relaxed, friendly expression. No text, no logos, no frame. Transparent background.',
+  'Redraw the person in this photo as a realistic comic-book portrait, the way a 1990s surf magazine illustrated its riders: head and shoulders, facing the viewer, centred, with space around the head.',
+  'Realistic proportions and anatomy, not chibi, not big-eyed, not a caricature. Bold black ink outlines with brush-weight variation and fine hatching in the shadows,',
+  'hard-edged cel shading, Ben-Day halftone dots in the mid-tones, slightly off-register print colour, a sun-bleached palette (warm skin, salt-faded hair, deep navy and teal).',
+  'Keep the person clearly recognisable: same face shape, nose, eyes, brows, skin tone, hair colour, texture and length, same facial hair, glasses and visible accessories, same clothing.',
+  'A relaxed, confident expression. No text, no logos, no frame, no background scenery. Transparent background.',
 ].join(' ');
 
 const MAX_BYTES = 3 * 1024 * 1024;

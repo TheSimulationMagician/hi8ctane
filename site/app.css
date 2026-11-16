@@ -691,3 +691,18 @@ table.fx tr.rate td { color: var(--ink); }
 .ckline input { width: 20px; height: 20px; flex: 0 0 20px; margin-top: 1px; accent-color: var(--ink); }
 .ct .err { margin: 6px 0; font: 700 12px/1.4 var(--mono); color: #b0123f; }
 @media (max-width: 380px) { .ct .ctstage { flex-direction: column; } }
+
+/* 2.19 · home info cards wear the hero's blue halftone (.ht); text goes light to keep contrast */
+.how3 li, .more summary, .more a.mo {
+  background-color: #2F758B;
+  background-image: radial-gradient(rgba(255,255,255,.17) 1px, transparent 1.3px), linear-gradient(135deg, #4592AA 0%, #2F758B 48%, #1C4C63 100%);
+  background-size: 6px 6px, 100% 100%;
+  color: #F7F5EE;
+}
+.how3 b, .more summary b, .more a.mo b { color: #fff; text-shadow: 2px 2px 0 var(--ink); }
+.how3 b { color: var(--lime); }
+.how3 i { color: var(--ink); }
+.more summary span, .more a.mo span { color: #D6E8EE; }
+.more summary::after, .more a.mo::after { color: var(--lime); text-shadow: 2px 2px 0 var(--ink); }
+.more details[open] > summary { border-bottom: 2.5px solid var(--ink); }
+.more summary:focus-visible, .more a.mo:focus-visible { outline: 3px solid var(--lime); outline-offset: -6px; }
