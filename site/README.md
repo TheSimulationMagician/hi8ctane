@@ -169,6 +169,11 @@ The link and Google sign-in land on onboarding, where `live.js` swaps the sign-i
 
 ### How it stays safe with a public key
 
+**Checked 16 Nov 2026 (`test/live/security_api.py`, 25 checks).** Every table (28) has row level security on and no policies; the website's roles hold no table or sequence rights (0015 also makes new tables, sequences and functions start closed). The website can call 40 `hi8_` functions, all `SECURITY DEFINER` with a fixed `search_path`; each works out who you are from your secret key and only touches your own rows. Tested as an attacker: direct reads and writes of every table, server-only functions (erase, wallet, secrets, cartoons, Stripe), a stranger reading or posting in a crew chat, setting herself up as the driver, marking seats paid, made-up keys, SQL and HTML in fields, a forged service token, sign-up spam.
+
+**Check the live database:** paste `supabase/security_check.sql` into Supabase → SQL Editor → Run. It only reads. No rows = locked down; each row names a problem (a table without row level security, a policy or grant open to the website, a view, a function that shouldn't be public, a secret-looking public setting, a Storage policy letting the website upload or delete). Run it after every migration or dashboard change.
+
+
 The tables are locked (row-level security, no policies, no table rights for the public key). The browser can only call the `hi8_*` functions, which check every value, never return names or emails, and are rate-limited (20 sign-ups per visitor per 10 minutes, counted by a salted hash of the IP). Signing up gives the browser a random key that only changes its own sign-up. Details in the migration.
 
 Tests: `test/live/` (see its README): 55 app checks in a browser, 57 pilot API checks, 63 sign-up checks, 42 crews API checks, 49 core-loop API checks, and 26 forecast-engine checks in `test/unit/`, against Postgres + PostgREST and a stand-in Open-Meteo.
