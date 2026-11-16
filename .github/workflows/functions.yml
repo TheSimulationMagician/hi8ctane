@@ -1,13 +1,15 @@
-# Deploys the Stripe Edge Functions (supabase/functions/) to Supabase, and keeps their secrets there.
+# Deploys the Edge Functions (Stripe checkout and webhook, cartoon) (supabase/functions/) to Supabase, and keeps their secrets there.
 # It runs when anything in supabase/functions/ or this file changes on main, and from the Actions tab ("Run workflow").
 #
 # One-time setup, all in GitHub: Settings → Secrets and variables → Actions → New repository secret
 #   SUPABASE_ACCESS_TOKEN   supabase.com → Account → Access Tokens → Generate new token
 #   STRIPE_SECRET_KEY       Stripe → Developers → API keys → Secret key (sk_live_… or sk_test_… to try it first)
 #   STRIPE_WEBHOOK_SECRET   Stripe → Developers → Webhooks → your endpoint → Signing secret (whsec_…)
+#   OPENAI_API_KEY          optional here: platform.openai.com → API keys (set a monthly budget limit first).
+#                           Or skip it and add OPENAI_API_KEY in Supabase → Edge Functions → Secrets instead.
 # Without SUPABASE_ACCESS_TOKEN the job says so and stops: nothing breaks.
 
-name: Deploy the Stripe functions to Supabase
+name: Deploy the functions to Supabase
 
 on:
   push:
@@ -35,6 +37,7 @@ jobs:
       SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       STRIPE_SECRET_KEY: ${{ secrets.STRIPE_SECRET_KEY }}
       STRIPE_WEBHOOK_SECRET: ${{ secrets.STRIPE_WEBHOOK_SECRET }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
     steps:
       - name: Check the token is there
         id: gate
@@ -51,8 +54,12 @@ jobs:
         run: |
           supabase secrets set --project-ref "$PROJECT_REF" STRIPE_SECRET_KEY="$STRIPE_SECRET_KEY" SITE_URL="https://hi8ctane.com"
           if [ -n "$STRIPE_WEBHOOK_SECRET" ]; then supabase secrets set --project-ref "$PROJECT_REF" STRIPE_WEBHOOK_SECRET="$STRIPE_WEBHOOK_SECRET"; fi
+      - name: Cartoon secret
+        if: steps.gate.outputs.go == 'true' && env.OPENAI_API_KEY != ''
+        run: supabase secrets set --project-ref "$PROJECT_REF" OPENAI_API_KEY="$OPENAI_API_KEY"
       - name: Deploy
         if: steps.gate.outputs.go == 'true'
         run: |
           supabase functions deploy stripe-checkout --project-ref "$PROJECT_REF" --no-verify-jwt
           supabase functions deploy stripe-webhook --project-ref "$PROJECT_REF" --no-verify-jwt
+          supabase functions deploy cartoon --project-ref "$PROJECT_REF" --no-verify-jwt
