@@ -219,7 +219,7 @@
       '<div class="kick"><span class="blink pdot"></span><span id="heroKick">LIVE CREWS · KITE · MTB · MX</span></div>' +
       '<h1 class="hl">THE FORECAST SAYS GO.<br><span>WE GET YOU THERE.</span></h1>' +
       '<p class="lede0">Good sessions near you, a crew at your level and a seat in the car. Tap <b>I\'M GOING</b>. No app to install.</p>' +
-      '<div class="herowind" id="heroWind"></div><div class="herostat" id="heroStat"></div></section>' +
+      '<div class="herowind wait" id="heroWind" aria-hidden="true"><b>··</b> KT<span>CHECKING THE FORECAST</span></div><div class="herostat" id="heroStat"></div></section>' +
       '<div class="ctx" id="ctx"><div class="sps" id="sports"></div><button class="ctxfrom" data-act="from" id="ctxFrom"></button></div>' +
       '<div class="pg">' +
       (V === 1 ? '<section class="blk" id="crews"></section>' : '<section class="blk" id="sessions"></section>') +
@@ -300,6 +300,8 @@
   function heroWind(o) {
     var f = o && o.fx, el = $('#heroWind'), has = f && f.w != null && f.dir != null;
     HW.kt = has ? f.w : 6; if (has) HW.dir = f.dir;
+    if (!has && !FX.data[S.city] && !FX.error) { heroFx(); return; } // still loading: keep the placeholder's space, so nothing jumps
+    if (el) { el.classList.remove('wait'); el.removeAttribute('aria-hidden'); }
     if (el) el.innerHTML = has ? '<b>' + f.w + '</b> KT ' + esc(FX.compass(f.dir)) + '<i style="transform:rotate(' + ((f.dir + 180) % 360) + 'deg)">↑</i><span>' + esc(o.spot.name.toUpperCase()) + ' · ' + esc(dayRel(o.date)) + ' ' + pad(o.from) + '–' + pad(o.to) + '</span>' : '';
     heroFx();
   }
@@ -1161,7 +1163,7 @@
     if (!c.drivers) return '<div class="box sav"><h3>NEED A DRIVER <span class="tag ok">NO CAR YET</span></h3><p class="hint" style="margin:0">Nobody is driving yet. When someone does, a seat from ' + esc(title(hub.name)) + ' costs about <b>' + money(m.share) + '</b> instead of ' + money(cost) + ' driving alone. Driving? Join and pick I\'LL DRIVE: ' + money(m.share * 3) + ' back from a full car.</p></div>';
     return '<div class="box sav"><h3>A SEAT, SPLIT <span class="tag good">YOU SAVE ' + money(m.save) + '</span></h3>' +
       '<div class="savrow"><span><small>DRIVING ALONE</small><s>' + money(cost) + '</s></span><span><small>A SEAT</small><b>' + money(m.share) + '</b></span><span><small>HI8 FEE ' + feePct() + '%</small>' + (m.feeFree ? '<b class="free">FREE</b>' : '<b>' + money(m.fee) + '</b>') + '</span></div>' +
-      '<p class="hint">Fuel from ' + esc(title(hub.name)) + ' to ' + esc(spot.name) + ' and back, split four ways in a full car, settled with the driver on the day.' + (m.feeFree ? ' The ' + feePct() + '% fee keeps Hi8ctane free: not charged during the pilot.' : '') + ' <button class="lnk" data-act="pass">' + memberPct() + '% with the Hi8 Pass →</button></p></div>';
+      '<p class="hint">Fuel from ' + esc(title(hub.name)) + ' to ' + esc(spot.name) + ' and back, split four ways in a full car, settled with the driver on the day.' + (m.feeFree ? ' The ' + feePct() + '% fee keeps Hi8ctane free: not charged during the pilot.' : '') + ' <button class="lnk" data-act="passinfo">' + memberPct() + '% with the Hi8 Pass →</button></p></div>';
   }
   function sheetCrew() {
     var C = S.crew;
@@ -1347,9 +1349,10 @@
     if (!(w.pass && w.pass.active) && !(w.live && S.settings && S.settings.fee_live === true)) return '<div class="box pass">' + passCard('me') + '</div>';
     if (w.pass && w.pass.active) return '<div class="box pass"><h3>HI8 PASS <span class="tag good">ON</span></h3><p class="hint" style="margin:0">' + (w.pass.plan === 'year' ? 'Yearly' : 'Monthly') + (w.pass.until ? ', renews ' + esc(dayLong(String(w.pass.until).slice(0, 10))) : '') + '. Cancel any time from the Stripe receipt email.</p>' + perks + '</div>';
     var fee = S.settings && S.settings.fee_live === true;
-    return '<div class="box pass"><h3>HI8 PASS <span class="tag">' + euro(w.pass_month_cents) + ' A MONTH</span></h3>' + perks +
-      (w.live && fee ? '<div class="row"><button class="opt" data-act="pass" data-plan="month">' + euro(w.pass_month_cents) + ' A MONTH<small>SEPA or card</small></button><button class="opt" data-act="pass" data-plan="year">' + euro(w.pass_year_cents).replace('.00', '') + ' A YEAR<small>two months free</small></button></div>'
-        : '<p class="hint">Comes with the Hi8 fee: during the pilot every seat is fee-free anyway.</p>') + '</div>';
+    var P2 = passPrices(), fOpen = S.settings && S.settings.pass_founding_open !== false, price = fOpen ? P2.founding : P2.month;
+    return '<div class="box pass"><h3>HI8 PASS <span class="tag">' + euro(price) + ' A MONTH</span></h3>' + perks +
+      (w.live && fee ? '<div class="row"><button class="opt" data-act="pass" data-plan="month">' + euro(price) + ' A MONTH<small>' + (fOpen ? 'founding price, kept for good · ' : '') + 'SEPA or card</small></button></div>'
+        : '') + '</div>';
   }
   function topup(cents, back) {
     toast('<span class="spin"></span> Opening Stripe…', 8000);
@@ -1419,7 +1422,7 @@
   // ---- THE HI8 PASS: shown where it pays; while it isn't on sale, "count me in"
   function passPrices() {
     var st = S.settings || {}, w = S.wallet || {};
-    return { month: Number(st.pass_month_cents || w.pass_month_cents || 1699), founding: Number(st.pass_founding_cents || 999), member: memberPct(), fee: feePct() };
+    return { month: Number(w.pass_month_cents || st.pass_month_cents || 1699), founding: Number(w.pass_founding_cents || st.pass_founding_cents || 999), member: memberPct(), fee: feePct() };
   }
   function passCard(where) {
     var P = passPrices(), on = S.wallet && S.wallet.pass && S.wallet.pass.active, asked = HI8.store.get('passAsked', false);
@@ -1577,7 +1580,7 @@
       case 'kgset': HI8.store.set('kg', Number(d.v)); drawAll(); renderSheet(); break;
       case 'level': go('#level'); break;
       case 'lvset': HI8.store.set('lv.' + S.sport, d.v); drawAll(); renderSheet(); break;
-      case 'pass': go('#pass'); break;
+      case 'passinfo': go('#pass'); break;
       case 'passin': passIn(null, d.src); break;
       case 'close': if (S.view === 'kg' && S.kgBack) { var kb = S.kgBack; S.kgBack = null; closeSheet(); go(kb); } else if (S.view === 'from' && S.fromBack) { var back = S.fromBack; S.fromBack = null; closeSheet(); go(back); } else closeSheet(); break;
       case 'join': if (S.view === 'crew') closeSheet(); go('#join'); break;
@@ -1777,7 +1780,7 @@
     if (stop && HI8.live) HI8.rpc('hi8_unsubscribe', { p_token: stop }).then(function (r) { toast(r.stopped ? 'Stopped: no more ' + esc((SPORT[r.sport] || { name: r.sport }).name) + ' crew emails.' : 'Already stopped.', 6000); }, function () { toast('That stop link didn\'t work. Email hello@hi8ctane.com and we\'ll do it.'); });
     drawAll(); initMap();
     if (HI8.live) {
-      HI8.rpc('hi8_settings', {}).then(function (s) { S.settings = s; drawTop(); drawSave(); drawWeek(); }, noop);
+      HI8.rpc('hi8_settings', {}).then(function (s) { S.settings = s; drawTop(); drawSave(); drawWeek(); drawPass(); if (S.view) renderSheet(); }, noop); // prices and the fee can change what an open sheet says
       HI8.onData(function () { drawTop(); drawCrews(); drawSessions(); drawMapSpots(); if (S.view === 'join' || S.view === 'me') renderSheet(); });
       window.addEventListener('focus', function () { if (Date.now() - (S.plansAt || 0) > 120000) { S.plansAt = Date.now(); loadPlans(); } });
       HI8.loadPlaces().then(function () { fitMap(); loadForecast(); drawAll(); }, function () { loadForecast(); });

@@ -666,3 +666,5 @@ table.fx tr.rate td { color: var(--ink); }
 .box.pass .passc { box-shadow: none; border: 0; padding: 0; }
 .lnk { padding: 0; border: 0; background: none; color: inherit; font: inherit; text-decoration: underline; cursor: pointer; }
 .bd-c.t-epic, .bd-k span.t-epic, .wc.t-epic, .tag.epic, .vd.t-epic { color: var(--ink); }
+
+.herowind.wait { opacity: .45; } .herowind.wait b { color: var(--cream); }

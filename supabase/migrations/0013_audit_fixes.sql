@@ -56,9 +56,28 @@ $$;
 insert into public.app_settings (key, value) values
   ('pass_month_cents', '1699'),
   ('pass_founding_cents', '999'),
-  ('member_fee_pct', '10')
+  ('member_fee_pct', '10'),
+  ('pass_founding_open', 'true')
 on conflict (key) do update set value = excluded.value
   where public.app_settings.key in ('pass_month_cents', 'pass_founding_cents', 'member_fee_pct');
+-- the Pass is monthly only: no yearly price
+delete from public.app_settings where key = 'pass_year_cents';
+-- Close the founding price later (riders who subscribed keep theirs: Stripe keeps a subscription's price):
+--   update public.app_settings set value = 'false' where key = 'pass_founding_open';
+
+-- what the Stripe checkout reads about a rider: now with the founding price
+create or replace function public.hi8_key_owner(p_key uuid) returns json
+language plpgsql security definer set search_path = public as $$
+declare em text := public.hi8_email(p_key);
+begin
+  return json_build_object('email', em, 'balance_cents', public.hi8_balance(em), 'live', public.hi8_payments_live(),
+    'max_cents', public.hi8_int('wallet_max_cents', 10000), 'topups', (select value from public.app_settings where key = 'topup_cents'),
+    'pass', public.hi8_has_pass(em), 'pass_month_cents', public.hi8_int('pass_month_cents', 1699),
+    'pass_founding_cents', public.hi8_int('pass_founding_cents', 999),
+    'pass_founding_open', coalesce((select value = 'true'::jsonb from public.app_settings where key = 'pass_founding_open'), false),
+    'stripe_cus', (select stripe_cus from public.passes where email = em),
+    'stripe_acct', (select stripe_acct from public.payout_accounts where email = em), 'payout_ready', coalesce((select ready from public.payout_accounts where email = em), false));
+end $$;
 
 -- what a rider's seat costs now: the share of the driver's car, plus the Hi8 fee (10% with the Pass, 15% without)
 create or replace function public.hi8_seat_price(p_crew uuid, p_email text) returns jsonb

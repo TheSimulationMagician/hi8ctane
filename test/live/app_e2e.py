@@ -232,6 +232,20 @@ with sync_playwright() as p:
     check('HI8 PASS' in txt(Wp, '#sheet') and '10% INSTEAD OF 15%' in txt(Wp, '#sheet') and '€9.99' in txt(Wp, '#sheet') and 'FREE WHILE THE PILOT RUNS' in txt(Wp, '#sheet') and Wp.locator('#sheet [data-act=passin]').count() == 1, 'the Pass: 10% instead of 15%, €9.99 for founding riders, free in the pilot, COUNT ME IN (2.17)')
     Wp.locator('#sheet [data-act=passin]').click(); Wp.wait_for_timeout(1200)
     check(sql("select count(*) from public.pass_interest where source = 'me'") == '1' and "ON THE LIST" in txt(Wp, '#sheet'), 'COUNT ME IN saves the rider to the Pass list')
+    # once rides are paid in the app (2.17): the Pass is bought through Stripe, at the founding price
+    sql("update app_settings set value = 'true' where key in ('payments_live', 'fee_live')")
+    if sql("select count(*) from app_settings where key = 'payments_live'") == '0': sql("insert into app_settings (key, value) values ('payments_live', 'true')")
+    Wp.evaluate("localStorage.removeItem('hi8.passAsked')")
+    calls = []
+    Wp.route(re.compile(r'.*/functions/v1/stripe-checkout'), lambda r: (calls.append(r.request.post_data), r.fulfill(status=200, content_type='application/json', body='{"url":"about:blank#stripe"}')))
+    Wp.goto(BASE + '/?fresh=1#me'); Wp.wait_for_selector('#sheet.on'); Wp.wait_for_timeout(2000)
+    buy = Wp.locator('#sheet .box.pass [data-act=pass]')
+    check(buy.count() == 1 and '€9.99 A MONTH' in buy.inner_text() and 'FOUNDING PRICE' in buy.inner_text().upper(), 'fees on: one BUY button, €9.99 a month, founding price')
+    buy.click(); Wp.wait_for_timeout(1500)
+    check(len(calls) == 1 and '"kind":"pass"' in calls[0] and '"plan":"month"' in calls[0], 'and it opens Stripe checkout for the monthly Pass (not the info sheet)')
+    sql("update app_settings set value = 'false' where key in ('payments_live', 'fee_live')")
+    Wp.unroute(re.compile(r'.*/functions/v1/stripe-checkout'))
+    Wp.goto(BASE + '/#me'); Wp.wait_for_selector('#sheet.on'); Wp.wait_for_timeout(1000)  # back from the (fake) Stripe page
     sql("update public.app_settings set value = 'true' where key = 'payments_live'")
     asked = []
     def fake_fn(route):
@@ -308,6 +322,7 @@ with sync_playwright() as p:
     N.route(re.compile(r'.*/v1/(forecast|marine).*'), lambda r: r.abort())
     N.goto(BASE + '/'); N.wait_for_timeout(2500)
     check('No forecast right now'.upper() in txt(N, '#week') and 'ALL SPOTS · THIS WEEK' in txt(N, '#sessions') and not N.errs, 'Open-Meteo down: says so, crews still work, nothing breaks')
+    check('CHECKING' not in txt(N, '#heroWind') and 'wait' not in (N.locator('#heroWind').get_attribute('class') or ''), 'and the hero stops saying it is checking the forecast (2.17)')
 
     for name, pg in (('A', A), ('B', B), ('C', C), ('D', D), ('E', E), ('F', F), ('G', G), ('W', Wp), ('V', V)):
         check(not pg.errs, f'no script errors ({name}): {pg.errs[:2]}')
