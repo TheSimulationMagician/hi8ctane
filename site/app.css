@@ -42,6 +42,7 @@ a:hover { color: var(--pink); }
 .a-mtb { background-color: #2257AB; background-image: radial-gradient(rgba(255,255,255,.17) 1px, transparent 1.3px), linear-gradient(135deg, #3F7FD6 0%, #2257AB 48%, #14397A 100%); }
 .a-mx { background-color: #5C6B2F; background-image: radial-gradient(rgba(255,255,255,.17) 1px, transparent 1.3px), linear-gradient(135deg, #8E9C57 0%, #5C6B2F 48%, #363F18 100%); }
 .a-wake, .a-surf, .a-sup { background-color: #0E7A8C; background-image: radial-gradient(rgba(255,255,255,.2) 1px, transparent 1.3px), linear-gradient(135deg, #39B5C6 0%, #0E7A8C 48%, #08505C 100%); }
+.a-snow { background-color: #3B6FB5; background-image: radial-gradient(rgba(255,255,255,.35) 1.2px, transparent 1.5px), linear-gradient(135deg, #8FC3F0 0%, #3B6FB5 48%, #234A80 100%); }
 .a-other { background-color: #4A4538; background-image: radial-gradient(rgba(255,255,255,.15) 1px, transparent 1.3px), linear-gradient(135deg, #7A735F 0%, #4A4538 100%); }
 .tile { display: block; flex: none; }
 

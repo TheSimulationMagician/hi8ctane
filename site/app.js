@@ -96,7 +96,7 @@
   }
 
   // ---------------------------------------------------------------- the 2.7 look: tiles, ribbons, verdicts
-  var SCOL = { kite: '#2A6F86', wing: '#5B3F99', surf: '#2297AA', sup: '#2A8C74', mtb: '#1F4FA0', mx: '#5C6B2F', windsurf: '#B4472E', wake: '#0E7A8C', other: '#4A4538' };
+  var SCOL = { kite: '#2A6F86', wing: '#5B3F99', surf: '#2297AA', sup: '#2A8C74', mtb: '#1F4FA0', mx: '#5C6B2F', windsurf: '#B4472E', wake: '#0E7A8C', snow: '#3B6FB5', other: '#4A4538' };
   var ICON = {
     kite: '<path d="M3 11l18-8-8 18-2-8z"/>',
     wing: '<path d="M3.5 16 C5 9 11 5 20 4.5 C17 9 15.5 13.5 15.5 19.5 C12 17.5 8 16.3 3.5 16 Z"/><path d="M9.8 10.4 L15.5 19.5"/>',
@@ -106,6 +106,7 @@
     mx: '<circle cx="5.5" cy="16.5" r="3.6"/><circle cx="18.5" cy="16.5" r="3.6"/><path d="M5.5 16.5 L8.8 11.4 H14 L18.5 16.5 M7.2 9 H12.2 L14 11.4 L16.2 6.2 M14.6 6.2 H18.2 M16.8 9.6 L20.8 10.6"/>',
     windsurf: '<path d="M12 3 V17 H19 Z"/><path d="M12 3 C8 7 7.4 12 8.6 17"/><path d="M3 20 H21"/>',
     wake: '<path d="M3 19.5 C8 21.5 16 21.5 21 19.5"/><circle cx="8.5" cy="6.5" r="2"/><path d="M8.5 9.5 L9.5 16.5 M9 11.5 L15 8 M13.5 4 L20.5 10"/>',
+    snow: '<path d="M12 2.5 V21.5 M3.8 7.2 L20.2 16.8 M20.2 7.2 L3.8 16.8"/><path d="M9.5 4.5 L12 7 L14.5 4.5 M9.5 19.5 L12 17 L14.5 19.5"/>',
     other: '<circle cx="12" cy="12" r="8"/><path d="M12 7 V12 L15 14"/>'
   };
   // a sport tile: colour square, white inner square, the line icon (framed = with the black outline, for buttons)
