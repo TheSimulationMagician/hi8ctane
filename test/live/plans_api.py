@@ -45,7 +45,11 @@ mx = by['mx-day-martorelles']
 check(mx['spot'] == 'martorelles-mx' and mx['price_from'] in (25, 180) and 'insurance' in mx['price_note'] and mx['interested'] == 0 and mx['mine'] is None, 'the MX day: spot, price, nobody in yet')
 check(by['bcp-cable']['price_from'] is None and 'ask' in by['bcp-cable']['price_note'].lower(), 'no made-up price where the park publishes none')
 s, A = rpc('hi8_plans', {'p_city': 'amsterdam'})
-check(s == 200 and A == [], 'no plans in Amsterdam yet')
+am = {p['slug']: p for p in A}
+check(s == 200 and set(am) == {'schoorl-mtb-day', 'almere-cable', 'burnside-cable', 'snowworld-amsterdam'}, 'Amsterdam: an MTB day, two cable parks and an indoor snow day')
+check(am['schoorl-mtb-day']['price_from'] == 28 and am['schoorl-mtb-day']['spot'] == 'schoorl' and am['snowworld-amsterdam']['kind'] == 'snow'
+      and all(am[k]['price_from'] is None and ('ask' in am[k]['price_note'].lower() or 'rates' in am[k]['price_note'].lower()) for k in ('almere-cable', 'burnside-cable', 'snowworld-amsterdam')),
+      'the MTB hire price, a snow kind, and no made-up price for the parks or the snow dome')
 check(get('plans?select=slug') in (401, 403, 404) and get('plan_leads?select=email') in (401, 403, 404), 'the tables themselves are closed')
 
 print("I'm in")
