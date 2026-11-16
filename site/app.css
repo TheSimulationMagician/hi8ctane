@@ -85,6 +85,14 @@ a:hover { color: var(--pink); }
 .cta2 .jn { width: 100%; }
 .herostat { margin-top: 12px; font: 700 10.5px/1.3 var(--mono); letter-spacing: .4px; color: var(--cream); }
 .herostat b { color: var(--lime); font-family: var(--big); font-weight: 400; font-size: 15px; }
+/* who's looking: a live dot and the counts */
+.looking { margin-top: 8px; display: inline-flex; align-items: center; gap: 6px; font: 700 10.5px/1.3 var(--mono); letter-spacing: .4px; color: var(--cream); background: rgba(17,17,17,.55); padding: 4px 8px; }
+.looking[hidden] { display: none; }
+.looking b { color: var(--lime); font-family: var(--big); font-weight: 400; font-size: 15px; }
+.looking .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--pink); box-shadow: 0 0 0 0 rgba(255,45,120,.7); animation: lookdot 1.6s ease-out infinite; }
+@keyframes lookdot { to { box-shadow: 0 0 0 8px rgba(255,45,120,0); } }
+.mapend .looking { margin: 0; font-style: normal; background: none; padding: 0; }
+@media (prefers-reduced-motion: reduce) { .looking .dot { animation: none; } }
 
 /* ---------------------------------------------------------------- buttons */
 .jn { position: relative; isolation: isolate; display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 40px; padding: 0 14px 0 17px; border: 0; background: none; color: var(--ink); font: 400 12px/1 var(--word); letter-spacing: .3px; white-space: nowrap; text-decoration: none; cursor: pointer; filter: drop-shadow(3px 3px 0 #111); flex-shrink: 0; }

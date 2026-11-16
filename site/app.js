@@ -215,7 +215,7 @@
       '<div class="kick"><span class="blink pdot"></span><span id="heroKick">LIVE CREWS · KITE · MTB · MX</span></div>' +
       '<h1 class="hl">THE FORECAST SAYS GO.<br><span>WE GET YOU THERE.</span></h1>' +
       '<p class="lede0">Good sessions near you, a crew at your level and a seat in the car. Tap <b>I\'M GOING</b>. No app to install.</p>' +
-      '<div class="herowind" id="heroWind"></div><div class="herostat" id="heroStat"></div></section>' +
+      '<div class="herowind" id="heroWind"></div><div class="herostat" id="heroStat"></div><div class="looking" id="looking" hidden></div></section>' +
       '<div class="ctx" id="ctx"><div class="sps" id="sports"></div><button class="ctxfrom" data-act="from" id="ctxFrom"></button></div>' +
       '<div class="pg">' +
       (V === 1 ? '<section class="blk" id="crews"></section>' : '<section class="blk" id="sessions"></section>') +
@@ -230,7 +230,7 @@
       '<a class="mo" href="B27-Schools.dc.html"><b>FOR SCHOOLS + RENTAL SHOPS</b><span>We send you riders who already have a crew →</span></a>' +
       '</section>' +
       '<section class="blk mapsec" id="mapsec"><div class="sec2"><b>THE LIVE MAP</b><span>WIND · CREWS · WHO\'S THERE</span></div><div class="mapbox" id="mapslot"></div>' +
-      '<div class="mapend"><span>SEE YOU OUT THERE.</span><button class="sygo" data-act="top">FIND MY NEXT SESSION ↑</button></div></section>' +
+      '<div class="mapend"><span>SEE YOU OUT THERE.</span><i class="looking" id="looking2" hidden></i><button class="sygo" data-act="top">FIND MY NEXT SESSION ↑</button></div></section>' +
       '</div>' +
       '<div class="credits">Forecast: Open-Meteo (CC BY 4.0): a local model for the first days (KNMI HARMONIE in the Netherlands, Météo-France AROME in Spain), then ECMWF, ICON and GFS, compared hour by hour for the "models agree" line. Waves and water temperature: Open-Meteo Marine. Coastlines: Natural Earth. A model forecast, not a beach sensor: every session is your own call. 18+.<br>' +
       '<a href="terms/">Terms</a> · <a href="privacy/">Privacy</a> · <a href="B27-Schools.dc.html">Schools + rental shops</a> · <a href="B27-City.dc.html">Other cities</a> · hi8ctane.com</div>' +
@@ -1514,7 +1514,7 @@
         S.wlBusy = d.city; drawWhere();
         after(HI8.withKey('hi8_waitlist', { p_city: d.city }, { noQueue: true }), function (out) { S.wlBusy = null; S.waitlisted = Object.assign({}, S.waitlisted, (function () { var o = {}; o[d.city] = 1; return o; })()); drawWhere(); toast(out.already ? "You're already on the " + esc(out.name) + ' list.' : "You're on the " + esc(out.name) + ' list. You hear first.'); }).catch(function () { S.wlBusy = null; drawWhere(); });
         break;
-      case 'setcity': S.city = d.city; HI8.store.set('city28', d.city); S.hi = null; closeSheet(); initMap(); loadForecast(); loadLive(); loadPlans(); drawAll(); break;
+      case 'setcity': S.city = d.city; HI8.store.set('city28', d.city); S.hi = null; closeSheet(); initMap(); loadForecast(); loadLive(); loadPlans(); look(); drawAll(); break;
       case 'sport': setSport(d.sport); break;
       case 'soon': go('#soon/' + d.sport); break;
       case 'soonpick': S.soonSport = d.sport; history.replaceState(null, '', '#soon/' + d.sport); renderSheet(); break;
@@ -1671,6 +1671,19 @@
     if (!HI8.live) return Promise.resolve();
     return HI8.rpc('hi8_live', { p_city: S.city }).then(function (l) { S.live = l; drawMapSpots(); drawCrews(); drawSessions(); drawNow(); drawLive(); if (S.view && S.view !== 'start') renderSheet(); }, noop);
   }
+  // WHO'S LOOKING: a random visitor id (not the rider key), one "I'm here" a minute while the page is open.
+  // Shown from 2 looking now / 5 today: never "1 looking" (that's just you).
+  function look() {
+    if (!HI8.live || document.hidden) return;
+    var v = HI8.store.get('visitor', null);
+    if (!v) { v = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-8xxx-xxxxxxxxxxxx'.replace(/x/g, function () { return (Math.random() * 16 | 0).toString(16); }); HI8.store.set('visitor', v); }
+    HI8.rpc('hi8_look', { p_visitor: v, p_city: S.city }).then(function (r) {
+      var parts = [];
+      if (r && r.now >= 2) parts.push('<b>' + r.now + '</b> LOOKING NOW');
+      if (r && r.today >= 5) parts.push('<b>' + r.today + '</b> TODAY');
+      ['#looking', '#looking2'].forEach(function (id) { var el = $(id); if (!el) return; el.hidden = !parts.length; el.innerHTML = parts.length ? '<span class="dot"></span>' + parts.join(' · ') + (id === '#looking' ? ' IN ' + esc(regionName().toUpperCase()) : '') : ''; });
+    }, noop);
+  }
   function boot() {
     frame(); sheet = $('#sheet');
     var paid = P.get('paid');
@@ -1687,7 +1700,8 @@
       HI8.onData(function () { drawTop(); drawCrews(); drawSessions(); drawMapSpots(); if (S.view === 'join' || S.view === 'me') renderSheet(); });
       window.addEventListener('focus', function () { if (Date.now() - (S.plansAt || 0) > 120000) { S.plansAt = Date.now(); loadPlans(); } });
       HI8.loadPlaces().then(function () { fitMap(); loadForecast(); drawAll(); }, function () { loadForecast(); });
-      loadLive(); loadPlans();
+      loadLive(); loadPlans(); look(); setInterval(look, 60000);
+      document.addEventListener('visibilitychange', function () { if (!document.hidden) look(); });
       setInterval(function () { if (!document.hidden) { loadLive(); HI8.loadCrews(true).catch(noop); } }, 60000);
     } else loadForecast();
     setInterval(function () { if (!document.hidden) loadForecast(); }, 30 * 60e3);
