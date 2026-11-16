@@ -1411,21 +1411,32 @@
   function squadUrl(q) { return location.origin + location.pathname + '?s=' + q.code; }
   function squadShare(q) { return 'Ride with us: ' + q.name + ' on Hi8ctane. When one of us goes, everyone hears. Join the crew: ' + squadUrl(q); }
   function riderChips(q) {
-    return '<div class="sqr">' + (q.riders || []).map(function (r, i) { return '<span class="sqp" style="background:' + AVC[i % AVC.length] + '">' + (r.plate ? '<b>#' + pad3(r.plate) + '</b>' : '') + esc(r.name || 'Rider') + (r.me ? ' · YOU' : '') + '</span>'; }).join('') + '</div>';
+    return '<ol class="sqr">' + (q.riders || []).map(function (r, i) {
+      return '<li class="sqp"><b>' + (r.plate ? '#' + pad3(r.plate) : pad(i + 1)) + '</b><span>' + esc(r.name || 'Rider') + '</span>' + (r.me ? '<i>YOU</i>' : '') + '</li>';
+    }).join('') + '</ol>';
   }
   function sheetSquad() {
     var Q = S.sq || {}, q = Q.data;
     if (Q.err) return shell('CREW', '<div class="err">' + esc(Q.err) + '</div>', '', true);
     if (!q) return shell('CREW', '<div class="sec"><div class="skel"></div></div>', '', true);
     var sport = (SPORT[q.sport] || { name: q.sport }).name.toUpperCase();
-    var body = '<div class="hero sqhero art a-' + esc(q.sport) + '"><div class="k">' + esc(sport) + ' · A CREW THAT RIDES TOGETHER</div><h2>' + esc(q.name) + '</h2>' +
-      '<div class="when2">' + q.size + ' RIDER' + (q.size === 1 ? '' : 'S') + ' · ' + q.sessions + ' SESSION' + (q.sessions === 1 ? '' : 'S') + ' TOGETHER</div></div>' +
-      '<div class="sec">' + riderChips(q) + '</div>' +
+    // the cover of a surf mag: masthead line, the spot in big condensed letters, "crew" in script, a sticker
+    var nm = String(q.name || ''), base = nm.replace(/\s+crew$/i, ''), script = base === nm ? '' : 'crew';
+    var body = '<div class="sqmag">' +
+      '<div class="sqm-mast"><span>HI8 · THE CREW ISSUE</span><span>No. ' + esc(q.code) + '</span></div>' +
+      '<div class="sqm-cover art a-' + esc(q.sport) + '">' +
+        '<span class="sqm-k">' + esc(sport) + ' · ' + esc(regionName(q.city).toUpperCase()) + '</span>' +
+        '<h2 class="sqm-t">' + esc(base.toUpperCase()) + (script ? '<em>' + script + '</em>' : '') + '</h2>' +
+        '<span class="sqm-stk"><b>' + q.sessions + '</b>SESSION' + (q.sessions === 1 ? '' : 'S') + '<br>TOGETHER</span>' +
+      '</div>' +
+      '<div class="sqm-strip"><span>' + q.size + ' RIDER' + (q.size === 1 ? '' : 'S') + '</span><span>RIDES WHEN IT BLOWS</span><span>NO APP</span></div>' +
+      '</div>' +
+      '<div class="sec"><h2 class="sqm-h">THE LINE-UP</h2>' + riderChips(q) + '</div>' +
       '<div class="sec"><h2>NEXT <small>' + q.next.length + ' COMING UP</small></h2>' + (q.next.length ? '<div class="crews">' + q.next.map(crewCard).join('') + '</div>' : '<p class="lede">Nothing posted yet. When one of you starts a crew, tap TELL THE CREW and everyone gets an email.</p>') + '</div>';
     var foot;
     if (q.mine) {
       body += '<div class="f"><button class="opt" data-act="sqleave">' + (Q.confirm ? 'TAP AGAIN TO LEAVE' : 'LEAVE THIS CREW') + '</button></div>';
-      foot = '<a class="big wa" href="https://wa.me/?text=' + encodeURIComponent(squadShare(q)) + '" target="_blank" rel="noopener">INVITE A MATE</a><button class="big start" data-act="sqstart" style="flex:0 0 42%">GO RIDE</button>';
+      foot = '<a class="big invite" href="https://wa.me/?text=' + encodeURIComponent(squadShare(q)) + '" target="_blank" rel="noopener">INVITE A MATE</a><button class="big start" data-act="sqstart" style="flex:0 0 42%">GO RIDE</button>';
     } else if (signedIn()) {
       foot = '<button class="big join" data-act="sqjoin"' + (Q.busy ? ' disabled' : '') + '>' + (Q.busy ? '<span class="spin"></span>' : 'JOIN THIS CREW') + '</button>';
     } else {
