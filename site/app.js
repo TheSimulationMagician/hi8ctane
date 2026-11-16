@@ -799,6 +799,8 @@
   function route() {
     var h = location.hash.replace(/^#/, ''), c = new URLSearchParams(location.search).get('c');
     if (c) { if (!S.crew || S.crew.code !== c.toUpperCase()) openCrew(c, h === 'chat'); return; }
+    var sq = new URLSearchParams(location.search).get('s');
+    if (sq && !h) { openSquad(sq); return; }
     if (h === 'join') { S.view = 'join'; }
     else if (h === 'start') {
       S.view = 'start';
@@ -808,7 +810,7 @@
         newStart({ spot: q.get('spot') || null, sport: sp && LIVE_SPORTS.indexOf(sp) >= 0 ? sp : null });
       }
     }
-    else if (h === 'me') { S.view = 'me'; if (signedIn()) { HI8.loadMine(true).then(renderSheet, noop); loadWallet(); } }
+    else if (h === 'me') { S.view = 'me'; if (signedIn()) { HI8.loadMine(true).then(renderSheet, noop); loadWallet(); loadSocial(); } }
     else if (h === 'city') { S.view = 'city'; }
     else if (/^spot\//.test(h)) { S.view = 'spot'; S.spotSlug = h.slice(5); S.spotDay = S.spotDay || 0; }
     else if (/^soon\//.test(h)) { S.view = 'soon'; S.soonSport = h.slice(5); }
@@ -820,7 +822,7 @@
   }
   function renderSheet() {
     if (!S.view) return;
-    var fn = { join: sheetJoin, start: sheetStart, crew: sheetCrew, spot: sheetSpot, me: sheetMe, city: sheetCity, soon: sheetSoon, plan: sheetPlan, from: sheetFrom, kg: sheetKg }[S.view];
+    var fn = { join: sheetJoin, start: sheetStart, crew: sheetCrew, spot: sheetSpot, me: sheetMe, city: sheetCity, soon: sheetSoon, plan: sheetPlan, from: sheetFrom, kg: sheetKg, squad: sheetSquad }[S.view];
     if (!fn) return;
     var keep = sheet.querySelector('.sh-body'), top = keep ? keep.scrollTop : 0, focus = document.activeElement && document.activeElement.id;
     var vals = {}; sheet.querySelectorAll('input[id],textarea[id]').forEach(function (i) { vals[i.id] = i.value; });
@@ -958,7 +960,11 @@
   }
   function startDone(c) {
     var txt = shareText(c);
-    return shell('YOUR CREW IS UP', '<div class="ok-box"><b>' + esc(SPORT[c.sport].em + ' ' + c.spot_name.toUpperCase() + ' · ' + dayRel(c.day) + ' ' + hm(c.start)) + '</b><br>Now get people in: share it to your group chats. They join in one tap, no app to install.</div>' +
+    var tell = (S.squads || []).filter(function (q) { return q.sport === c.sport; }).map(function (q) {
+      var done = S.told && S.told[q.code + ':' + c.code];
+      return '<button class="big ' + (done ? 'ghost' : 'start') + '" data-act="sqcall" data-squad="' + esc(q.code) + '" data-code="' + esc(c.code) + '"' + (done ? ' disabled' : '') + '>' + (done ? 'TOLD ' + esc(q.name.toUpperCase()) + ' ✓' : 'TELL ' + esc(q.name.toUpperCase()) + '<small style="display:block;font:700 10.5px var(--mono)">' + (q.size - 1) + ' RIDERS GET AN EMAIL</small>') + '</button>';
+    }).join('');
+    return shell('YOUR CREW IS UP', (tell ? '<div class="f"><span class="lb">YOUR CREWS</span><div style="display:grid;gap:8px">' + tell + '</div></div>' : '') + '<div class="ok-box"><b>' + esc(SPORT[c.sport].em + ' ' + c.spot_name.toUpperCase() + ' · ' + dayRel(c.day) + ' ' + hm(c.start)) + '</b><br>Now get people in: share it to your group chats. They join in one tap, no app to install.</div>' +
       '<div class="f"><span class="lb">THE MESSAGE</span><pre class="box" style="margin:0;white-space:pre-wrap;font:400 12.5px/1.5 var(--mono)">' + esc(txt) + '</pre></div>' +
       '<div class="f"><div style="display:grid;gap:8px"><a class="big wa" href="https://wa.me/?text=' + encodeURIComponent(txt) + '" target="_blank" rel="noopener" data-act="shared">SHARE TO WHATSAPP</a>' +
       '<button class="big ghost" data-act="copy" data-text="' + esc(txt) + '">COPY THE MESSAGE</button>' + (navigator.share ? '<button class="big ghost" data-act="nshare" data-code="' + esc(c.code) + '">MORE APPS</button>' : '') + '</div></div>',
@@ -1176,6 +1182,7 @@
       body += S.jf ? joinForm(c) : '';
       body += '<div class="box"><h3>THE SPOT</h3><div style="font-size:12.5px">' + esc(spot.note || '') + '</div><div class="row" style="margin-top:10px"><a class="opt" target="_blank" rel="noopener" href="' + esc(maps) + '">DIRECTIONS</a><button class="opt" data-act="spot" data-spot="' + esc(c.spot) + '">FULL FORECAST</button></div></div>';
     }
+    if (member) body += '<div class="box keepbox"><h3>RIDE WITH THEM AGAIN</h3><p class="hint">Keep this crew: the people in it stay together. When one of you goes, the rest hear about it first.</p><button class="big start" data-act="keep" data-code="' + esc(c.code) + '">KEEP THIS CREW</button></div>';
     if (c.reports && c.reports.length) {
       body += '<div class="box"><h3>REPORTS FROM THE SPOT</h3><div class="reports">' + c.reports.slice(0, 5).map(function (r) {
         return '<div class="rep"><span class="tag ' + (r.verdict === 'on' ? 'epic' : r.verdict === 'meh' ? 'ok' : 'no') + '">' + r.verdict.toUpperCase() + '</span><span>' + (r.name ? esc(r.name) + ' · ' : '') + (r.kite ? r.kite + ' m' : '') + (r.ground ? esc(r.ground) : '') + (r.note ? ' · ' + esc(r.note) : '') + '</span><small>' + esc(ago(r.at)) + '</small></div>';
@@ -1370,7 +1377,7 @@
     var al = m.alerts || [];
     var body = '<div class="sec" style="display:flex;gap:16px;align-items:center">' + (pl ? '<div class="bigplate"><b>#' + pad3(pl) + '</b><small>' + esc((cityObj(S.city).name || '').toUpperCase()) + '</small></div>' : '') +
       '<div><div style="font:400 30px/1 var(--big)">' + esc(m.name || '') + '</div><div class="hint">' + esc(m.email_hint || '') + (m.captain ? ' · captain' : '') + '</div></div></div>' +
-      walletBox() + passBox() +
+      cardBox() + squadsBox() + walletBox() + passBox() +
       '<div class="box"><h3>EMAIL ME NEW CREWS</h3><div class="row">' + LIVE_SPORTS.map(function (k) {
         var on = al.some(function (a) { return a.city === S.city && a.sport === k; });
         return '<button class="opt" data-act="alert" data-sport="' + k + '" data-on="' + (!on) + '" aria-pressed="' + on + '">' + SPORT[k].name.toUpperCase() + '</button>';
@@ -1381,6 +1388,81 @@
       '<div class="f"><p class="hint">Switching phones? Sign up with the same email there: your plate comes with you. To delete everything, email <a href="mailto:hello@hi8ctane.com">hello@hi8ctane.com</a>.</p>' +
       '<button class="opt" data-act="signout">' + (S.confirmOut ? 'TAP AGAIN: FORGET ME ON THIS PHONE' : 'NOT YOU? FORGET ME ON THIS PHONE') + '</button></div>';
     return shell('ME', body, '');
+  }
+  // ---- MY CREW: a group that stays together after a session (squads), your card and your log
+  function loadSocial() {
+    if (!HI8.live || !signedIn()) return Promise.resolve();
+    return Promise.all([
+      HI8.withKey('hi8_squads', {}, { noQueue: true }).then(function (q) { S.squads = q || []; }, noop),
+      HI8.withKey('hi8_card', {}, { noQueue: true }).then(function (c) { S.card = c; }, noop),
+      HI8.withKey('hi8_watch', { p_spot: null }, { noQueue: true }).then(function (w) { // your stars, on every phone you sign in on
+        var f = favList(); (w && w.spots || []).forEach(function (x) { if (f.indexOf(x) < 0) f.push(x); }); HI8.store.set('favs', f);
+        f.filter(function (x) { return (w && w.spots || []).indexOf(x) < 0; }).forEach(function (x) { HI8.withKey('hi8_watch', { p_spot: x, p_on: true }, { noQueue: true }).catch(noop); });
+      }, noop)
+    ]).then(function () { drawMapSpots(); if (S.view === 'me' || S.view === 'start' || S.view === 'crew') renderSheet(); });
+  }
+  function openSquad(code) {
+    code = String(code).toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
+    S.view = 'squad'; S.sq = { code: code, data: null, err: null, busy: false };
+    if (new URLSearchParams(location.search).get('s') !== code) history.pushState(null, '', '?s=' + code);
+    renderSheet();
+    HI8.rpc('hi8_squad', { p_code: code, p_key: HI8.me().key || null }).then(function (d) { S.sq.data = d; renderSheet(); }, function (e) { S.sq.err = errText(e); renderSheet(); });
+  }
+  function squadUrl(q) { return location.origin + location.pathname + '?s=' + q.code; }
+  function squadShare(q) { return 'Ride with us: ' + q.name + ' on Hi8ctane. When one of us goes, everyone hears. Join the crew: ' + squadUrl(q); }
+  function riderChips(q) {
+    return '<div class="sqr">' + (q.riders || []).map(function (r, i) { return '<span class="sqp" style="background:' + AVC[i % AVC.length] + '">' + (r.plate ? '<b>#' + pad3(r.plate) + '</b>' : '') + esc(r.name || 'Rider') + (r.me ? ' · YOU' : '') + '</span>'; }).join('') + '</div>';
+  }
+  function sheetSquad() {
+    var Q = S.sq || {}, q = Q.data;
+    if (Q.err) return shell('CREW', '<div class="err">' + esc(Q.err) + '</div>', '', true);
+    if (!q) return shell('CREW', '<div class="sec"><div class="skel"></div></div>', '', true);
+    var sport = (SPORT[q.sport] || { name: q.sport }).name.toUpperCase();
+    var body = '<div class="hero sqhero art a-' + esc(q.sport) + '"><div class="k">' + esc(sport) + ' · A CREW THAT RIDES TOGETHER</div><h2>' + esc(q.name) + '</h2>' +
+      '<div class="when2">' + q.size + ' RIDER' + (q.size === 1 ? '' : 'S') + ' · ' + q.sessions + ' SESSION' + (q.sessions === 1 ? '' : 'S') + ' TOGETHER</div></div>' +
+      '<div class="sec">' + riderChips(q) + '</div>' +
+      '<div class="sec"><h2>NEXT <small>' + q.next.length + ' COMING UP</small></h2>' + (q.next.length ? '<div class="crews">' + q.next.map(crewCard).join('') + '</div>' : '<p class="lede">Nothing posted yet. When one of you starts a crew, tap TELL THE CREW and everyone gets an email.</p>') + '</div>';
+    var foot;
+    if (q.mine) {
+      body += '<div class="f"><button class="opt" data-act="sqleave">' + (Q.confirm ? 'TAP AGAIN TO LEAVE' : 'LEAVE THIS CREW') + '</button></div>';
+      foot = '<a class="big wa" href="https://wa.me/?text=' + encodeURIComponent(squadShare(q)) + '" target="_blank" rel="noopener">INVITE A MATE</a><button class="big start" data-act="sqstart" style="flex:0 0 42%">GO RIDE</button>';
+    } else if (signedIn()) {
+      foot = '<button class="big join" data-act="sqjoin"' + (Q.busy ? ' disabled' : '') + '>' + (Q.busy ? '<span class="spin"></span>' : 'JOIN THIS CREW') + '</button>';
+    } else {
+      body += '<div class="f"><label class="lb" for="sqEmail">YOUR EMAIL</label><input class="inp" id="sqEmail" type="email" autocomplete="email" placeholder="you@example.com">' +
+        '<p class="hint">You hear when one of them goes. No app, no password. ' + (Q.err2 ? '<b style="color:var(--pink)">' + esc(Q.err2) + '</b>' : '') + '</p></div>';
+      foot = '<button class="big join" data-act="sqjoin"' + (Q.busy ? ' disabled' : '') + '>' + (Q.busy ? '<span class="spin"></span>' : 'JOIN THIS CREW') + '</button>';
+    }
+    return shell('CREW', body, foot, true);
+  }
+  function squadJoin() {
+    var Q = S.sq; if (!Q || !Q.data || Q.busy) return;
+    var p;
+    if (signedIn()) p = HI8.withKey('hi8_squad_join', { p_code: Q.code }, { noQueue: true });
+    else {
+      var em = (($('#sqEmail') || {}).value || '').trim();
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) { Q.err2 = "That email doesn't look right."; renderSheet(); return; }
+      p = HI8.rpc('hi8_join', { p_email: em, p_city: Q.data.city, p_source: 'squad-link', p_ref: Q.code }).then(function (out) { HI8.saveMe(out); S.me = HI8.me(); return HI8.withKey('hi8_squad_join', { p_code: Q.code }, { noQueue: true }); });
+    }
+    Q.busy = true; Q.err2 = null; renderSheet();
+    p.then(function (d) { Q.busy = false; Q.data = d; drawTop(); renderSheet(); loadSocial(); toast("You're in the crew. When one of them goes, you hear first."); },
+      function (e) { Q.busy = false; Q.err2 = errText(e); renderSheet(); });
+  }
+  // the Me page: your card and your crews
+  function cardBox() {
+    var c = S.card; if (!c) return '';
+    var stat = function (n, l, col) { return '<span class="cs" style="border-color:' + col + '"><b style="color:' + col + '">' + n + '</b>' + l + '</span>'; };
+    return '<div class="box ridercard"><h3>YOUR RIDER CARD</h3><div class="csr">' + stat(c.sessions, 'SESSIONS', 'var(--lime)') + stat(c.spots, 'SPOTS', 'var(--yellow)') + stat(c.drives, 'DRIVES', 'var(--pink)') + stat(c.squads, 'CREWS', 'var(--mint)') + '</div>' +
+      (c.log && c.log.length ? '<div class="log">' + c.log.map(function (x) {
+        return '<div class="lg"><span class="lg-d">' + esc(FX.dayName(x.day, S.today).toUpperCase()) + '<small>' + esc(x.day.slice(8, 10) + '/' + x.day.slice(5, 7)) + '</small></span><span class="lg-s"><b>' + esc(x.spot_name.toUpperCase()) + '</b><small>' + (x.role === 'drive' ? 'YOU DROVE · ' : '') + (x.riders && x.riders.length ? 'WITH ' + esc(x.riders.slice(0, 3).join(', ').toUpperCase()) + (x.riders.length > 3 ? ' +' + (x.riders.length - 3) : '') : 'SOLO') + '</small></span>' +
+          (x.squad ? '<button class="opt" data-act="squad" data-code="' + esc(x.squad) + '">THE CREW</button>' : '<button class="opt" data-act="keep" data-code="' + esc(x.code) + '">KEEP CREW</button>') + '</div>';
+      }).join('') + '</div>' : '<p class="hint">Your sessions show here after the day: who came, where, who drove.</p>') + '</div>';
+  }
+  function squadsBox() {
+    var Q = S.squads || [];
+    return '<div class="sec"><h2>CREWS THAT STAY <small>' + Q.length + '</small></h2>' + (Q.length ? Q.map(function (q) {
+      return '<button class="sqcard" data-act="squad" data-code="' + esc(q.code) + '"><span class="sqn">' + esc(q.name.toUpperCase()) + '</span><span class="hint">' + q.size + ' rider' + (q.size === 1 ? '' : 's') + ' · ' + q.sessions + ' session' + (q.sessions === 1 ? '' : 's') + ' · ' + (q.next.length ? 'next: ' + esc(dayRel(q.next[0].day)) + ' ' + esc(q.next[0].spot_name) : 'nothing posted yet') + '</span></button>';
+    }).join('') : '<p class="lede">After a session, tap KEEP CREW: the people you rode with stay together, and when one of you goes the rest hear about it.</p>') + '</div>';
   }
   // ---- KITE SIZE: your weight, from any kite size on the page
   function sheetKg() {
@@ -1556,7 +1638,24 @@
         var i2 = T2.indexOf(want || d.date + 'T12:00'); if (i2 < 0) i2 = T2.indexOf(d.date + 'T12:00');
         if (i2 >= 0) { S.hi = i2; drawTime(); drawMapSpots(); }
         break; }
-      case 'fav': { var on = toggleFav(d.spot); toast(on ? 'Saved: it glows on your map.' : 'Removed from your spots.'); renderSheet(); drawMapSpots(); break; }
+      case 'fav': { var on = toggleFav(d.spot); if (signedIn()) HI8.withKey('hi8_watch', { p_spot: d.spot, p_on: on }, { noQueue: true }).catch(noop);
+        toast(on ? (signedIn() ? 'Saved: it glows on your map, and you get an email when a crew goes there.' : 'Saved: it glows on your map.') : 'Removed from your spots.'); renderSheet(); drawMapSpots(); break; }
+      case 'squad': openSquad(d.code); break;
+      case 'sqjoin': squadJoin(); break;
+      case 'sqleave':
+        if (!S.sq.confirm) { S.sq.confirm = true; renderSheet(); break; }
+        after(HI8.withKey('hi8_squad_leave', { p_code: S.sq.code }, { noQueue: true }), function () { toast('You left the crew.'); S.sq.confirm = false; loadSocial(); closeSheet(); });
+        break;
+      case 'sqstart': if (S.sq && S.sq.data && S.sq.data.sport !== S.sport && LIVE_SPORTS.indexOf(S.sq.data.sport) >= 0) setSport(S.sq.data.sport); newStart({ sport: S.sq && S.sq.data ? S.sq.data.sport : null }); go('#start'); break;
+      case 'sqcall':
+        after(HI8.withKey('hi8_squad_call', { p_code: d.squad, p_crew: d.code }, { noQueue: true }), function (r) {
+          S.told = S.told || {}; S.told[d.squad + ':' + d.code] = 1; renderSheet(); loadSocial();
+          toast(r.told ? 'Told ' + r.told + ' rider' + (r.told > 1 ? 's' : '') + ': they get an email with the crew link.' : 'Everyone in that crew is already in this one.');
+        });
+        break;
+      case 'keep':
+        after(HI8.withKey('hi8_squad_keep', { p_crew: d.code }, { noQueue: true }), function (q) { loadSocial(); openSquad(q.code); toast('Kept: ' + esc(q.name) + '. Invite whoever else rides with you.'); });
+        break;
       case 'seeday': { var T = times(), i = T.indexOf(d.date + 'T' + pad(Number(d.from || 12)) + ':00'); if (i >= 0) { S.hi = i; drawTime(); drawMapSpots(); var mw = $('.mapwrap'); if (mw && mw.getBoundingClientRect().top < 0) mw.scrollIntoView({ behavior: 'smooth' }); } break; }
       case 'joinday': S.joinDay = d.day; renderSheet(); break;
       case 'sfsport': newStart({ sport: d.sport }); if (d.sport !== S.sport) setSport(d.sport); renderSheet(); break;
@@ -1733,7 +1832,7 @@
       HI8.onData(function () { drawTop(); drawCrews(); drawSessions(); drawMapSpots(); if (S.view === 'join' || S.view === 'me') renderSheet(); });
       window.addEventListener('focus', function () { if (Date.now() - (S.plansAt || 0) > 120000) { S.plansAt = Date.now(); loadPlans(); } });
       HI8.loadPlaces().then(function () { fitMap(); loadForecast(); drawAll(); }, function () { loadForecast(); });
-      loadLive(); loadPlans(); look(); setInterval(look, 60000);
+      loadLive(); loadPlans(); look(); setInterval(look, 60000); if (signedIn()) loadSocial();
       document.addEventListener('visibilitychange', function () { if (!document.hidden) look(); });
       setInterval(function () { if (!document.hidden) { loadLive(); HI8.loadCrews(true).catch(noop); } }, 60000);
     } else loadForecast();
