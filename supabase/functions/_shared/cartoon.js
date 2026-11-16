@@ -11,8 +11,9 @@
 export const PROMPT = [
   'Redraw the person in this photo as a gritty action-sports comic portrait with an anime edge: head and shoulders, facing the viewer, centred, with space around the head.',
   'Realistic proportions, not chibi, not big-eyed. Sharp, angular, straight-edged linework: squared jaw and chin, faceted cheekbones, hair drawn as sharp spiky clumps and shards.',
-  'Thick black ink outlines, hard-cut cel shadows with hatching, halftone dots, a sharp anime catch-light in the eyes, a thin neon rim light on the hair.',
-  'Grunge print texture: grain, a few ink specks, slightly worn. Bold palette of ink black, hot pink, acid lime and teal accents against natural, sun-tanned skin.',
+  'Thick black ink outlines, hard-cut cel shadows with hatching, halftone dots, a sharp anime catch-light in the eyes, warm late-afternoon sunlight from one side.',
+  'Sun, sea and salt: hair bleached lighter at the tips by sun and saltwater, a little tousled and stiff with salt, a few dry strands; sun-tanned skin with a light flush across the nose and cheeks, faint freckles.',
+  'Grunge print texture: grain, a few ink specks, faded like a sun-bleached poster. Natural, weathered palette: warm sand, sun-faded browns, deep sea blue and ink black. No neon, no pink, no lime, no glowing rim light.',
   'Keep the person clearly recognisable: same face shape, nose, eyes, brows, skin tone, hair colour, texture and length, same facial hair, glasses and visible accessories, same clothing.',
   'A confident, focused expression. No text, no logos, no frame, no background scenery. Transparent background.',
 ].join(' ');
