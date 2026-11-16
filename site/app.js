@@ -220,7 +220,6 @@
       '<div class="pg">' +
       (V === 1 ? '<section class="blk" id="crews"></section>' : '<section class="blk" id="sessions"></section>') +
       '<section class="blk" id="live"></section>' +
-      '<section class="blk mapsec" id="mapsec"><div class="sec2"><b>THE LIVE MAP</b><span>WIND · CREWS · WHO\'S THERE</span></div><div class="mapbox" id="mapslot"></div></section>' +
       '<section class="blk" id="how">' + howHtml() + '</section>' +
       '<section class="blk more" id="more"><div class="sec2"><b>MORE</b><span>WHEN YOU WANT IT</span></div>' +
       '<details class="mo" id="moWeek"><summary><b>THE WEEK AHEAD</b><span>Every sport, every day, and the best window</span></summary><section class="blk" id="week"></section><section class="blk" id="best"></section></details>' +
@@ -230,22 +229,9 @@
       '<details class="mo" id="moSoon"><summary><b>MORE SPORTS SOON</b><span>Get an email when yours opens</span></summary><div class="sps soonr" id="soonSports"></div></details>' +
       '<a class="mo" href="B27-Schools.dc.html"><b>FOR SCHOOLS + RENTAL SHOPS</b><span>We send you riders who already have a crew →</span></a>' +
       '</section>' +
+      '<section class="blk mapsec" id="mapsec"><div class="sec2"><b>THE LIVE MAP</b><span>WIND · CREWS · WHO\'S THERE</span></div><div class="mapbox" id="mapslot"></div>' +
+      '<div class="mapend"><span>SEE YOU OUT THERE.</span><button class="sygo" data-act="top">FIND MY NEXT SESSION ↑</button></div></section>' +
       '</div>' +
-      '<footer class="seeyou">' +
-      // turquoise water over a reef, drawn by the browser (no image to download): the reef, the light on the surface, a little grain
-      '<svg class="sea" viewBox="0 0 390 340" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs>' +
-      '<filter id="sea29" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">' +
-      '<feTurbulence type="fractalNoise" baseFrequency="0.006 0.014" numOctaves="3" seed="7" result="reef"/>' +
-      '<feColorMatrix in="reef" type="matrix" values="0 0 0 0 0.05  0 0 0 0 0.42  0 0 0 0 0.40  1.9 0 0 0 -0.62" result="reefc"/>' +
-      '<feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="1" seed="11" result="gr"/>' +
-      '<feColorMatrix in="gr" type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0.16 0 0 0 -0.04" result="grc"/>' +
-      '<feFlood flood-color="#19B3A6" result="base"/><feMerge><feMergeNode in="base"/><feMergeNode in="reefc"/><feMergeNode in="grc"/></feMerge></filter>' +
-      '<filter id="glint29" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB"><feTurbulence type="turbulence" baseFrequency="0.022 0.05" numOctaves="2" seed="3"/>' +
-      '<feColorMatrix type="matrix" values="0 0 0 0 0.62  0 0 0 0 0.98  0 0 0 0 0.90  0 2.6 0 0 -0.95"/></filter>' +
-      '<linearGradient id="deep29" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0B3B4A" stop-opacity=".55"/><stop offset=".4" stop-color="#0B3B4A" stop-opacity="0"/><stop offset="1" stop-color="#0B3B4A" stop-opacity=".3"/></linearGradient></defs>' +
-      '<rect width="390" height="340" filter="url(#sea29)"/><rect width="390" height="340" fill="url(#deep29)"/></svg>' +
-      '<svg class="glint" viewBox="0 0 470 340" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="470" height="340" filter="url(#glint29)"/></svg>' +
-      '<div class="sy">SEE YOU<br><span>OUT THERE.</span></div><button class="sygo" data-act="top">FIND MY NEXT SESSION ↑</button></footer>' +
       '<div class="credits">Forecast: Open-Meteo (CC BY 4.0): a local model for the first days (KNMI HARMONIE in the Netherlands, Météo-France AROME in Spain), then ECMWF, ICON and GFS, compared hour by hour for the "models agree" line. Waves and water temperature: Open-Meteo Marine. Coastlines: Natural Earth. A model forecast, not a beach sensor: every session is your own call. 18+.<br>' +
       '<a href="terms/">Terms</a> · <a href="privacy/">Privacy</a> · <a href="B27-Schools.dc.html">Schools + rental shops</a> · <a href="B27-City.dc.html">Other cities</a> · hi8ctane.com</div>' +
       '</main>' +
