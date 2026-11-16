@@ -231,12 +231,21 @@
       '<a class="mo" href="B27-Schools.dc.html"><b>FOR SCHOOLS + RENTAL SHOPS</b><span>We send you riders who already have a crew →</span></a>' +
       '</section>' +
       '</div>' +
-      '<footer class="seeyou"><span class="st" style="left:78%;top:30px"></span><span class="st" style="left:88%;top:64px"></span><span class="st" style="left:67%;top:90px"></span><span class="st" style="left:9%;top:120px"></span>' +
-      '<svg class="kt" viewBox="0 0 46 34" aria-hidden="true"><path d="M2 12 Q23 -6 44 12 Q23 4 2 12Z" fill="#FF2D78" stroke="#111" stroke-width="2"/><path d="M2 12 L22 33 M44 12 L24 33" stroke="#F3EFE3" stroke-width="1"/></svg>' +
-      '<div class="sy">SEE YOU<br><span>OUT THERE.</span></div><button class="sygo" data-act="top">FIND MY NEXT SESSION ↑</button>' +
-      '<svg class="sun" viewBox="0 0 390 120" preserveAspectRatio="xMaxYMax slice" aria-hidden="true"><defs><linearGradient id="sun29" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#FFE14D"/><stop offset=".55" stop-color="#FF8FB6"/><stop offset="1" stop-color="#FF2D78"/></linearGradient><clipPath id="hz29"><rect x="0" y="0" width="390" height="86"/></clipPath></defs>' +
-      '<g clip-path="url(#hz29)"><circle class="sunc" cx="292" cy="86" r="66" fill="url(#sun29)"/></g><rect x="218" y="48" width="148" height="3" fill="#FF4F8E"/><rect x="218" y="60" width="148" height="4" fill="#FF4F8E"/><rect x="218" y="72" width="148" height="5" fill="#FF4F8E"/>' +
-      '<rect x="0" y="86" width="390" height="34" fill="#111"/><path class="sw1" d="M0 98 Q24 92 48 98 T96 98 T144 98 T192 98 T240 98 T288 98 T336 98 T384 98 T432 98 T480 98" fill="none" stroke="#8DF5E8" stroke-width="2.5"/><path class="sw2" d="M-72 110 Q-48 104 -24 110 T24 110 T72 110 T120 110 T168 110 T216 110 T264 110 T312 110 T360 110 T408 110" fill="none" stroke="#C8FF3D" stroke-width="2.5"/></svg></footer>' +
+      '<footer class="seeyou">' +
+      // turquoise water over a reef, drawn by the browser (no image to download): the reef, the light on the surface, a little grain
+      '<svg class="sea" viewBox="0 0 390 340" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs>' +
+      '<filter id="sea29" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">' +
+      '<feTurbulence type="fractalNoise" baseFrequency="0.006 0.014" numOctaves="3" seed="7" result="reef"/>' +
+      '<feColorMatrix in="reef" type="matrix" values="0 0 0 0 0.05  0 0 0 0 0.42  0 0 0 0 0.40  1.9 0 0 0 -0.62" result="reefc"/>' +
+      '<feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="1" seed="11" result="gr"/>' +
+      '<feColorMatrix in="gr" type="matrix" values="0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0.16 0 0 0 -0.04" result="grc"/>' +
+      '<feFlood flood-color="#19B3A6" result="base"/><feMerge><feMergeNode in="base"/><feMergeNode in="reefc"/><feMergeNode in="grc"/></feMerge></filter>' +
+      '<filter id="glint29" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB"><feTurbulence type="turbulence" baseFrequency="0.022 0.05" numOctaves="2" seed="3"/>' +
+      '<feColorMatrix type="matrix" values="0 0 0 0 0.62  0 0 0 0 0.98  0 0 0 0 0.90  0 2.6 0 0 -0.95"/></filter>' +
+      '<linearGradient id="deep29" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0B3B4A" stop-opacity=".55"/><stop offset=".4" stop-color="#0B3B4A" stop-opacity="0"/><stop offset="1" stop-color="#0B3B4A" stop-opacity=".3"/></linearGradient></defs>' +
+      '<rect width="390" height="340" filter="url(#sea29)"/><rect width="390" height="340" fill="url(#deep29)"/></svg>' +
+      '<svg class="glint" viewBox="0 0 470 340" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="470" height="340" filter="url(#glint29)"/></svg>' +
+      '<div class="sy">SEE YOU<br><span>OUT THERE.</span></div><button class="sygo" data-act="top">FIND MY NEXT SESSION ↑</button></footer>' +
       '<div class="credits">Forecast: Open-Meteo (CC BY 4.0): a local model for the first days (KNMI HARMONIE in the Netherlands, Météo-France AROME in Spain), then ECMWF, ICON and GFS, compared hour by hour for the "models agree" line. Waves and water temperature: Open-Meteo Marine. Coastlines: Natural Earth. A model forecast, not a beach sensor: every session is your own call. 18+.<br>' +
       '<a href="terms/">Terms</a> · <a href="privacy/">Privacy</a> · <a href="B27-Schools.dc.html">Schools + rental shops</a> · <a href="B27-City.dc.html">Other cities</a> · hi8ctane.com</div>' +
       '</main>' +
