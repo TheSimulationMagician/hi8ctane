@@ -9,11 +9,12 @@
 // deps: { fetch, uuid } (the tests pass fakes)
 
 export const PROMPT = [
-  'Redraw the person in this photo as a realistic comic-book portrait, the way a 1990s surf magazine illustrated its riders: head and shoulders, facing the viewer, centred, with space around the head.',
-  'Realistic proportions and anatomy, not chibi, not big-eyed, not a caricature. Bold black ink outlines with brush-weight variation and fine hatching in the shadows,',
-  'hard-edged cel shading, Ben-Day halftone dots in the mid-tones, slightly off-register print colour, a sun-bleached palette (warm skin, salt-faded hair, deep navy and teal).',
+  'Redraw the person in this photo as a gritty action-sports comic portrait with an anime edge: head and shoulders, facing the viewer, centred, with space around the head.',
+  'Realistic proportions, not chibi, not big-eyed. Sharp, angular, straight-edged linework: squared jaw and chin, faceted cheekbones, hair drawn as sharp spiky clumps and shards.',
+  'Thick black ink outlines, hard-cut cel shadows with hatching, halftone dots, a sharp anime catch-light in the eyes, a thin neon rim light on the hair.',
+  'Grunge print texture: grain, a few ink specks, slightly worn. Bold palette of ink black, hot pink, acid lime and teal accents against natural, sun-tanned skin.',
   'Keep the person clearly recognisable: same face shape, nose, eyes, brows, skin tone, hair colour, texture and length, same facial hair, glasses and visible accessories, same clothing.',
-  'A relaxed, confident expression. No text, no logos, no frame, no background scenery. Transparent background.',
+  'A confident, focused expression. No text, no logos, no frame, no background scenery. Transparent background.',
 ].join(' ');
 
 const MAX_BYTES = 3 * 1024 * 1024;
