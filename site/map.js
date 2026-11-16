@@ -3,7 +3,8 @@
  *
  *   var m = HI8Map(el, { geo: HI8_GEO.barcelona, onSpot: fn(slug) });
  *   m.setGrid(FX.gridData.barcelona); m.setHour(i); m.setLayer('wind' | 'rain');
- *   m.setSpots([{ slug, name, lat, lon, tone, big, small, crews, here, live, sel }]);
+ *   m.setSpots([{ slug, name, lat, lon, tone, big, small, crews, going, seats, here, live, sel, fav }]);
+ *   m.setDrives([{ from: [lat, lon], to: [lat, lon], seats, label }]);   cars going: a dashed road with a car on it
  *   m.fit([[lat, lon], ...]); m.redraw(); m.destroy();
  *
  * Land, lakes, borders and rivers come from Natural Earth (public domain, geo.js). The wind is Open-Meteo's,
@@ -40,7 +41,7 @@
     var field = document.createElement('canvas'), fctx = field.getContext('2d');
     cv.className = 'map-canvas'; cv.setAttribute('role', 'img'); cv.setAttribute('aria-label', opts.label || 'Live wind map with spots and crews');
     host.appendChild(cv);
-    var W = 0, H = 0, z = 7.6, cx = 0, cy = 0, geo = opts.geo, grid = null, hour = 0, layer = 'wind', spots = [], hits = [], keepOut = [];
+    var W = 0, H = 0, z = 7.6, cx = 0, cy = 0, geo = opts.geo, grid = null, hour = 0, layer = 'wind', spots = [], hits = [], keepOut = [], drives = [];
     var parts = [], raf = 0, visible = true, still = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) || !!opts.still;
     var fieldDirty = true, t0 = Date.now();
 
@@ -176,6 +177,31 @@
       });
       return out;
     }
+    function drawDrives(now) {
+      if (!drives.length) return;
+      drives.forEach(function (d, i) {
+        var a = px(d.from[0], d.from[1]), b = px(d.to[0], d.to[1]);
+        var mx = (a[0] + b[0]) / 2 - (b[1] - a[1]) * 0.18, my = (a[1] + b[1]) / 2 + (b[0] - a[0]) * 0.18; // a gentle curve
+        ctx.save();
+        ctx.lineCap = 'round';
+        ctx.strokeStyle = 'rgba(17,17,17,.75)'; ctx.lineWidth = 5; ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.quadraticCurveTo(mx, my, b[0], b[1]); ctx.stroke();
+        ctx.strokeStyle = '#FF2D78'; ctx.lineWidth = 2.5; ctx.setLineDash([7, 6]); ctx.lineDashOffset = -((now - t0) / 60) % 13;
+        ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.quadraticCurveTo(mx, my, b[0], b[1]); ctx.stroke(); ctx.setLineDash([]);
+        // the car: it drives the road in 6 s, again and again
+        var t = ((now - t0) / 6000 + i * 0.37) % 1, u = 1 - t;
+        var cx2 = u * u * a[0] + 2 * u * t * mx + t * t * b[0], cy2 = u * u * a[1] + 2 * u * t * my + t * t * b[1];
+        var dx = 2 * u * (mx - a[0]) + 2 * t * (b[0] - mx), dy = 2 * u * (my - a[1]) + 2 * t * (b[1] - my);
+        ctx.translate(cx2, cy2); ctx.rotate(Math.atan2(dy, dx));
+        ctx.fillStyle = '#111111'; ctx.fillRect(-8, -5, 17, 11); ctx.fillStyle = '#FF2D78'; ctx.fillRect(-7, -4, 15, 9); ctx.fillStyle = '#F3EFE3'; ctx.fillRect(1, -3, 4, 7);
+        ctx.restore();
+        // the start: a dot and the seats left
+        ctx.fillStyle = '#111111'; ctx.beginPath(); ctx.arc(a[0], a[1], 5.5, 0, 7); ctx.fill(); ctx.fillStyle = '#FF2D78'; ctx.beginPath(); ctx.arc(a[0], a[1], 3.5, 0, 7); ctx.fill();
+        if (d.label) {
+          ctx.font = '700 9.5px "Space Mono", ui-monospace, monospace'; var lw = ctx.measureText(d.label).width + 10;
+          ctx.fillStyle = '#111111'; ctx.fillRect(a[0] - lw / 2, a[1] + 8, lw, 15); ctx.fillStyle = '#F3EFE3'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(d.label, a[0], a[1] + 16); ctx.textAlign = 'left';
+        }
+      });
+    }
     function drawSpots(now, lay) {
       hits = [];
       ctx.textBaseline = 'middle';
@@ -193,6 +219,7 @@
         ctx.fillRect(x - r - 1.5, y - r - 1.5, r * 2 + 3, r * 2 + 3);
         ctx.fillStyle = col; ctx.fillRect(x - r + 1, y - r + 1, r * 2 - 2, r * 2 - 2);
         if (s.sel) { ctx.strokeStyle = '#F3EFE3'; ctx.lineWidth = 2; ctx.strokeRect(x - r - 3.5, y - r - 3.5, r * 2 + 7, r * 2 + 7); }
+        if (s.fav) { ctx.save(); ctx.shadowColor = '#C8FF3D'; ctx.shadowBlur = 14; ctx.strokeStyle = '#C8FF3D'; ctx.lineWidth = 2.5; ctx.strokeRect(x - r - 5, y - r - 5, r * 2 + 10, r * 2 + 10); ctx.restore(); }
         ctx.fillStyle = INK[s.tone] || '#111111'; ctx.font = '400 15px Anton, Impact, sans-serif'; ctx.textAlign = 'center';
         ctx.fillText(s.big == null ? '–' : String(s.big), x, y + 1);
         ctx.textAlign = 'left';
@@ -203,13 +230,23 @@
           ctx.font = '700 9.5px "Space Mono", ui-monospace, monospace';
           ctx.lineWidth = 3; ctx.strokeStyle = '#111111'; ctx.strokeText(o.small, o.lx, y + 8); ctx.fillStyle = col === TONE.no || col === TONE.none ? '#F3EFE3' : col; ctx.fillText(o.small, o.lx, y + 8);
         }
-        if (s.crews) { // a yellow tag with the number of crews
-          var bx = x + r - 1, by = y - r - 1, txt = String(s.crews);
-          ctx.fillStyle = '#111111'; ctx.fillRect(bx - 8, by - 8, 17, 17);
-          ctx.fillStyle = '#FFE14D'; ctx.fillRect(bx - 6.5, by - 6.5, 14, 14);
-          ctx.fillStyle = '#111111'; ctx.font = '400 11px Anton, Impact, sans-serif'; ctx.textAlign = 'center'; ctx.fillText(txt, bx + 0.5, by + 1); ctx.textAlign = 'left';
+        var ty = 0;
+        if (s.crews) { // who's going: "3 GOING · 1 SEAT" under the marker, pink when there's a seat to take
+          var seat = s.seats > 0, tag = (s.going || 0) + ' GOING' + (seat ? ' · ' + s.seats + ' SEAT' + (s.seats > 1 ? 'S' : '') : '');
+          ctx.font = '700 9.5px "Space Mono", ui-monospace, monospace';
+          var tw2 = ctx.measureText(tag).width + 10, tx = x - tw2 / 2; ty = y + r + 5;
+          ctx.fillStyle = '#111111'; ctx.fillRect(tx + 2, ty + 2, tw2, 15);
+          ctx.fillStyle = seat ? '#FF2D78' : '#FFE14D'; ctx.fillRect(tx, ty, tw2, 15);
+          ctx.strokeStyle = '#111111'; ctx.lineWidth = 1.5; ctx.strokeRect(tx, ty, tw2, 15);
+          ctx.fillStyle = seat ? '#FFFFFF' : '#111111'; ctx.textAlign = 'center'; ctx.fillText(tag, x, ty + 8); ctx.textAlign = 'left';
+          if (s.crews > 1) { // and how many crews, in the corner
+            var bx = x + r - 1, by = y - r - 1;
+            ctx.fillStyle = '#111111'; ctx.fillRect(bx - 8, by - 8, 17, 17);
+            ctx.fillStyle = '#FFE14D'; ctx.fillRect(bx - 6.5, by - 6.5, 14, 14);
+            ctx.fillStyle = '#111111'; ctx.font = '400 11px Anton, Impact, sans-serif'; ctx.textAlign = 'center'; ctx.fillText(String(s.crews), bx + 0.5, by + 1); ctx.textAlign = 'left';
+          }
         }
-        hits.push({ slug: s.slug, x: x, y: y, r: r + 10, lx: o.lx, w: o.tw });
+        hits.push({ slug: s.slug, x: x, y: y + (ty ? 8 : 0), r: r + 10 + (ty ? 8 : 0), lx: o.lx, w: o.tw });
       });
     }
 
@@ -247,8 +284,9 @@
       var lay = layoutSpots();
       drawBase(lay);
       if (!still) { stepParticles(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(trail, 0, 0); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); }
+      drawDrives(now);
       drawSpots(now, lay);
-      if (!still || spots.some(function (s) { return s.live || s.here; })) raf = requestAnimationFrame(frame);
+      if (!still || drives.length || spots.some(function (s) { return s.live || s.here; })) raf = requestAnimationFrame(frame);
     }
     function kick() { if (!raf) raf = requestAnimationFrame(frame); }
 
@@ -316,6 +354,7 @@
       setHour: function (i) { if (i !== hour) { hour = i; fieldDirty = true; kick(); } },
       setLayer: function (l) { if (l !== layer) { layer = l; fieldDirty = true; kick(); } },
       setSpots: function (s) { spots = s || []; kick(); },
+      setDrives: function (d) { drives = d || []; kick(); },
       setKeepOut: function (r) { keepOut = r || []; kick(); },
       setStill: function (b) { still = !!b; seed(); kick(); },
       // pad: pixels to keep free on each side ({ t, r, b, l }), for the buttons and the time bar
