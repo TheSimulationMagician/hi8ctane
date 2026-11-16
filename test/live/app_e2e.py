@@ -262,7 +262,7 @@ with sync_playwright() as p:
     check(D.locator('.hero').bounding_box()['height'] > 200, 'computer: the hero keeps its full height')
     ctxV, V = fresh()
     V.goto(BASE + '/'); V.wait_for_timeout(1500)
-    check(V.locator('.hero .hl').bounding_box()['y'] < V.locator('#sessions').bounding_box()['y'] < V.locator('.mapwrap').bounding_box()['y'] < V.locator('#how').bounding_box()['y'] < V.locator('#moWeek').bounding_box()['y'] and V.locator('#night').count() == 0, 'phone: the hero, the board, the live map, how it works, then MORE; no Founding Night')
+    check(V.locator('.hero .hl').bounding_box()['y'] < V.locator('#sessions').bounding_box()['y'] < V.locator('#how').bounding_box()['y'] < V.locator('#moWeek').bounding_box()['y'] < V.locator('.mapwrap').bounding_box()['y'] and V.locator('#night').count() == 0 and V.locator('.seeyou').count() == 0, 'phone: the hero, the board, how it works, MORE, and the page ends on the live map')
     V.goto(BASE + '/?v=1'); V.wait_for_timeout(1500)
     check(V.locator('#crews').count() == 1 and V.locator('#sessions').count() == 0, 'iteration 1 (?v=1): the crew cards')
     V.goto(BASE + '/?v=2'); V.wait_for_timeout(1500)
