@@ -52,7 +52,7 @@ with sync_playwright() as p:
     check('CATALONIA' in A.locator('.tbcity').inner_text().upper() and 'PILOT' in A.locator('.tbcity').inner_text(), 'opens on the Barcelona pilot (Catalonia)')
     check(A.locator('.ransom span').count() == 8 and 'THE FORECAST SAYS GO.' in txt(A, '.hero .hl') and A.locator('#verdict').count() == 0, "the ransom-note logo and the 2.14 hero: the forecast says go")
     A.locator('.mapsec').scroll_into_view_if_needed(); A.wait_for_timeout(1200)
-    check(A.locator('.mapsec .mapwrap').bounding_box()['height'] <= 345, 'on a phone the live map sits under the crews, smaller')
+    check(320 <= A.locator('.mapsec .mapwrap').bounding_box()['height'] <= 525, 'on a phone the live map closes the page, tall')
     px = A.evaluate("""(() => { const c = document.querySelector('.map-canvas'), x = c.getContext('2d').getImageData(0, 0, c.width, c.height).data, seen = new Set();
                         for (let i = 0; i < x.length; i += 4 * 997) seen.add(x[i] >> 4 << 8 | x[i + 1] >> 4 << 4 | x[i + 2] >> 4); return seen.size; })()""")
     check(px > 25, f'the map is drawn: wind colours, coast, spots ({px} colours)')

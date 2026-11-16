@@ -203,7 +203,7 @@
       '<button class="tbcity" data-act="city" aria-label="Change city"><span id="cityName"></span><small id="cityTag"></small> ▾</button>' +
       '<button class="tbme" id="plate" data-act="me" aria-label="Me: your plate and crews"></button></header>' +
       '<section class="mapwrap" aria-label="Live map"><div id="map"></div>' +
-      '<div class="mapnote" id="mapnote"></div>' +
+      '<div class="mapnote" id="mapnote"></div><div class="mapdays" id="mapdays" role="group" aria-label="Day on the map"></div>' +
       '<div class="mapbtns"><button class="mbtn" data-act="zoom" data-d="0.6" aria-label="Zoom in">+</button><button class="mbtn" data-act="zoom" data-d="-0.6" aria-label="Zoom out">−</button>' +
       '<button class="mbtn txt" id="layerBtn" data-act="layer" aria-pressed="false">RAIN</button></div>' +
       '<div class="legend" aria-hidden="true">0 <i id="legendBar"></i> 40 KT</div>' +
@@ -337,7 +337,7 @@
   function initMap() {
     var geo = (window.HI8_GEO || {})[S.city];
     if (map) { map.destroy(); map = null; }
-    map = window.HI8Map($('#map'), { geo: geo, onSpot: function (slug) { go('#spot/' + slug); }, still: P.get('still') === '1' });
+    map = window.HI8Map($('#map'), { geo: geo, onSpot: function (slug) { var t = times()[S.hi]; S.spotDay = t ? Math.max(0, Math.min(6, Math.round((dDate(t.slice(0, 10)) - dDate(S.today)) / 864e5))) : 0; go('#spot/' + slug); }, still: P.get('still') === '1' });
     fitMap();
   }
   function fitMap() {
@@ -349,16 +349,25 @@
   function keepOut() {
     if (!map) return;
     var base = $('#map').getBoundingClientRect();
-    map.setKeepOut(['.mapbtns', '.legend', '.timebar', '#mapnote .chip'].map(function (q) { return Array.prototype.slice.call(document.querySelectorAll(q)); })
+    map.setKeepOut(['.mapbtns', '.legend', '.timebar', '#mapnote .chip', '#mapdays button'].map(function (q) { return Array.prototype.slice.call(document.querySelectorAll(q)); })
       .reduce(function (a, b) { return a.concat(b); }, []).map(function (el) { var r = el.getBoundingClientRect(); return [r.left - base.left - 4, r.top - base.top - 4, r.right - base.left + 4, r.bottom - base.top + 4]; }));
   }
   function drawMapSpots() {
     if (!map) return;
-    var T = times(), t = T[S.hi] || null, crews = upcoming(S.sport, 3), live = S.live;
+    var T = times(), t = T[S.hi] || null, day = t ? t.slice(0, 10) : null, live = S.live, favs = favList();
+    // the crews on the day the map shows (or the next 3 days before the forecast is in)
+    var crews = day ? upcoming(S.sport, 7).filter(function (c) { return c.day === day; }) : upcoming(S.sport, 3);
+    var drives = [];
+    crews.forEach(function (c) {
+      var hub = hubOf(c), spot = HI8.spot(c.spot);
+      if (hub && spot && (c.drivers || 0) > 0) drives.push({ from: [hub.lat, hub.lon], to: [spot.lat, spot.lon], seats: c.seats_free || 0, label: (c.seats_free > 0 ? c.seats_free + ' SEAT' + (c.seats_free > 1 ? 'S' : '') : 'FULL') + ' · ' + hm(c.meet_time || c.start) });
+    });
+    if (map.setDrives) map.setDrives(drives);
     map.setSpots(spotsFor(S.city, S.sport).map(function (s) {
       var r = t ? rowAt(s.slug, t) : null, rt = t ? rateAt(s, t) : null, mine = crews.filter(function (c) { return c.spot === s.slug; });
       var here = live ? (live.crews || []).filter(function (c) { return c.spot === s.slug; }).reduce(function (n, c) { return n + (c.here || 0); }, 0) : 0;
-      var o = { slug: s.slug, name: s.name, lat: s.lat, lon: s.lon, crews: mine.length, here: here, live: mine.some(function (c) { return c.live; }) };
+      var o = { slug: s.slug, name: s.name, lat: s.lat, lon: s.lon, crews: mine.length, here: here, live: mine.some(function (c) { return c.live; }), fav: favs.indexOf(s.slug) >= 0,
+        going: mine.reduce(function (n, c) { return n + (c.going || 0); }, 0), seats: mine.reduce(function (n, c) { return n + (c.seats_free || 0); }, 0) };
       if (!r || !rt) { o.tone = 'none'; o.big = null; o.small = FX.error ? 'NO FORECAST' : ''; return o; }
       o.tone = rt.dark ? 'dark' : FX.tone(rt.s);
       if (S.sport === 'kite') { o.big = Math.round(r.w); o.small = rt.dark ? 'DARK' : FX.compass(r.dir) + ' · ' + rt.label; }
@@ -376,6 +385,9 @@
     $('#mapnote').innerHTML = note.join('');
     keepOut();
   }
+  // your spots: a star on the spot page, a glow on the map (kept on this phone)
+  function favList() { return HI8.store.get('favs', []) || []; }
+  function toggleFav(slug) { var f = favList(), i = f.indexOf(slug); if (i >= 0) f.splice(i, 1); else f.push(slug); HI8.store.set('favs', f); return i < 0; }
   // wind for kite, rain for MTB and MX, unless the rider switched it
   function effLayer() { return S.layerSet ? S.layer : (S.sport === 'kite' ? 'wind' : 'rain'); }
   function drawTime() {
@@ -387,6 +399,12 @@
     $('#when').innerHTML = esc(FX.dayName(t.slice(0, 10), S.today)) + ' ' + t.slice(11, 16) + (isNow ? '<small>NOW</small>' : '<small><button data-act="now">BACK TO NOW</button></small>');
     var ds = []; T.forEach(function (x, i) { if (x.slice(11, 13) === '12') ds.push(FX.dayName(x.slice(0, 10), S.today)); });
     $('#tlDays').innerHTML = ds.map(function (d) { return '<span>' + esc(d) + '</span>'; }).join('');
+    var dates = []; T.forEach(function (x) { var d = x.slice(0, 10); if (dates.indexOf(d) < 0 && T.indexOf(d + 'T12:00') >= 0) dates.push(d); });
+    var cur = t.slice(0, 10), crewDays = upcoming(S.sport, 7).map(function (c) { return c.day; });
+    $('#mapdays').innerHTML = dates.map(function (d) {
+      var n = crewDays.filter(function (x) { return x === d; }).length;
+      return '<button data-act="mapday" data-date="' + d + '" aria-pressed="' + (d === cur) + '">' + esc(d === S.today ? 'TODAY' : FX.dayName(d, S.today).slice(0, 3).toUpperCase()) + (n ? '<i>' + n + '</i>' : '') + '</button>';
+    }).join('');
     $('#layerBtn').textContent = effLayer() === 'rain' ? 'WIND' : 'RAIN';
   }
 
@@ -1213,8 +1231,16 @@
     }
     var crews = upcoming(sport, 14).filter(function (c) { return c.spot === spot.slug; });
     var reps = S.live ? (S.live.reports || []).filter(function (r) { return r.spot === spot.slug; }) : [];
+    // the call for this spot on the chosen day: join who's going, or start a crew in the best window, one tap
+    var bw = sp ? FX.windows(sp, date, sport, spot, { kg: kg() })[0] : null, dayCrews = crews.filter(function (c) { return c.day === date; });
+    var fav = favList().indexOf(spot.slug) >= 0;
+    var call = '<div class="spotcall">' +
+      (dayCrews.length ? '<div class="sc-k">' + esc(FX.dayName(date, S.today).toUpperCase()) + ' · ' + dayCrews.length + ' CREW' + (dayCrews.length > 1 ? 'S' : '') + ' GOING</div><div class="crews">' + dayCrews.map(crewCard).join('') + '</div>' : '') +
+      (bw ? '<button class="big start" data-act="startwin" data-spot="' + esc(spot.slug) + '" data-sport="' + esc(sport) + '" data-date="' + date + '" data-from="' + bw.from + '" data-to="' + bw.to + '">' + (dayCrews.length ? 'OR START YOUR OWN · ' : 'START A CREW · ') + esc(FX.dayName(date, S.today).toUpperCase()) + ' ' + pad(bw.from) + '–' + pad(bw.to) + '<small>' + esc(bw.label) + (sport === 'kite' && bw.w ? ' · ' + Math.round(bw.w) + ' KT' : '') + ' · THE BEST WINDOW THAT DAY</small></button>'
+        : (!dayCrews.length ? '<p class="hint" style="padding:0 0 4px">No good window ' + esc(FX.dayName(date, S.today).toLowerCase()) + '. Try another day.</p>' : '')) +
+      '<button class="favbtn" data-act="fav" data-spot="' + esc(spot.slug) + '" aria-pressed="' + fav + '">' + (fav ? '★ YOUR SPOT' : '☆ SAVE AS YOUR SPOT') + '</button></div>';
     var body = '<div class="hero"><div class="k">' + esc((spot.sports || []).filter(function (k) { return LIVE_SPORTS.indexOf(k) >= 0; }).map(function (k) { return SPORT[k].name.toUpperCase(); }).join(' · ')) + '</div><h2>' + esc(spot.name) + '</h2>' +
-      (spot.note ? '<div class="when2" style="font-weight:400">' + esc(spot.note) + '</div>' : '') + '</div>' + tabs + table +
+      (spot.note ? '<div class="when2" style="font-weight:400">' + esc(spot.note) + '</div>' : '') + '</div>' + tabs + call + table +
       (reps.length ? '<div class="box"><h3>REPORTS · LAST HOURS</h3><div class="reports">' + reps.map(function (r) { return '<div class="rep"><span class="tag ' + (r.verdict === 'on' ? 'epic' : r.verdict === 'meh' ? 'ok' : 'no') + '">' + r.verdict.toUpperCase() + '</span><span>' + (r.kite ? 'on a ' + r.kite + ' m' : '') + (r.ground ? esc(r.ground) : '') + '</span><small>' + esc(ago(r.at)) + '</small></div>'; }).join('') + '</div></div>' : '') +
       (S.plans || []).filter(function (p) { return p.spot === spot.slug; }).map(function (p) { return '<div class="f"><button class="opt wide" data-act="plan" data-plan="' + esc(p.slug) + '"><span>PLAN: ' + esc(p.title.toUpperCase()) + '<small>' + esc(p.blurb.split('. ')[0]) + '.</small></span><span class="tag good">' + (p.interested ? p.interested + ' IN' : 'SEE IT') + '</span></button></div>'; }).join('') +
       '<div class="sec"><h2>CREWS HERE <small>' + crews.length + ' COMING UP</small></h2>' + (crews.length ? '<div class="crews">' + crews.map(crewCard).join('') + '</div>' : '<p class="lede">None yet.</p>') + '</div>' +
@@ -1524,6 +1550,13 @@
       case 'layer': S.layer = effLayer() === 'rain' ? 'wind' : 'rain'; S.layerSet = true; drawTime(); drawMapSpots(); break;
       case 'play': togglePlay(); break;
       case 'now': S.hi = Math.max(0, times().indexOf(S.today + 'T' + pad(S.nowH) + ':00')); drawTime(); drawMapSpots(); break;
+      case 'mapday': { // that day at the best hour: now if it's today and light, else the best window of the day, else noon
+        var T2 = times(), want = d.date === S.today && S.nowH >= 8 && S.nowH < 18 ? S.today + 'T' + pad(S.nowH) + ':00' : null;
+        if (!want && FX.data[S.city]) { var b2 = null; spotsFor(S.city, S.sport).forEach(function (sp) { var fs = fxSpot(sp.slug); if (!fs) return; var w = FX.windows(fs, d.date, S.sport, sp, { kg: kg() })[0]; if (w && (!b2 || w.score > b2.score)) b2 = w; }); if (b2) want = d.date + 'T' + pad(b2.from) + ':00'; }
+        var i2 = T2.indexOf(want || d.date + 'T12:00'); if (i2 < 0) i2 = T2.indexOf(d.date + 'T12:00');
+        if (i2 >= 0) { S.hi = i2; drawTime(); drawMapSpots(); }
+        break; }
+      case 'fav': { var on = toggleFav(d.spot); toast(on ? 'Saved: it glows on your map.' : 'Removed from your spots.'); renderSheet(); drawMapSpots(); break; }
       case 'seeday': { var T = times(), i = T.indexOf(d.date + 'T' + pad(Number(d.from || 12)) + ':00'); if (i >= 0) { S.hi = i; drawTime(); drawMapSpots(); var mw = $('.mapwrap'); if (mw && mw.getBoundingClientRect().top < 0) mw.scrollIntoView({ behavior: 'smooth' }); } break; }
       case 'joinday': S.joinDay = d.day; renderSheet(); break;
       case 'sfsport': newStart({ sport: d.sport }); if (d.sport !== S.sport) setSport(d.sport); renderSheet(); break;
