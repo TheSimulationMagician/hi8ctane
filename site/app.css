@@ -668,3 +668,26 @@ table.fx tr.rate td { color: var(--ink); }
 .bd-c.t-epic, .bd-k span.t-epic, .wc.t-epic, .tag.epic, .vd.t-epic { color: var(--ink); }
 
 .herowind.wait { opacity: .45; } .herowind.wait b { color: var(--cream); }
+
+/* ---------------------------------------------------------------- 2.18: cartoons */
+.tbme.hasav { display: inline-flex; align-items: center; gap: 6px; padding-left: 3px; }
+.tbav { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--ink); background: #2bb3a8; object-fit: cover; }
+.meav { width: 72px; height: 72px; border: 3px solid var(--ink); background: linear-gradient(160deg, #1ec8b4, #0e6f86); box-shadow: 4px 4px 0 var(--ink); object-fit: cover; }
+.who .av.img { padding: 0; overflow: hidden; background: linear-gradient(160deg, #1ec8b4, #0e6f86); }
+.who .av.img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ct .ctstage { display: flex; gap: 14px; align-items: flex-start; }
+.ctframe { flex: 0 0 112px; width: 112px; height: 112px; position: relative; overflow: hidden; border: 3px solid var(--ink); box-shadow: 5px 5px 0 var(--pink, #FF2D78);
+  background: linear-gradient(160deg, #1ec8b4 0%, #12a0a6 45%, #0e6f86 100%); }
+.ctframe img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ctframe.empty { display: grid; place-items: center; font: 400 54px/1 var(--big); color: var(--cream); text-shadow: 3px 3px 0 var(--ink); }
+.ctframe.drawing img { filter: grayscale(1) contrast(1.2); opacity: .55; }
+.ctpen { position: absolute; inset: 0; background: repeating-linear-gradient(115deg, transparent 0 14px, rgba(255, 225, 77, .55) 14px 17px); animation: ctink 1.6s linear infinite; }
+@keyframes ctink { from { transform: translateX(-34px); } to { transform: translateX(0); } }
+@media (prefers-reduced-motion: reduce) { .ctpen { animation: none; } }
+.ctpick { gap: 8px; }
+.ctbtn { position: relative; cursor: pointer; }
+.ctbtn:focus-within { outline: 3px solid var(--pink, #FF2D78); outline-offset: 2px; }
+.ckline { display: flex; gap: 8px; align-items: flex-start; font: 400 13px/1.4 var(--mono); margin-bottom: 10px; }
+.ckline input { width: 20px; height: 20px; flex: 0 0 20px; margin-top: 1px; accent-color: var(--ink); }
+.ct .err { margin: 6px 0; font: 700 12px/1.4 var(--mono); color: #b0123f; }
+@media (max-width: 380px) { .ct .ctstage { flex-direction: column; } }

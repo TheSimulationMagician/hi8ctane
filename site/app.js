@@ -458,8 +458,8 @@
     $('#cityName').textContent = regionName().toUpperCase();
     $('#cityTag').textContent = S.settings && S.settings.pilot_city === S.city ? ' · PILOT' : '';
     var pl = myPlate(), b = $('#plate');
-    b.textContent = pl ? '#' + pad3(pl) : signedIn() ? 'ME' : 'SIGN IN';
-    b.className = 'tbme' + (pl ? ' plate' : '');
+    b.innerHTML = (S.avatar ? '<img class="tbav" src="' + esc(HI8.avatarUrl(S.avatar)) + '" alt="" width="26" height="26">' : '') + esc(pl ? '#' + pad3(pl) : signedIn() ? 'ME' : 'SIGN IN');
+    b.className = 'tbme' + (pl ? ' plate' : '') + (S.avatar ? ' hasav' : '');
     var live = (S.settings && S.settings.live_sports) || LIVE_SPORTS, soon = (S.settings && S.settings.soon_sports) || SOON;
     $('#sports').innerHTML = live.filter(function (k) { return SPORT[k]; }).map(function (k) {
       return '<button class="stile mini" data-act="sport" data-sport="' + k + '" aria-pressed="' + (k === S.sport) + '" aria-label="' + SPORT[k].name + '">' + tile(k, 20) + '<span>' + SPORT[k].name.toUpperCase() + '</span></button>';
@@ -829,7 +829,7 @@
         newStart({ spot: q.get('spot') || null, sport: sp && LIVE_SPORTS.indexOf(sp) >= 0 ? sp : null });
       }
     }
-    else if (h === 'me') { S.view = 'me'; if (signedIn()) { HI8.loadMine(true).then(renderSheet, noop); loadWallet(); } }
+    else if (h === 'me') { S.view = 'me'; if (signedIn()) { HI8.loadMine(true).then(renderSheet, noop); loadWallet(); loadAvatar(); } }
     else if (h === 'city') { S.view = 'city'; }
     else if (/^spot\//.test(h)) { S.view = 'spot'; S.spotSlug = h.slice(5); S.spotDay = S.spotDay || 0; }
     else if (/^soon\//.test(h)) { S.view = 'soon'; S.soonSport = h.slice(5); }
@@ -1080,7 +1080,7 @@
     var hubName = c.meet_hub ? (HI8.hubsOf(c.city).filter(function (h) { return h.slug === c.meet_hub; })[0] || {}).name : null;
     var who = '<div class="who">' + M.map(function (m) {
       var how = m.getting === 'drive' ? 'drives · ' + m.seats + ' seat' + (m.seats === 1 ? '' : 's') : m.getting === 'seat' ? (m.car_with ? 'rides with ' + esc((M.filter(function (x) { return x.member_id === m.car_with; })[0] || {}).name || 'a driver') : 'needs a seat') : 'own way';
-      return '<div class="p"><span class="av' + (m.here ? ' here' : '') + '">' + esc(String(m.name).slice(0, 2).toUpperCase()) + '</span><span><b>' + esc(m.name) + '</b>' + (m.host ? ' · captain' : '') + (m.me ? ' · you' : '') + '<br><span style="color:var(--mute)">' + esc(LEVEL[m.level] || '') + (m.here ? ' · at the spot' : '') + '</span></span><small>' + how + '</small></div>';
+      return '<div class="p"><span class="av' + (m.here ? ' here' : '') + (m.avatar ? ' img' : '') + '">' + (m.avatar ? '<img src="' + esc(HI8.avatarUrl(m.avatar)) + '" alt="" width="44" height="44" loading="lazy">' : esc(String(m.name).slice(0, 2).toUpperCase())) + '</span><span><b>' + esc(m.name) + '</b>' + (m.host ? ' · captain' : '') + (m.me ? ' · you' : '') + '<br><span style="color:var(--mute)">' + esc(LEVEL[m.level] || '') + (m.here ? ' · at the spot' : '') + '</span></span><small>' + how + '</small></div>';
     }).join('') + '</div>';
     var carHtml = cars.map(function (d) {
       var ps = M.filter(function (m) { return m.car_with === d.member_id; });
@@ -1396,8 +1396,9 @@
     var crews = (m.crews || []), up = crews.filter(function (c) { return c.day >= S.today && c.status === 'on'; }).reverse(), past = crews.filter(function (c) { return !(c.day >= S.today && c.status === 'on'); });
     var al = m.alerts || [];
     var body = '<div class="sec" style="display:flex;gap:16px;align-items:center">' + (pl ? '<div class="bigplate"><b>#' + pad3(pl) + '</b><small>' + esc((cityObj(S.city).name || '').toUpperCase()) + '</small></div>' : '') +
+      (S.avatar ? '<img class="meav" src="' + esc(HI8.avatarUrl(S.avatar)) + '" alt="Your cartoon" width="72" height="72">' : '') +
       '<div><div style="font:400 30px/1 var(--big)">' + esc(m.name || '') + '</div><div class="hint">' + esc(m.email_hint || '') + (m.captain ? ' · captain' : '') + '</div></div></div>' +
-      walletBox() + passBox() +
+      cartoonBox() + walletBox() + passBox() +
       '<div class="box"><h3>EMAIL ME NEW CREWS</h3><div class="row">' + LIVE_SPORTS.map(function (k) {
         var on = al.some(function (a) { return a.city === S.city && a.sport === k; });
         return '<button class="opt" data-act="alert" data-sport="' + k + '" data-on="' + (!on) + '" aria-pressed="' + on + '">' + SPORT[k].name.toUpperCase() + '</button>';
@@ -1409,6 +1410,61 @@
       '<button class="opt" data-act="signout">' + (S.confirmOut ? 'TAP AGAIN: FORGET ME ON THIS PHONE' : 'NOT YOU? FORGET ME ON THIS PHONE') + '</button></div>';
     return shell('ME', body, '');
   }
+  // ---- YOUR CARTOON (2.18): a selfie, drawn as a surf-mag cartoon by an image AI; only the cartoon is kept
+  var CT = { step: 'idle', photo: null, consent: false, err: '', left: null };
+  function loadAvatar() {
+    if (!signedIn() || !HI8.live) return Promise.resolve(null);
+    return HI8.withKey('hi8_my_avatar', {}, { noQueue: true }).then(function (r) {
+      var was = S.avatar; S.avatar = r && r.path || null; S.cartoonsOn = !!(r && r.on);
+      if (was !== S.avatar) drawTop();
+      if (S.view === 'me') renderSheet(); return r;
+    }, function () { return null; });
+  }
+  function cartoonBox() {
+    if (!HI8.live || !S.cartoonsOn) return '';
+    var head = '<h3>YOUR CARTOON <span class="tag">NEW</span></h3>';
+    var pick = '<div class="row ctpick"><label class="opt ctbtn"><input type="file" accept="image/*" capture="user" data-change="selfie" class="sr">TAKE A SELFIE</label>' +
+      '<label class="opt ctbtn"><input type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif" data-change="selfie" class="sr">PICK A PHOTO</label></div>';
+    if (CT.step === 'busy') return '<div class="box ct">' + head + '<div class="ctstage"><div class="ctframe drawing"><img src="' + CT.photo + '" alt=""><span class="ctpen" aria-hidden="true"></span></div>' +
+      '<p class="lede" role="status" aria-live="polite"><span class="spin"></span> <b id="ctMsg">Drawing you…</b><br><span class="hint">Takes about 30 seconds. Keep this open.</span></p></div></div>';
+    if (CT.step === 'photo') return '<div class="box ct">' + head + '<div class="ctstage"><div class="ctframe"><img src="' + CT.photo + '" alt="Your photo"></div>' +
+      '<div><label class="ckline"><input type="checkbox" data-change="ctconsent"' + (CT.consent ? ' checked' : '') + '> <span>Send this photo to OpenAI to draw my cartoon. Hi8ctane keeps only the cartoon, never the photo.</span></label>' +
+      (CT.err ? '<p class="err" role="alert">' + esc(CT.err) + '</p>' : '') +
+      '<div class="row"><button class="jn lm" data-act="ctdraw"' + (CT.consent ? '' : ' disabled') + '>DRAW ME</button><button class="jn wh" data-act="ctcancel">CANCEL</button></div></div></div></div>';
+    if (S.avatar) return '<div class="box ct">' + head + '<div class="ctstage"><div class="ctframe done"><img src="' + esc(HI8.avatarUrl(S.avatar)) + '" alt="Your cartoon"></div>' +
+      '<div><p class="hint" style="margin-top:0">Your crew sees it next to your name. Public crew cards keep your initials.</p>' + (CT.err ? '<p class="err" role="alert">' + esc(CT.err) + '</p>' : '') +
+      '<p class="hint" style="margin:8px 0 4px">New one?' + (CT.left != null ? ' ' + CT.left + ' left today.' : '') + '</p>' + pick + '<button class="lnk" data-act="ctremove" style="margin-top:8px">Remove my cartoon</button></div></div></div>';
+    return '<div class="box ct">' + head + '<div class="ctstage"><div class="ctframe empty" aria-hidden="true"><span>?</span></div><div><p class="hint" style="margin-top:0">Snap a selfie and we draw you as a Hi8ctane cartoon, surf-mag style. It\'s what your crew sees next to your name.</p>' +
+      (CT.err ? '<p class="err" role="alert">' + esc(CT.err) + '</p>' : '') + pick + '</div></div></div>';
+  }
+  // the photo: turned upright, cropped square around the middle, 1024 px, JPEG (so a 12 MB phone photo goes up as ~200 KB)
+  function prepSelfie(file) {
+    var load = window.createImageBitmap ? createImageBitmap(file, { imageOrientation: 'from-image' }).catch(function () { return null; }) : Promise.resolve(null);
+    return load.then(function (bm) {
+      return bm || new Promise(function (res, rej) { var u = URL.createObjectURL(file), im = new Image(); im.onload = function () { res(im); }; im.onerror = function () { rej(new Error('bad_photo')); }; im.src = u; });
+    }).then(function (im) {
+      var w = im.width || im.naturalWidth, h = im.height || im.naturalHeight, side = Math.min(w, h);
+      if (side < 256) throw new Error('small_photo');
+      var sx = (w - side) / 2, sy = Math.max(0, (h - side) / 2 - (h > w ? side * 0.08 : 0)); // portrait: a little above the middle, where faces are
+      var cv = document.createElement('canvas'), N = Math.min(1024, side); cv.width = cv.height = N;
+      cv.getContext('2d').drawImage(im, sx, sy, side, side, 0, 0, N, N);
+      return cv.toDataURL('image/jpeg', 0.86);
+    });
+  }
+  var CT_MSGS = ['Drawing you…', 'Inking the outlines…', 'Wind in the hair…', 'Adding the sun…', 'Almost there…'];
+  function ctDraw() {
+    CT.step = 'busy'; CT.err = ''; renderSheet();
+    var i = 0, tick = setInterval(function () { var m = $('#ctMsg'); i = Math.min(i + 1, CT_MSGS.length - 1); if (m) m.textContent = CT_MSGS[i]; }, 7000);
+    HI8.fn('cartoon', { key: HI8.me().key, image: CT.photo, consent: true }).then(function (r) {
+      clearInterval(tick); S.avatar = r.path; CT = { step: 'idle', photo: null, consent: false, err: '', left: CT.left == null ? 2 : Math.max(0, CT.left - 1) };
+      drawTop(); renderSheet(); toast('There you are. Your crew will see this one.', 4000);
+    }, function (e) {
+      clearInterval(tick); CT.step = 'photo'; CT.err = e && e.hint || errText(e);
+      if (e && e.message === 'slow_down') { CT.left = 0; CT.err = 'That\'s 3 cartoons today. Try again tomorrow.'; }
+      renderSheet();
+    });
+  }
+
   // ---- YOUR LEVEL: what the ratings are for (and the safety caps), per sport, on this phone
   function sheetLevel() {
     var k = S.sport, cur = lvSet(k);
@@ -1579,6 +1635,13 @@
       case 'kg': S.kgBack = S.view ? location.hash : null; go('#kg'); break;
       case 'kgset': HI8.store.set('kg', Number(d.v)); drawAll(); renderSheet(); break;
       case 'level': go('#level'); break;
+      case 'ctdraw': if (CT.photo && CT.consent && CT.step !== 'busy') ctDraw(); break;
+      case 'ctcancel': CT = { step: 'idle', photo: null, consent: false, err: '', left: CT.left }; renderSheet(); break;
+      case 'ctremove':
+        if (!S.confirmCt) { S.confirmCt = true; t.textContent = 'Tap again to remove it'; setTimeout(function () { S.confirmCt = false; if (S.view === 'me') renderSheet(); }, 4000); break; }
+        S.confirmCt = false;
+        HI8.fn('cartoon', { key: HI8.me().key, kind: 'remove' }).then(function () { S.avatar = null; drawTop(); renderSheet(); toast('Cartoon removed.'); }, function (e) { toast(errText(e), 5000); });
+        break;
       case 'lvset': HI8.store.set('lv.' + S.sport, d.v); drawAll(); renderSheet(); break;
       case 'passinfo': go('#pass'); break;
       case 'passin': passIn(null, d.src); break;
@@ -1709,6 +1772,14 @@
     if (a === 'sffrom') { S.sf.from = Number(t.value); if (S.sf.to <= S.sf.from) S.sf.to = S.sf.from + 2; rerank(); }
     if (a === 'sfto') { S.sf.to = Number(t.value); rerank(); }
     if (a === 'sfmeet') { S.sf.meet = t.value; S.sf.meetAuto = false; }
+    if (a === 'selfie' && t.files && t.files[0]) {
+      var f = t.files[0]; t.value = '';
+      if (f.size > 25 * 1024 * 1024) { CT.err = 'That photo is too big. Try another one.'; renderSheet(); return; }
+      prepSelfie(f).then(function (url) { CT.photo = url; CT.step = 'photo'; CT.err = ''; renderSheet(); },
+        function (er) { CT.err = er && er.message === 'small_photo' ? 'That photo is too small. Try a closer selfie.' : "We couldn't open that photo. Try a JPEG or PNG."; renderSheet(); });
+      return;
+    }
+    if (a === 'ctconsent') { CT.consent = t.checked; var db = document.querySelector('[data-act=ctdraw]'); if (db) db.disabled = !t.checked; return; }
     if (a === 'kg') { var v = Math.max(35, Math.min(140, Number(t.value) || 75)); HI8.store.set('kg', v); drawAll(); if (S.view === 'kg') renderSheet(); }
   });
   document.addEventListener('input', function (e) { if (e.target.id === 'hour') { S.hi = Number(e.target.value); stopPlay(); drawTime(); drawMapSpots(); } });
@@ -1780,6 +1851,7 @@
     if (stop && HI8.live) HI8.rpc('hi8_unsubscribe', { p_token: stop }).then(function (r) { toast(r.stopped ? 'Stopped: no more ' + esc((SPORT[r.sport] || { name: r.sport }).name) + ' crew emails.' : 'Already stopped.', 6000); }, function () { toast('That stop link didn\'t work. Email hello@hi8ctane.com and we\'ll do it.'); });
     drawAll(); initMap();
     if (HI8.live) {
+      loadAvatar();
       HI8.rpc('hi8_settings', {}).then(function (s) { S.settings = s; drawTop(); drawSave(); drawWeek(); drawPass(); if (S.view) renderSheet(); }, noop); // prices and the fee can change what an open sheet says
       HI8.onData(function () { drawTop(); drawCrews(); drawSessions(); drawMapSpots(); if (S.view === 'join' || S.view === 'me') renderSheet(); });
       window.addEventListener('focus', function () { if (Date.now() - (S.plansAt || 0) > 120000) { S.plansAt = Date.now(); loadPlans(); } });

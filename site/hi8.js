@@ -71,6 +71,8 @@
         });
       });
   };
+  // a rider's cartoon (0014): a public file in Storage, by its random name
+  HI8.avatarUrl = function (path) { return path && API ? API + '/storage/v1/object/public/avatars/' + encodeURIComponent(path) : ''; };
   // a Supabase Edge Function (the Stripe ones): same key, same errors as rpc
   HI8.fn = function (name, body) {
     if (!HI8.live) return Promise.reject(Object.assign(new Error('offline_build'), { status: 0 }));
