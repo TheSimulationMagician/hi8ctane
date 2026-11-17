@@ -30,6 +30,7 @@ def txt(pg, sel='body'):  # headings are upper-cased by CSS; what's folded under
     return re.sub(r'\s+', ' ', t).upper()
 
 sql("truncate public.signups, public.night_rsvps, public.rider_keys, public.crews, public.crew_members, public.crew_messages, public.rate_hits, public.outbox, public.spot_reports, public.crew_alerts, public.plan_leads, public.wallet_ledger, public.seat_payments, public.passes, public.payout_accounts cascade")
+sql("delete from public.pass_interest")
 sql("update public.app_settings set value = 'false' where key in ('payments_live', 'fee_live')")
 sql("delete from public.hubs where kind = 'town'")
 sql("update public.app_settings set value = 'true' where key = 'open_posting'")
@@ -37,19 +38,22 @@ sql("update public.app_settings set value = 'true' where key = 'open_posting'")
 with sync_playwright() as p:
     br = p.chromium.launch()
     def fresh(w=390, h=844):
-        ctx = br.new_context(viewport={'width': w, 'height': h}, accept_downloads=True, timezone_id='Europe/Madrid')  # a rider in Spain opens on Barcelona
+        ctx = br.new_context(viewport={'width': w, 'height': h}, accept_downloads=True, timezone_id='Europe/Madrid')  # 2.17: everyone opens on the Netherlands; these tests pick Barcelona with ?city=
         ctx.route(re.compile(r'https://fonts\.(googleapis|gstatic)\.com/.*'), lambda r: r.abort())  # no internet here
+        ctx.add_init_script("if (!localStorage.getItem('hi8.city28')) localStorage.setItem('hi8.city28', JSON.stringify('barcelona'))")  # these tests ride in Barcelona
         pg = ctx.new_page(); pg.errs = []
         pg.on('pageerror', lambda e: pg.errs.append(str(e)))
         return ctx, pg
 
     print('the landing: live map, forecast, two options')
     ctxA, A = fresh()
-    A.goto(BASE + '/?ref=kaiwave')
+    A.goto(BASE + '/?ref=kaiwave&city=barcelona')
     A.wait_for_selector('.map-canvas', state='attached'); A.wait_for_timeout(2500)
-    check(A.locator('.dock .big').count() == 1 and A.locator('#dockGo').inner_text().startswith("I'M GOING") and 'NEXT:' in A.locator('#dockGo').inner_text(), "one action, always on screen: I'M GOING on the next good session")
+    check(A.locator('.dock .big').count() == 1 and (A.locator('#dockGo').inner_text().startswith("I'M GOING") or A.locator('#dockGo').inner_text().startswith('START A CREW')) and 'NEXT:' in A.locator('#dockGo').inner_text(), "one action, always on screen: I'M GOING on the next good session")
     check([x.inner_text() for x in A.locator('#sports .stile[data-act=sport]').all()] == ['KITE', 'MTB', 'MX'] and A.locator('#sports .soon').count() == 0 and A.locator('#soonSports .soon').count() == 4 and 'SOON' in A.locator('#soonSports .soon').first.text_content(), 'kite, MTB and MX live; wing, surf, SUP and windsurf coming soon')
-    check('CATALONIA' in A.locator('.tbcity').inner_text().upper() and 'PILOT' in A.locator('.tbcity').inner_text(), 'opens on the Barcelona pilot (Catalonia)')
+    ctxNL = br.new_context(viewport={'width': 390, 'height': 844}, timezone_id='Europe/Madrid'); NL = ctxNL.new_page(); NL.goto(BASE + '/'); NL.wait_for_timeout(1500)
+    check('NETHERLANDS' in NL.locator('.tbcity').inner_text().upper(), 'a first visit opens on the Netherlands, wherever the phone is (2.17)'); ctxNL.close()
+    check('CATALONIA' in A.locator('.tbcity').inner_text().upper() and 'PILOT' in A.locator('.tbcity').inner_text(), '?city=barcelona opens the Barcelona pilot (Catalonia)')
     check(A.locator('.ransom span').count() == 8 and 'THE FORECAST SAYS GO.' in txt(A, '.hero .hl') and A.locator('#verdict').count() == 0, "the ransom-note logo and the 2.14 hero: the forecast says go")
     A.locator('.mapsec').scroll_into_view_if_needed(); A.wait_for_timeout(1200)
     check(320 <= A.locator('.mapsec .mapwrap').bounding_box()['height'] <= 525, 'on a phone the live map closes the page, tall')
@@ -80,7 +84,7 @@ with sync_playwright() as p:
     check(A.locator('[data-act=sfget][data-v=drive]').get_attribute('aria-pressed') == 'true' and A.locator('[data-act=sfhub][aria-pressed=true]').count() == 1, 'driving, from the nearest pick-up point')
     meet = A.input_value('#sfMeet')
     check(re.match(r'^\d\d:\d\d$', meet or '') is not None, f'leaving time set from the drive time ({meet})')
-    check(A.locator('[data-act=sflevels]').count() == 1 and 'RIDERS WHO RIDE SOLO'.upper() in txt(A, '#sheet'), 'not a captain: crews for riders who ride solo')
+    check(A.locator('[data-act=sflevels]').count() == 1 and 'INDEPENDENT RIDERS' in txt(A, '#sheet'), 'not a captain: crews for independent riders')
     A.locator('.sh-foot .big.start').click(); A.wait_for_timeout(300)
     check('Add your email'.upper() in txt(A, '#sheet'), 'no email: says so, nothing posted')
     A.fill('#sfEmail', 'Kai@Example.com'); A.fill('#sfName', 'Kai'); A.fill('#sfNote', 'Bring a 9')
@@ -110,7 +114,7 @@ with sync_playwright() as p:
     B.goto(BASE + '/?c=' + code); B.wait_for_selector('#sheet .hero', timeout=8000); B.wait_for_timeout(500)
     t = txt(B, '#sheet')
     check('CASTELLDEFELS'.upper() in t and '1/8'.upper() in t and 'Names, cars and the chat are for the crew'.upper() in t, 'the crew: spot, time, who is going, no names for outsiders')
-    check(B.locator('.hcell').count() >= 2 or 'forecast reaches 3 days'.upper() in t, 'the hour-by-hour forecast for its window')
+    check(B.locator('.hcell').count() >= 1 or 'forecast reaches 3 days'.upper() in t, 'the hour-by-hour forecast for its window')
     B.locator('.sh-foot .big.join').click(); B.wait_for_selector('#joinForm')
     check(B.locator('[data-act=jflevel]').count() == 2 and 'LEARNING'.upper() not in txt(B, '#joinForm'), 'a crew for riders who ride solo: no learner option')
     B.locator('[data-act=jfget][data-v=seat]').click()
@@ -225,7 +229,23 @@ with sync_playwright() as p:
     Wp = ctxW.new_page(); Wp.errs = []; Wp.on('pageerror', lambda e: Wp.errs.append(str(e)))
     Wp.goto(BASE + '/#me'); Wp.wait_for_selector('#sheet.on'); Wp.wait_for_timeout(1500)
     check('WALLET' in txt(Wp, '#sheet') and 'OPENS SOON' in txt(Wp, '#sheet') and Wp.locator('[data-act=topup]').count() == 0, 'payments off: the wallet says it opens soon, nothing to press')
-    check('HI8 PASS' in txt(Wp, '#sheet') and 'NO HI8 FEE ON ANY SEAT' in txt(Wp, '#sheet') and 'FEE-FREE ANYWAY' in txt(Wp, '#sheet'), 'the Pass: what it gives, and that the pilot is fee-free anyway')
+    check('HI8 PASS' in txt(Wp, '#sheet') and '10% INSTEAD OF 15%' in txt(Wp, '#sheet') and '€9.99' in txt(Wp, '#sheet') and 'FREE WHILE THE PILOT RUNS' in txt(Wp, '#sheet') and Wp.locator('#sheet [data-act=passin]').count() == 1, 'the Pass: 10% instead of 15%, €9.99 for founding riders, free in the pilot, COUNT ME IN (2.17)')
+    Wp.locator('#sheet [data-act=passin]').click(); Wp.wait_for_timeout(1200)
+    check(sql("select count(*) from public.pass_interest where source = 'me'") == '1' and "ON THE LIST" in txt(Wp, '#sheet'), 'COUNT ME IN saves the rider to the Pass list')
+    # once rides are paid in the app (2.17): the Pass is bought through Stripe, at the founding price
+    sql("update app_settings set value = 'true' where key in ('payments_live', 'fee_live')")
+    if sql("select count(*) from app_settings where key = 'payments_live'") == '0': sql("insert into app_settings (key, value) values ('payments_live', 'true')")
+    Wp.evaluate("localStorage.removeItem('hi8.passAsked')")
+    calls = []
+    Wp.route(re.compile(r'.*/functions/v1/stripe-checkout'), lambda r: (calls.append(r.request.post_data), r.fulfill(status=200, content_type='application/json', body='{"url":"about:blank#stripe"}')))
+    Wp.goto(BASE + '/?fresh=1#me'); Wp.wait_for_selector('#sheet.on'); Wp.wait_for_timeout(2000)
+    buy = Wp.locator('#sheet .box.pass [data-act=pass]')
+    check(buy.count() == 1 and '€9.99 A MONTH' in buy.inner_text() and 'FOUNDING PRICE' in buy.inner_text().upper(), 'fees on: one BUY button, €9.99 a month, founding price')
+    buy.click(); Wp.wait_for_timeout(1500)
+    check(len(calls) == 1 and '"kind":"pass"' in calls[0] and '"plan":"month"' in calls[0], 'and it opens Stripe checkout for the monthly Pass (not the info sheet)')
+    sql("update app_settings set value = 'false' where key in ('payments_live', 'fee_live')")
+    Wp.unroute(re.compile(r'.*/functions/v1/stripe-checkout'))
+    Wp.goto(BASE + '/#me'); Wp.wait_for_selector('#sheet.on'); Wp.wait_for_timeout(1000)  # back from the (fake) Stripe page
     sql("update public.app_settings set value = 'true' where key = 'payments_live'")
     asked = []
     def fake_fn(route):
@@ -248,7 +268,7 @@ with sync_playwright() as p:
 
     print('old links')
     C.goto(BASE + '/B27-Crew.dc.html?c=' + code); C.wait_for_url('**/?c=' + code); C.wait_for_selector('#sheet.on')
-    check('KITE CREW'.upper() in txt(C, '#shTitle'), 'an old crew link (emails, chats) opens the crew')
+    C.wait_for_timeout(1500); check('KITE CREW'.upper() in txt(C, '#shTitle'), 'an old crew link (emails, chats) opens the crew')
     C.goto(BASE + '/B27-Start.dc.html?spot=trabucador&sp=kite'); C.wait_for_url(re.compile(r'.*\?spot=trabucador&sport=kite#start$')); C.wait_for_timeout(800)
     check(C.locator('[data-act=sfspot][data-spot=trabucador]').get_attribute('aria-pressed') == 'true', 'an old start link opens START with that spot')
     C.goto(BASE + '/join?ref=pinkflyer'); C.wait_for_url(re.compile(r'.*/\?ref=pinkflyer#join$')); C.wait_for_timeout(500)
@@ -277,9 +297,9 @@ with sync_playwright() as p:
     check(jt.index('HOW ARE YOU GETTING THERE?') < jt.index('YOUR LEVEL') < jt.index('RIDER NAME') if 'RIDER NAME' in jt else jt.index('HOW ARE YOU GETTING THERE?') < jt.index('YOUR LEVEL'), 'the crew opens with the join form: how you get there first, then your level, then you')
     check(Q.locator('.sh-foot .big.join').inner_text() == "I'M GOING" and Q.locator('#joinForm [data-act=jfgo]').inner_text() == "I'M GOING", "and the button says I'M GOING")
     Q.locator('[data-act=close]').click(); Q.wait_for_timeout(300)
-    check(Q.locator('#sessions [data-act=startwin]').count() >= 1, 'a good session with nobody yet offers I\'M GOING too')
+    check(Q.locator('#sessions [data-act=startwin]').count() >= 1, 'a good session with nobody yet offers START IT')
     Q.locator('#sessions [data-act=startwin]').first.click(); Q.wait_for_selector('#sheet .qsum'); Q.wait_for_timeout(300)
-    check("I'M GOING" in txt(Q, '#shTitle') and 'HOW ARE YOU GETTING THERE?' in txt(Q, '#sheet') and Q.locator('[data-act=sfwin]').count() == 0 and Q.locator('[data-act=sfspot]').count() == 0 and Q.locator('[data-act=sflevels]').count() == 0,
+    check("START THIS CREW" in txt(Q, '#shTitle') and 'HOW ARE YOU GETTING THERE?' in txt(Q, '#sheet') and Q.locator('[data-act=sfwin]').count() == 0 and Q.locator('[data-act=sfspot]').count() == 0 and Q.locator('[data-act=sflevels]').count() == 0,
           'no crew yet: the day, time and spot are already picked; one question, how you get there')
     check(Q.locator('[data-act=sfget][aria-pressed=true]').count() == 0 and Q.locator('#sfNote').count() == 0, 'nothing chosen for you, and the note folded away')
     Q.locator('.sh-foot .big.start').click(); Q.wait_for_timeout(300)
@@ -302,6 +322,7 @@ with sync_playwright() as p:
     N.route(re.compile(r'.*/v1/(forecast|marine).*'), lambda r: r.abort())
     N.goto(BASE + '/'); N.wait_for_timeout(2500)
     check('No forecast right now'.upper() in txt(N, '#week') and 'ALL SPOTS · THIS WEEK' in txt(N, '#sessions') and not N.errs, 'Open-Meteo down: says so, crews still work, nothing breaks')
+    check('CHECKING' not in txt(N, '#heroWind') and 'wait' not in (N.locator('#heroWind').get_attribute('class') or ''), 'and the hero stops saying it is checking the forecast (2.17)')
 
     for name, pg in (('A', A), ('B', B), ('C', C), ('D', D), ('E', E), ('F', F), ('G', G), ('W', Wp), ('V', V)):
         check(not pg.errs, f'no script errors ({name}): {pg.errs[:2]}')

@@ -228,6 +228,20 @@
     if (w == null || w < 9) return null;
     return clamp(Math.round(2.2 * (kg || 75) / w), 5, 17);
   };
+  // Safety caps on the kite/wing rating. PLACEHOLDER VALUES: a certified instructor signs these off before release.
+  // Scores: 5.9 = OK at most, 3.9 = NO GO. Per level: rookie (learning), regular (rides on their own), ripper.
+  FX.CAPS = {
+    gustyKt: 10, gustyRatio: 1.6,          // gusts more than 10 kt or 60% over the mean: GUSTY
+    veryGustyKt: 15, veryGustyRatio: 1.75, // 15 kt or 75% over: very gusty
+    onshoreDeg: 30,                        // wind within 30° of straight onshore
+    coldWater: 12,                         // °C
+    minModels: 2,                          // windows: at least 2 of 3 global models must agree, else UNSURE caps them
+    level: {
+      rookie: { gusty: 3.9, veryGusty: 0, onshore: 3.9, crossOff: 0, cold: 3.9, unsure: 3.9 },
+      regular: { gusty: 5.9, veryGusty: 3.9, onshore: 5.9, crossOff: 3.9, cold: null, unsure: 5.9 },
+      ripper: { gusty: 8.9, veryGusty: 5.9, onshore: 8.9, crossOff: 5.9, cold: null, unsure: 8.9 }
+    }
+  };
   FX.label = function (s) { return s == null ? '' : s >= 9 ? 'EPIC' : s >= 6 ? 'GOOD' : s >= 4 ? 'OK' : 'NO GO'; };
   FX.tone = function (s) { return s == null ? 'none' : s >= 9 ? 'epic' : s >= 6 ? 'good' : s >= 4 ? 'ok' : 'no'; };
   function dark(r, day) {
@@ -274,6 +288,17 @@
       var gf = g - w;
       if (gf > 15 || g > 40) { s -= 3; why.push('very gusty'); } else if (gf > 10) { s -= 1.5; why.push('gusty'); }
       if (w >= 9) out.kite = FX.kiteSize(w, opts.kg);
+      // safety caps (2.15): a session can't be GOOD when it's this gusty or blows straight in, whatever the wind score
+      out.caps = [];
+      if (s > 0) {
+        var C = FX.CAPS, lv = C.level[opts.level] || C.level.regular, spread = w >= 10 ? g / w : 1;
+        var capTo = function (max, tag) { if (s > max) s = max; if (out.caps.indexOf(tag) < 0) out.caps.push(tag); };
+        if (gf >= C.veryGustyKt || (w >= 10 && spread >= C.veryGustyRatio)) capTo(lv.veryGusty, 'GUSTY');
+        else if (gf > C.gustyKt || (w >= 10 && spread > C.gustyRatio)) capTo(lv.gusty, 'GUSTY');
+        if (!spot.lake && spot.face != null && r.dir != null && angDiff(r.dir, spot.face) <= C.onshoreDeg) capTo(lv.onshore, 'ONSHORE');
+        if (out.shore === 'cross-off') capTo(lv.crossOff, 'OFFSHORE');
+        if (r.sst != null && r.sst < C.coldWater && lv.cold != null) capTo(lv.cold, 'COLD');
+      }
     } else if (sport === 'mtb') {
       out.ground = FX.ground('mtb', r.r24);
       s = 9;
@@ -316,6 +341,29 @@
     });
   };
 
+  // the safety caps hit by any of these hours (GUSTY, ONSHORE, ...), in a fixed order
+  function capsOf(rows) {
+    var all = []; rows.forEach(function (r) { (r.rate && r.rate.caps || []).forEach(function (c) { if (all.indexOf(c) < 0) all.push(c); }); });
+    return ['GUSTY', 'ONSHORE', 'OFFSHORE', 'COLD'].filter(function (c) { return all.indexOf(c) >= 0; });
+  }
+  // kite/wing: when fewer than 2 of the 3 global models see the same wind, a window can't be GOOD
+  function capUnsure(sc, m, sport, opts, caps) {
+    if ((sport !== 'kite' && sport !== 'wing') || !m || m.of < 2 || m.n >= FX.CAPS.minModels) return sc;
+    var lv = FX.CAPS.level[(opts && opts.level)] || FX.CAPS.level.regular;
+    if (caps.indexOf('UNSURE') < 0) caps.push('UNSURE');
+    return Math.min(sc, lv.unsure);
+  }
+  FX.capsOf = capsOf;
+  // one word for why a day or hour isn't good (for cells and labels)
+  FX.reason = function (rate) {
+    if (!rate) return '';
+    if (rate.dark) return 'DARK';
+    if (rate.caps && rate.caps.length) return rate.caps[0];
+    var w = (rate.why || []).join(' ');
+    return /thunder/.test(w) ? 'STORM' : /offshore/.test(w) ? 'OFFSHORE' : /wrong direction/.test(w) ? 'WRONG DIR' : /too light/.test(w) ? 'TOO LIGHT' : /very strong/.test(w) ? 'TOO STRONG' :
+      /gust/.test(w) ? 'GUSTY' : /mud/.test(w) ? 'MUD' : /rain|shower/.test(w) ? 'RAIN' : /freez|cold/.test(w) ? 'COLD' : /hot/.test(w) ? 'HOT' : /wet/.test(w) ? 'WET' : '';
+  };
+
   // the good stretches of one day: runs of hours rated GOOD or better (OK if there's nothing better)
   FX.windows = function (sp, date, sport, spot, opts) {
     var rows = FX.dayRows(sp, date, sport, spot, opts, 6, 21), nowT = FX.localNow(sp ? sp.offset : 0);
@@ -341,11 +389,13 @@
       }
       var sc = avg(R.map(function (r) { return r.rate.s; }));
       var ws = R.map(function (r) { return r.w; });
-      return { date: date, from: R[0].h, to: R[R.length - 1].h + 1, runFrom: all[0].h, runTo: all[all.length - 1].h + 1, hours: R.length, score: Math.round(sc * 10) / 10, label: FX.label(sc),
+      var models = FX.agreement(R, sport), caps = capsOf(R);
+      sc = capUnsure(sc, models, sport, opts, caps);
+      return { caps: caps, date: date, from: R[0].h, to: R[R.length - 1].h + 1, runFrom: all[0].h, runTo: all[all.length - 1].h + 1, hours: R.length, score: Math.round(sc * 10) / 10, label: FX.label(sc),
         w: Math.round(avg(ws)), g: Math.round(Math.max.apply(null, R.map(function (r) { return r.g || 0; }))), dir: vecDir(R.map(function (r) { return r.dir; }), ws),
         kite: R[0].rate.kite != null ? FX.kiteSize(avg(ws), opts && opts.kg) : null,
         shore: R[Math.floor(R.length / 2)].rate.shore || null, ground: R[0].rate.ground || null,
-        temp: Math.round(avg(R.map(function (r) { return r.temp; })) || 0), why: R[Math.floor(R.length / 2)].rate.why, models: FX.agreement(R, sport) };
+        temp: Math.round(avg(R.map(function (r) { return r.temp; })) || 0), why: R[Math.floor(R.length / 2)].rate.why, models: models };
     }).sort(function (a, b) { return b.score * Math.sqrt(b.hours) - a.score * Math.sqrt(a.hours); });
   };
 
@@ -353,7 +403,8 @@
   FX.span = function (sp, date, from, to, sport, spot, opts) {
     var rows = FX.dayRows(sp, date, sport, spot, opts, from, Math.max(from, to - 1));
     if (!rows.length || rows.some(function (r) { return r.w == null; })) return null;
-    var ws = rows.map(function (r) { return r.w; }), sc = avg(rows.map(function (r) { return r.rate ? r.rate.s : 0; }));
+    var ws = rows.map(function (r) { return r.w; }), sc = avg(rows.map(function (r) { return r.rate ? r.rate.s : 0; })), caps = capsOf(rows), check = FX.agreement(rows, sport);
+    sc = capUnsure(sc, check, sport, opts, caps);
     var models = {};
     OTHER.forEach(function (m) {
       var mw = rows.map(function (r) { return r.m && r.m[m] ? r.m[m].w : null; });
@@ -364,7 +415,7 @@
     return { rows: rows, score: Math.round(sc * 10) / 10, label: FX.label(sc), w: Math.round(avg(ws)), g: Math.round(Math.max.apply(null, rows.map(function (r) { return r.g || 0; }))),
       dir: vecDir(rows.map(function (r) { return r.dir; }), ws), kite: rows[0].rate && rows[0].rate.kite != null ? FX.kiteSize(avg(ws), opts && opts.kg) : null,
       shore: rows[0].rate ? rows[0].rate.shore : null, ground: rows[0].rate ? rows[0].rate.ground : null, models: models, spread: spread,
-      agree: spread == null ? null : spread <= 4 ? 'agree' : spread <= 8 ? 'roughly' : 'disagree', check: FX.agreement(rows, sport),
+      agree: spread == null ? null : spread <= 4 ? 'agree' : spread <= 8 ? 'roughly' : 'disagree', check: check, caps: caps,
       temp: Math.round(avg(rows.map(function (r) { return r.temp; })) || 0), why: rows[Math.floor(rows.length / 2)].rate ? rows[Math.floor(rows.length / 2)].rate.why : [] };
   };
 

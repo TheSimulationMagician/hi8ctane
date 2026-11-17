@@ -77,7 +77,9 @@ export async function checkout(body, env, deps) {
   if (body.kind === 'pass') {
     if (me.pass) throw bad('pass_active', 'Your Hi8 Pass is already on.');
     const plan = body.plan === 'year' ? 'year' : 'month';
-    const amount = plan === 'year' ? (me.pass_year_cents || 3900) : (me.pass_month_cents || 399);
+    // 2.17: monthly only; founding riders pay the founding price for as long as they keep it
+    if (plan !== 'month') throw bad('bad_plan', 'The Hi8 Pass is monthly.');
+    const amount = me.pass_founding_open ? (me.pass_founding_cents || 999) : (me.pass_month_cents || 1699);
     const s = await stripe(env, deps, 'POST', 'checkout/sessions', {
       mode: 'subscription', customer_email: me.stripe_cus ? undefined : me.email, customer: me.stripe_cus || undefined,
       line_items: [{ quantity: 1, price_data: { currency: 'eur', unit_amount: Number(amount), recurring: { interval: plan }, product_data: { name: 'Hi8 Pass (' + (plan === 'year' ? 'a year' : 'a month') + ')' } } }],

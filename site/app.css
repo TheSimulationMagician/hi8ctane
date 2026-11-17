@@ -646,6 +646,72 @@ table.fx tr.rate td { color: var(--ink); }
 .bd-k i { display: inline-grid; place-items: center; min-width: 13px; height: 13px; background: var(--ink); color: var(--lime); font: 700 9px/1 var(--mono); font-style: normal; }
 @media (min-width: 620px) { .bd-r { grid-template-columns: minmax(118px, 1.8fr) repeat(8, minmax(0, 1fr)); } .bd-n { font-size: 11px; } }
 
+/* ---------------------------------------------------------------- 2.17: audit fixes (safety caps, join first, the Pass, readability) */
+.caps { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-top: 8px; }
+.cap { padding: 3px 6px; background: var(--yellow, #FFE14D); color: var(--ink); border: 2px solid var(--ink); font: 400 11px/1 var(--word); letter-spacing: .3px; }
+.capn { font: 700 10.5px/1.2 var(--mono); color: var(--cream); }
+.bd-c > span { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.bd-c em { font: 700 10px/1 var(--mono); font-style: normal; letter-spacing: 0; }
+.bd-c.t-no { color: #45413a; } .bd-c.t-none { color: #3d3a33; }
+.bd-k span.t-no { color: #45413a; }
+.bd-k span, .bd-h .bd-n, .bd-h .bd-c { font-size: 10.5px; }
+.bd-n small { font-size: 10px; }
+.lvb { padding: 3px 6px; border: 2px solid var(--ink); background: var(--lime); color: var(--ink); font: 400 11px/1 var(--word); cursor: pointer; }
+.sg .sgl { color: inherit; font-weight: 700; text-decoration: underline; text-underline-offset: 2px; }
+.sh-foot .big small { display: block; font: 700 10px/1 var(--mono); letter-spacing: .3px; }
+.sh-foot .big:has(small) { flex-direction: column; gap: 4px; }
+.passc { padding: 14px; background: #fff; border: 3px solid var(--ink); box-shadow: 5px 5px 0 var(--pink, #FF2D78); }
+.passc .pch { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px; }
+.passc .pch b { font: 400 22px/1 var(--big); }
+.passc .pch span { font: 400 20px/1 var(--big); color: var(--pink, #FF2D78); }
+.passc .pch s { font-size: 15px; color: #5a564c; }
+.passc .pch small { display: block; font: 700 10px/1.2 var(--mono); color: var(--ink); }
+.passc .perks { margin: 10px 0; }
+.passc .jn { margin-top: 4px; }
+.okline { margin: 8px 0 0; font: 700 12px/1.4 var(--mono); color: #1f6b2b; }
+.box.pass .passc { box-shadow: none; border: 0; padding: 0; }
+.lnk { padding: 0; border: 0; background: none; color: inherit; font: inherit; text-decoration: underline; cursor: pointer; }
+.bd-c.t-epic, .bd-k span.t-epic, .wc.t-epic, .tag.epic, .vd.t-epic { color: var(--ink); }
+
+.herowind.wait { opacity: .45; } .herowind.wait b { color: var(--cream); }
+
+/* ---------------------------------------------------------------- 2.18: cartoons */
+.tbme.hasav { display: inline-flex; align-items: center; gap: 6px; padding-left: 3px; }
+.tbav { width: 26px; height: 26px; border-radius: 50%; border: 2px solid var(--ink); background: #2bb3a8; object-fit: cover; }
+.meav { width: 72px; height: 72px; border: 3px solid var(--ink); background: linear-gradient(160deg, #1ec8b4, #0e6f86); box-shadow: 4px 4px 0 var(--ink); object-fit: cover; }
+.who .av.img { padding: 0; overflow: hidden; background: linear-gradient(160deg, #1ec8b4, #0e6f86); }
+.who .av.img img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ct .ctstage { display: flex; gap: 14px; align-items: flex-start; }
+.ctframe { flex: 0 0 112px; width: 112px; height: 112px; position: relative; overflow: hidden; border: 3px solid var(--ink); box-shadow: 5px 5px 0 var(--pink, #FF2D78);
+  background: linear-gradient(160deg, #1ec8b4 0%, #12a0a6 45%, #0e6f86 100%); }
+.ctframe img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ctframe.empty { display: grid; place-items: center; font: 400 54px/1 var(--big); color: var(--cream); text-shadow: 3px 3px 0 var(--ink); }
+.ctframe.drawing img { filter: grayscale(1) contrast(1.2); opacity: .55; }
+.ctpen { position: absolute; inset: 0; background: repeating-linear-gradient(115deg, transparent 0 14px, rgba(255, 225, 77, .55) 14px 17px); animation: ctink 1.6s linear infinite; }
+@keyframes ctink { from { transform: translateX(-34px); } to { transform: translateX(0); } }
+@media (prefers-reduced-motion: reduce) { .ctpen { animation: none; } }
+.ctpick { gap: 8px; }
+.ctbtn { position: relative; cursor: pointer; }
+.ctbtn:focus-within { outline: 3px solid var(--pink, #FF2D78); outline-offset: 2px; }
+.ckline { display: flex; gap: 8px; align-items: flex-start; font: 400 13px/1.4 var(--mono); margin-bottom: 10px; }
+.ckline input { width: 20px; height: 20px; flex: 0 0 20px; margin-top: 1px; accent-color: var(--ink); }
+.ct .err { margin: 6px 0; font: 700 12px/1.4 var(--mono); color: #b0123f; }
+@media (max-width: 380px) { .ct .ctstage { flex-direction: column; } }
+
+/* 2.19 · home info cards wear the hero's blue halftone (.ht); text goes light to keep contrast */
+.how3 li, .more summary, .more a.mo {
+  background-color: #2F758B;
+  background-image: radial-gradient(rgba(255,255,255,.17) 1px, transparent 1.3px), linear-gradient(135deg, #4592AA 0%, #2F758B 48%, #1C4C63 100%);
+  background-size: 6px 6px, 100% 100%;
+  color: #F7F5EE;
+}
+.how3 b, .more summary b, .more a.mo b { color: #fff; text-shadow: 2px 2px 0 var(--ink); }
+.how3 b { color: var(--lime); }
+.how3 i { color: var(--ink); }
+.more summary span, .more a.mo span { color: #D6E8EE; }
+.more summary::after, .more a.mo::after { color: var(--lime); text-shadow: 2px 2px 0 var(--ink); }
+.more details[open] > summary { border-bottom: 2.5px solid var(--ink); }
+.more summary:focus-visible, .more a.mo:focus-visible { outline: 3px solid var(--lime); outline-offset: -6px; }
 /* crews that stay together, the rider card, the log (2.22) */
 .sqhero { color: #fff; padding: 18px 16px 16px; border-bottom: 3px solid var(--ink); }
 .big.invite { background: var(--yellow); color: var(--ink); }

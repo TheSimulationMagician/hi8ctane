@@ -3,6 +3,7 @@
 //   /auth/v1/*  -> recorded, so tests can check what the site asked Supabase Auth to do
 // Usage: node serve.mjs <siteDir> <port> <live|off> [postgrestPort]
 import { createServer, request } from 'node:http';
+import { createHmac } from 'node:crypto';
 import { readFile, stat } from 'node:fs/promises';
 import { join, extname, normalize } from 'node:path';
 
@@ -75,6 +76,10 @@ function fakeMeteo(url) {
   return all.length === 1 ? all[0] : all;
 }
 
+const avatars = new Map(), cartoonLog = [];
+// a service-role JWT for the local PostgREST (its test secret), for the cartoon function
+const SERVICE_JWT = (() => { const b = (o) => Buffer.from(JSON.stringify(o)).toString('base64url'); const h = b({ alg: 'HS256', typ: 'JWT' }), p = b({ role: 'service_role', exp: 4102444800 });
+  return `${h}.${p}.` + createHmac('sha256', 'test-secret-test-secret-test-secret-0123').update(`${h}.${p}`).digest('base64url'); })();
 createServer(async (req, res) => {
   const url = new URL(req.url, 'http://x');
   if (url.pathname === '/__auth') { res.writeHead(200, { 'content-type': 'application/json' }); return res.end(JSON.stringify(authLog)); }
@@ -89,6 +94,33 @@ createServer(async (req, res) => {
     const out = fakeMeteo(url);
     res.writeHead(200, { 'content-type': 'application/json', 'access-control-allow-origin': '*' }); return res.end(JSON.stringify(out));
   }
+  // the cartoon Edge Function (2.18), run here with a fake OpenAI (it "draws" a test image) and Storage kept in memory
+  if (url.pathname === '/functions/v1/cartoon' && mode === 'live') {
+    let body = ''; for await (const c of req) body += c;
+    const { cartoon } = await import('../../supabase/functions/_shared/cartoon.js');
+    const fakeAi = async (u, init) => {
+      if (u === 'https://api.openai.com/v1/images/edits') {
+        cartoonLog.push({ prompt: init.body.get('prompt'), size: init.body.get('image').size });
+        if (process.env.CARTOON_FAIL === '1') return new Response('{"error":{"code":"moderation_blocked","message":"rejected by the safety system"}}', { status: 400 });
+        await new Promise((r) => setTimeout(r, Number(process.env.CARTOON_DELAY || 300)));
+        return new Response(JSON.stringify({ data: [{ b64_json: (await readFile(join(dir, 'icon-512.png'))).toString('base64') }] }), { status: 200 });
+      }
+      if (u.includes('/storage/v1/object/avatars')) {
+        if (init.method === 'POST') { avatars.set(u.split('/avatars/')[1], Buffer.from(init.body)); return new Response('{}'); }
+        if (init.method === 'DELETE') { for (const x of JSON.parse(init.body).prefixes) avatars.delete(x); return new Response('[]'); }
+      }
+      return fetch(u, { ...init, headers: { ...init.headers, apikey: 'sb_publishable_test' } });
+    };
+    const env = { OPENAI_API_KEY: 'sk-test', SUPABASE_URL: `http://localhost:${port}`, SUPABASE_SERVICE_ROLE_KEY: SERVICE_JWT };
+    try { const out = await cartoon(JSON.parse(body || '{}'), env, { fetch: fakeAi }); res.writeHead(200, { 'content-type': 'application/json' }); return res.end(JSON.stringify(out)); }
+    catch (e) { res.writeHead(e.status || 500, { 'content-type': 'application/json' }); return res.end(JSON.stringify({ message: e.message, hint: e.hint || null })); }
+  }
+  if (url.pathname.startsWith('/storage/v1/object/public/avatars/')) {
+    const b = avatars.get(decodeURIComponent(url.pathname.split('/avatars/')[1]));
+    if (!b) { res.writeHead(404); return res.end(); }
+    res.writeHead(200, { 'content-type': 'image/png' }); return res.end(b);
+  }
+  if (url.pathname === '/__cartoon') { res.writeHead(200, { 'content-type': 'application/json' }); return res.end(JSON.stringify({ calls: cartoonLog, files: [...avatars.keys()] })); }
   if (url.pathname === '/__meteo') { res.writeHead(200, { 'content-type': 'application/json' }); return res.end(JSON.stringify(meteoLog)); }
   if (url.pathname.startsWith('/rest/v1/')) {
     if (req.headers.apikey !== 'sb_publishable_test') { res.writeHead(401); return res.end('{"message":"no apikey"}'); }

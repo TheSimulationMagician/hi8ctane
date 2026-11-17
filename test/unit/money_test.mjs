@@ -70,9 +70,14 @@ sql("insert into wallet_ledger (email, kind, cents, note) values ('lu@example.co
 check(await fails(checkout({ key, kind: 'topup', cents: 5000 }, env, deps), 'wallet_full'), 'over €100 in the wallet: no');
 
 console.log('the Hi8 Pass');
-out = await checkout({ key, kind: 'pass', plan: 'year' }, env, deps); c = calls.at(-1);
-check(out.url && c.params.get('mode') === 'subscription' && c.params.get('line_items[0][price_data][recurring][interval]') === 'year' && c.params.get('line_items[0][price_data][unit_amount]') === '3900'
-  && c.params.get('subscription_data[metadata][email]') === 'lu@example.com', 'a yearly Pass at €39, by subscription');
+check(await fails(checkout({ key, kind: 'pass', plan: 'year' }, env, deps), 'bad_plan'), 'no yearly Pass (2.17: monthly only)');
+out = await checkout({ key, kind: 'pass', plan: 'month' }, env, deps); c = calls.at(-1);
+check(out.url && c.params.get('mode') === 'subscription' && c.params.get('line_items[0][price_data][recurring][interval]') === 'month' && c.params.get('line_items[0][price_data][unit_amount]') === '999'
+  && c.params.get('subscription_data[metadata][email]') === 'lu@example.com', 'founding open: the Pass at €9.99 a month, by subscription');
+sql("update app_settings set value = 'false' where key = 'pass_founding_open'");
+await checkout({ key, kind: 'pass', plan: 'month' }, env, deps); c = calls.at(-1);
+check(c.params.get('line_items[0][price_data][unit_amount]') === '1699', 'founding closed: €16.99 a month');
+sql("update app_settings set value = 'true' where key = 'pass_founding_open'");
 const sub = JSON.stringify({ type: 'customer.subscription.created', data: { object: { id: 'sub_9', status: 'active', customer: 'cus_9', current_period_end: Math.floor(Date.now() / 1000) + 365 * 86400, metadata: { kind: 'pass', email: 'lu@example.com', plan: 'year' } } } });
 out = await webhook(sub, sign(sub), env, deps);
 check(out.done === 'pass' && sql("select public.hi8_has_pass('lu@example.com')") === 't', 'Stripe says active: the Pass is on');
