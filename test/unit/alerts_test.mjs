@@ -1,4 +1,4 @@
-// TEST ONLY. 0016 (2.23) and the alert worker, against the local stack (Postgres 5440, PostgREST 3300 behind
+// TEST ONLY. 0019 (2.23) and the alert worker, against the local stack (Postgres 5440, PostgREST 3300 behind
 // test/live/serve.mjs on 8801, which also stands in for Open-Meteo). A fake push service checks what phones get.
 // Run: node test/unit/alerts_test.mjs
 import crypto from 'node:crypto';
@@ -38,7 +38,7 @@ const srv = https.createServer({ key: fs.readFileSync(dir + '/k.pem'), cert: fs.
 await new Promise((r) => srv.listen(8443, r));
 const EP = 'https://localhost:8443/push/';
 
-sql("delete from public.app_secrets where name = 'vapid_private'; delete from public.app_settings where key = 'vapid_key'");
+sql("delete from public.app_secrets where name = 'vapid_private'; delete from public.app_settings where key = 'vapid_public'");
 sql("truncate public.signups, public.rider_keys, public.rate_hits, public.crews, public.crew_members, public.outbox, public.crew_alerts, public.spot_watch, public.wind_alerts, public.push_subs, public.push_queue, public.alert_sent, public.spot_reports cascade");
 const K = {};
 for (const n of ['ana', 'bo', 'cy', 'di']) K[n] = (await must('hi8_join', { p_email: n + '@example.com', p_city: 'amsterdam' })).key;
@@ -147,9 +147,9 @@ await run(3);
 check(sql(`select count(*) from public.push_subs where endpoint like '%/gone/%'`) === '0' && sql(`select count(*) from public.push_subs where email = 'ana@example.com'`) === '1', 'a phone the push service says is gone (410): forgotten');
 await run(3, { VAPID_PUBLIC_KEY: '', VAPID_PRIVATE_KEY: '' });
 const st = await must('hi8_settings', {});
-check(/^[A-Za-z0-9_-]{87}$/.test(st.vapid_key || '') && sql(`select count(*) from public.app_secrets where name = 'vapid_private'`) === '1', 'no keys yet: the worker makes the web push key pair; the site reads the public half, the private one stays in the database');
+check(/^[A-Za-z0-9_-]{87}$/.test(st.vapid_public || '') && sql(`select count(*) from public.app_secrets where name = 'vapid_private'`) === '1', 'no keys yet: the worker makes the web push key pair; the site reads the public half, the private one stays in the database');
 await run(3, { VAPID_PUBLIC_KEY: '', VAPID_PRIVATE_KEY: '' });
-check((await must('hi8_settings', {})).vapid_key === st.vapid_key, '...once: the next run keeps the same pair');
+check((await must('hi8_settings', {})).vapid_public === st.vapid_public, '...once: the next run keeps the same pair');
 sql(`select public.erase_email('ana@example.com')`);
 check(sql(`select count(*) from public.wind_alerts where email = 'ana@example.com'`) === '0' && sql(`select count(*) from public.push_subs where email = 'ana@example.com'`) === '0', 'erasing a rider removes their alerts and phones');
 

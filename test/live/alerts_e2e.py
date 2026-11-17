@@ -19,7 +19,7 @@ def rpc(fn, body):
     with urllib.request.urlopen(req) as r: return json.loads(r.read() or b'null')
 
 sql("truncate public.signups, public.rider_keys, public.rate_hits, public.crews, public.crew_members, public.outbox, public.crew_alerts, public.spot_watch, public.wind_alerts, public.push_subs, public.push_queue, public.alert_sent, public.spot_reports cascade")
-sql("insert into public.app_settings (key, value, public) values ('vapid_key', '\"BOr3Yp8tGg0o5xSmN0y0Hn3nq6r2s3hZx8c5mB4q1yYc9n8kQe0b7mPq2v1sXx4lU8y1tZ6n0a9rJ2w3e4r5t6y\"', true) on conflict (key) do update set value = excluded.value")
+sql("insert into public.app_settings (key, value, public) values ('vapid_public', '\"BOr3Yp8tGg0o5xSmN0y0Hn3nq6r2s3hZx8c5mB4q1yYc9n8kQe0b7mPq2v1sXx4lU8y1tZ6n0a9rJ2w3e4r5t6y\"', true) on conflict (key) do update set value = excluded.value")
 K = {n: rpc('hi8_join', {'p_email': n + '@example.com', 'p_city': 'amsterdam'})['key'] for n in ('ana', 'bo', 'cy')}
 day = lambda off: sql(f"select ((now() at time zone 'Europe/Amsterdam')::date + {off})::text")
 def crew(spot, off, host, members, start, end, mn=None):
@@ -87,7 +87,7 @@ with sync_playwright() as p:
     t = txt(A, '#sheet')
     check('THE FORECAST DROPPED' in t and A.locator('[data-act=movecrew]').count() == 1, 'tomorrow 7 kt: the captain sees it dropped, and the next good window')
     A.locator('[data-act=movecrew]').click(); A.wait_for_timeout(1500)
-    check(sql(f"select day::text from crews where code = '{drop_crew}'") != day(1) and 'THE FORECAST DROPPED' not in txt(A, '#sheet'), 'MOVE IT: the crew moves to that window')
+    check(sql(f"select day::text from crews where code = '{drop_crew}'") != day(1) and 'THE FORECAST DROPPED' not in txt(A, '#sheet'), 'MOVE IT: the crew moves to that window · ' + txt(A, '#toast')[:120] + ' · ' + sql(f"select day::text || ' ' || start_time from crews where code = '{drop_crew}'"))
 
     print('how was it')
     R.goto(BASE + f'/?c={past_crew}#rate'); R.wait_for_timeout(2500)

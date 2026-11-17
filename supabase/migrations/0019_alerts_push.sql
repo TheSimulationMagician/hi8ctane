@@ -1,6 +1,6 @@
--- Hi8ctane 0016: an alert when it's exactly right, on your phone; "I'm in if 2 more"; trust (2.23).
+-- Hi8ctane 0019: an alert when it's exactly right, on your phone; "I'm in if 2 more"; trust (2.23).
 --
--- Run it once in Supabase > SQL Editor, AFTER 0001 to 0015. Safe to run again.
+-- Run it once in Supabase > SQL Editor, AFTER 0001 to 0018. Safe to run again.
 --
 --   * WIND ALERTS: each rider sets their own conditions per sport: which spots, wind from/to, max gusts,
 --     which days and hours, how long the window has to be (wind_alerts). The direction is checked per spot
@@ -618,11 +618,11 @@ begin
   if p_public is not null and p_private is not null and p_public ~ '^[A-Za-z0-9_-]{80,90}$' and p_private ~ '^[A-Za-z0-9_-]{40,45}$' then
     insert into public.app_secrets (name, value) values ('vapid_private', p_private) on conflict (name) do nothing;
     if (select value from public.app_secrets where name = 'vapid_private') = p_private then
-      insert into public.app_settings (key, value, public) values ('vapid_key', to_jsonb(p_public), true)
+      insert into public.app_settings (key, value, public) values ('vapid_public', to_jsonb(p_public), true)
       on conflict (key) do update set value = excluded.value, updated_at = now();
     end if;
   end if;
-  return json_build_object('public', (select value #>> '{}' from public.app_settings where key = 'vapid_key'),
+  return json_build_object('public', (select value #>> '{}' from public.app_settings where key = 'vapid_public'),
                            'private', (select value from public.app_secrets where name = 'vapid_private'));
 end $$;
 
