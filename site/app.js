@@ -1489,6 +1489,8 @@
       drawTop(); renderSheet(); toast('There you are. Your crew will see this one.', 4000);
     }, function (e) {
       clearInterval(tick); CT.step = 'photo'; CT.err = e && e.hint || errText(e);
+      // no function deployed yet answers 404, or fails the browser's CORS check (looks like no connection): not the rider's fault
+      if (e && (e.status === 404 || (HI8.unreachable(e) && navigator.onLine !== false))) CT.err = 'Cartoons are being switched on. Try again in a few minutes.';
       if (e && e.message === 'slow_down') { CT.left = 0; CT.err = 'That\'s 3 cartoons today. Try again tomorrow.'; }
       renderSheet();
     });
