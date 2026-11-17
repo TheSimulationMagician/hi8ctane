@@ -23,7 +23,7 @@
   var MARINE = String(CFG.marineApi || (MKEY ? 'https://customer-marine-api.open-meteo.com' : 'https://marine-api.open-meteo.com')).replace(/\/+$/, '');
   var KEYQ = MKEY ? '&apikey=' + encodeURIComponent(MKEY) : '';
   var TTL = 30 * 60e3;
-  var V = 4; // cache version
+  var V = 5; // cache version
   var DAYS = 7; // the spots: a week ahead (the sharp model covers the first two days, best_match the rest)
 
   // the sharpest model per city, with best_match filling anything it doesn't give
@@ -116,7 +116,7 @@
       models: METEO + '/v1/forecast?latitude=' + lat + '&longitude=' + lon +
         '&hourly=wind_speed_10m,wind_gusts_10m,wind_direction_10m,precipitation&models=' + OTHER.join(',') + '&wind_speed_unit=kn&timezone=auto&forecast_days=' + DAYS + KEYQ,
       sea: sea.length ? MARINE + '/v1/marine?latitude=' + sea.map(function (s) { return s.lat; }).join(',') + '&longitude=' + sea.map(function (s) { return s.lon; }).join(',') +
-        '&hourly=wave_height,wave_period,wave_direction,sea_surface_temperature&timezone=auto&forecast_days=' + DAYS + KEYQ : null,
+        '&hourly=wave_height,wave_period,wave_direction,sea_surface_temperature,sea_level_height_msl&timezone=auto&forecast_days=' + DAYS + KEYQ : null,
       seaSpots: sea
     };
   };
@@ -131,7 +131,7 @@
       var j = mi[t], k = si[t];
       var row = { t: t, d: t.slice(0, 10), h: Number(t.slice(11, 13)), w: num(g(H.wind_speed_10m, i)), g: num(g(H.wind_gusts_10m, i)), dir: num(g(H.wind_direction_10m, i)),
         temp: num(g(H.temperature_2m, i)), mm: num(g(H.precipitation, i)), pop: num(g(H.precipitation_probability, i)), cc: num(g(H.cloud_cover, i)), code: num(g(H.weather_code, i)) };
-      if (k !== undefined) { row.wv = num(g(S.wave_height, k)); row.per = num(g(S.wave_period, k)); row.wdir = num(g(S.wave_direction, k)); row.sst = num(g(S.sea_surface_temperature, k)); }
+      if (k !== undefined) { row.wv = num(g(S.wave_height, k)); row.per = num(g(S.wave_period, k)); row.wdir = num(g(S.wave_direction, k)); row.sst = num(g(S.sea_surface_temperature, k)); row.tide = g(S.sea_level_height_msl, k) == null ? null : Math.round(g(S.sea_level_height_msl, k) * 100) / 100; }
       if (j !== undefined) {
         row.m = {};
         OTHER.forEach(function (mm) {
@@ -346,6 +346,56 @@
         kite: R[0].rate.kite != null ? FX.kiteSize(avg(ws), opts && opts.kg) : null,
         shore: R[Math.floor(R.length / 2)].rate.shore || null, ground: R[0].rate.ground || null,
         temp: Math.round(avg(R.map(function (r) { return r.temp; })) || 0), why: R[Math.floor(R.length / 2)].rate.why, models: FX.agreement(R, sport) };
+    }).sort(function (a, b) { return b.score * Math.sqrt(b.hours) - a.score * Math.sqrt(a.hours); });
+  };
+
+  // high and low water in one day, from the (rough, 8 km) sea level model: [{t: 'HH:MM', kind: 'high'|'low', m}]
+  FX.tides = function (sp, date) {
+    if (!sp) return [];
+    var R = sp.hours.filter(function (r) { return r.tide != null; }), out = [];
+    for (var i = 1; i < R.length - 1; i++) {
+      var a = R[i - 1].tide, b = R[i].tide, c = R[i + 1].tide;
+      if (R[i].d !== date) continue;
+      var hi = b > a && b >= c, lo = b < a && b <= c;
+      if (!hi && !lo) continue;
+      // a parabola through the three hours puts the turn between them
+      var den = a - 2 * b + c, off = den ? Math.max(-0.5, Math.min(0.5, (a - c) / (2 * den))) : 0, mins = Math.round((R[i].h + off) * 60);
+      out.push({ t: (mins < 600 ? '0' : '') + Math.floor(mins / 60) + ':' + ((mins % 60) < 10 ? '0' : '') + (mins % 60), kind: hi ? 'high' : 'low', m: b });
+    }
+    return out;
+  };
+
+  // a rider's alert: the hours that meet THEIR conditions at one spot on one day, in runs of at least min_hours.
+  // rule: { min_kt, max_kt, gust_max, from_h, to_h, min_hours, min_score, days }. The direction is the spot's
+  // (offshore or a direction the spot doesn't work in rates 0). Used by the site's preview and the alert worker.
+  FX.alertWindows = function (sp, date, sport, spot, rule, opts) {
+    if (!sp || !rule) return [];
+    var wd = new Date(date + 'T12:00:00Z').getUTCDay(), we = wd === 0 || wd === 6;
+    if ((rule.days === 'weekend' && !we) || (rule.days === 'weekday' && we)) return [];
+    var windy = sport === 'kite' || sport === 'wing' || sport === 'windsurf';
+    var rows = FX.dayRows(sp, date, sport, spot, opts, rule.from_h == null ? 8 : rule.from_h, (rule.to_h == null ? 20 : rule.to_h) - 1);
+    var ok = function (r) {
+      if (!r.rate || r.rate.dark || r.w == null) return false;
+      if (windy) {
+        if (r.rate.s < 4) return false; // offshore, wrong direction, storm, far too gusty
+        if (rule.min_kt != null && r.w < rule.min_kt) return false;
+        if (rule.max_kt != null && r.w > rule.max_kt) return false;
+        if (rule.gust_max != null && (r.g == null ? r.w : r.g) > rule.gust_max) return false;
+        return true;
+      }
+      return r.rate.s >= (rule.min_score == null ? 6 : rule.min_score);
+    };
+    var runs = [], cur = null;
+    rows.forEach(function (r) { if (ok(r)) { if (!cur) cur = []; cur.push(r); } else if (cur) { runs.push(cur); cur = null; } });
+    if (cur) runs.push(cur);
+    return runs.filter(function (R) { return R.length >= (rule.min_hours || 2); }).map(function (R) {
+      var ws = R.map(function (r) { return r.w; }), sc = avg(R.map(function (r) { return r.rate.s; }));
+      return { date: date, from: R[0].h, to: R[R.length - 1].h + 1, hours: R.length, score: Math.round(sc * 10) / 10, label: FX.label(sc),
+        w: Math.round(avg(ws)), wmin: Math.round(Math.min.apply(null, ws)), wmax: Math.round(Math.max.apply(null, ws)),
+        g: Math.round(Math.max.apply(null, R.map(function (r) { return r.g || r.w || 0; }))), dir: vecDir(R.map(function (r) { return r.dir; }), ws),
+        shore: R[Math.floor(R.length / 2)].rate.shore || null, ground: R[0].rate.ground || null,
+        kite: windy && R[0].rate.kite != null ? FX.kiteSize(avg(ws), opts && opts.kg) : null,
+        temp: Math.round(avg(R.map(function (r) { return r.temp; })) || 0) };
     }).sort(function (a, b) { return b.score * Math.sqrt(b.hours) - a.score * Math.sqrt(a.hours); });
   };
 

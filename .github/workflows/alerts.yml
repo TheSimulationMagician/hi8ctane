@@ -1,0 +1,47 @@
+# The alert worker (scripts/alerts.mjs): wind alerts at each rider's own conditions, "forecast dropped" for crews,
+# "how was it?" the morning after, and every message waiting for a phone. Every 10 minutes (GitHub may run it a few
+# minutes late), and from the Actions tab ("Run workflow").
+#
+# One-time setup, in GitHub: Settings → Secrets and variables → Actions → New repository secret
+#   SUPABASE_SECRET_KEY   Supabase → Project Settings → API Keys → Secret keys (sb_secret_…). Never in site/config.js.
+#   METEO_KEY             optional: an Open-Meteo API key (their free API is for non-commercial use)
+# The web push keys are made by the worker on its first run and kept in the database: nothing to set for them.
+# Without SUPABASE_SECRET_KEY the job says so and stops: nothing breaks.
+
+name: Alerts and push
+
+on:
+  schedule:
+    - cron: "*/10 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: alerts
+  cancel-in-progress: false
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    env:
+      SUPABASE_URL: https://ttpryqrjkhlthftdkhju.supabase.co
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+      METEO_KEY: ${{ secrets.METEO_KEY }}
+      SITE_URL: https://hi8ctane.com
+    steps:
+      - name: Check the key is there
+        id: gate
+        run: |
+          if [ -z "$SUPABASE_SECRET_KEY" ]; then echo "No SUPABASE_SECRET_KEY secret yet: skipping (see the top of this file)."; echo "go=false" >> "$GITHUB_OUTPUT"; else echo "go=true" >> "$GITHUB_OUTPUT"; fi
+      - uses: actions/checkout@v4
+        if: steps.gate.outputs.go == 'true'
+      - uses: actions/setup-node@v4
+        if: steps.gate.outputs.go == 'true'
+        with:
+          node-version: 20
+      - name: Run
+        if: steps.gate.outputs.go == 'true'
+        run: node scripts/alerts.mjs
