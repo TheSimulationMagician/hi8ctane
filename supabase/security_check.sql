@@ -11,7 +11,10 @@ with expected_public_functions(name) as (values
   ('hi8_report'), ('hi8_rsvp'), ('hi8_send'), ('hi8_set_from'), ('hi8_settings'), ('hi8_settle'), ('hi8_start_crew'), ('hi8_unsubscribe'),
   ('hi8_waitlist'), ('hi8_wallet'),
   -- 2.20 who's looking, 2.22 crews that stay together
-  ('hi8_look'), ('hi8_card'), ('hi8_squad'), ('hi8_squad_call'), ('hi8_squad_join'), ('hi8_squad_keep'), ('hi8_squad_leave'), ('hi8_squads'), ('hi8_watch')
+  ('hi8_look'), ('hi8_card'), ('hi8_squad'), ('hi8_squad_call'), ('hi8_squad_join'), ('hi8_squad_keep'), ('hi8_squad_leave'), ('hi8_squads'), ('hi8_watch'),
+  -- 0019 (2.23): alerts, push, crews needing a minimum, moving a crew, rider profiles
+  ('hi8_wind_alert'), ('hi8_wind_alerts'), ('hi8_push_sub'), ('hi8_push_unsub'), ('hi8_watchers'), ('hi8_crew_min'), ('hi8_move_crew'),
+  ('hi8_rider_profile'), ('hi8_crew_people'), ('hi8_set_phone'), ('hi8_no_show')
 ), problems(problem, object) as (
   -- 1. every table has row level security on
   select 'table without row level security', n.nspname || '.' || c.relname
@@ -54,6 +57,7 @@ with expected_public_functions(name) as (values
   select 'secret-looking setting readable by the website', s.key
   from public.app_settings s
   where s.public and s.key ~* '(secret|token|password|api_key|_key$|webhook)'
+    -- (vapid_public is the PUBLIC half of the web push key pair: browsers need it; the private half is in app_secrets)
   union all
   -- 8. Storage: the avatars bucket is read-only to the world; nobody but the server can add, change or delete files
   select 'Storage policy lets the website ' || lower(p.cmd) || ' files', p.policyname

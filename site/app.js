@@ -138,6 +138,7 @@
   // Fuel for the round trip (HI8.FUEL: 7 L/100 km with boards on, at the region's pump price; roads 30% longer than the crow flies), split evenly.
   // Riders add the Hi8 fee on top of their share (15%, set in Supabase); the driver gets the full share.
   // During the pilot the fee is shown but not charged (fee_live false).
+  function spain(city) { var co = cityObj(city || S.city); return co.country ? co.country === 'ES' : ['barcelona', 'tarifa'].indexOf(city || S.city) >= 0; }
   function feePct() { var v = S.settings && S.settings.ride_fee_pct; return v == null ? 15 : Number(v); }
   function memberPct() { var v = S.settings && S.settings.member_fee_pct; return v == null ? 10 : Number(v); }
   function feeLive() { return !!(S.settings && S.settings.fee_live === true); }
@@ -394,6 +395,7 @@
     keepOut();
   }
   // your spots: a star on the spot page, a glow on the map (kept on this phone)
+  function watchN(slug) { var n = S.watch ? S.watch[slug] || 0 : 0; return n >= 2 ? n : 0; } // never "1 watching" (that's maybe you)
   function favList() { return HI8.store.get('favs', []) || []; }
   function toggleFav(slug) { var f = favList(), i = f.indexOf(slug); if (i >= 0) f.splice(i, 1); else f.push(slug); HI8.store.set('favs', f); return i < 0; }
   // wind for kite, rain for MTB and MX, unless the rider switched it
@@ -458,7 +460,7 @@
       '<span class="chips">' + (min ? '<span class="chip" style="background:#8DF5E8">' + CLOCK + min + ' MIN FROM ' + esc(String(hub.name).toUpperCase()) + '</span>' : '') +
       '<span class="chip" style="background:' + lv[1] + '">' + BARS + lv[0] + '</span><span class="chip">CAPTAIN ' + esc(String(c.host || '').toUpperCase()) + (c.host_plate ? ' #' + pad3(c.host_plate) : '') + '</span></span>' +
       '<span class="sc-f"><span class="sc-l"><span class="sc-w">' + esc(dayRel(c.day)) + ' ' + esc(hm(c.start)) + (key ? ' <em>' + esc(key) + '</em>' : '') + '</span>' +
-      '<span class="sc-g">' + faces(c) + '<span>' + c.going + ' going' + (free > 0 && free <= 3 ? ' · ' + free + ' left' : '') + (c.here ? ' · ' + c.here + ' there' : '') + '</span>' +
+      '<span class="sc-g">' + faces(c) + '<span>' + (c.min && !c.min_met ? '<span class="needs">NEEDS ' + (c.min - c.going) + ' MORE</span> ' : '') + c.going + ' going' + (free > 0 && free <= 3 ? ' · ' + free + ' left' : '') + (c.here ? ' · ' + c.here + ' there' : '') + '</span>' +
       (c.seats_free > 0 && seat ? '<span class="seat" title="A seat, fuel split four ways">' + CAR + '<b>' + money(seat.pay) + '</b></span>' : '') + '</span></span>' +
       '<span class="jn' + (inIt ? ' wh' : free <= 0 ? ' wh' : '') + '">' + (inIt ? "YOU'RE IN" : free <= 0 ? 'FULL' : 'JOIN NOW') + '</span></span></a>';
   }
@@ -507,16 +509,7 @@
         '<br><button class="jn lm" data-act="startwin" data-date="' + best.date + '" data-from="' + best.from + '" data-to="' + best.to + '" data-spot="' + best.spot.slug + '" style="margin-top:12px">START THIS ONE</button> <button class="jn wh" data-act="start" style="margin-top:12px">ANOTHER TIME</button>'
         : 'Start the first one' + (h ? ' from ' + esc(title(h.name)) : '') + ': pick a window, a spot, share it to your group chats. 20 seconds.<br><button class="jn lm" data-act="start" style="margin-top:12px">START ONE</button>') + alertBox() + '</div>';
   }
-  function alertBox() {
-    var mine = (HI8.mine && HI8.mine.alerts) || [], on = mine.some(function (a) { return a.city === S.city && a.sport === S.sport; });
-    if (signedIn()) {
-      return '<p class="ab">' + (on ? 'You get an email when someone posts a ' + esc(SPORT[S.sport].name) + ' crew here.' : 'Or get an email when someone posts a ' + esc(SPORT[S.sport].name) + ' crew here:') + '</p>' +
-        '<button class="hbtn ' + (on ? '' : 'ink') + '" data-act="alert" data-on="' + (!on) + '" style="width:100%">' + (on ? 'STOP THESE EMAILS' : 'EMAIL ME NEW ' + esc(SPORT[S.sport].name.toUpperCase()) + ' CREWS') + '</button>';
-    }
-    return '<p class="ab">Or get an email when someone posts a ' + esc(SPORT[S.sport].name) + ' crew here:</p>' +
-      '<form class="send" data-form="alert"><label class="sr" for="alertEmail">Email</label><input class="inp" id="alertEmail" type="email" inputmode="email" autocomplete="email" placeholder="you@email.com" required><button type="submit">ALERT ME</button></form>' +
-      '<p class="hint">You get a founding plate with it. One click stops the emails.</p>';
-  }
+  function alertBox() { return alertCta(); } // 2.23: the wind alert (your conditions) replaces "email me new crews" here; that one stays in Me
   function drawLive() {
     var el = $('#live'), L = S.live;
     var reps = L ? (L.reports || []).filter(function (r) { return r.sport === S.sport; }) : [];
@@ -734,8 +727,8 @@
       var f = o.fx, c = o.crews[0], kite = S.sport === 'kite';
       var key = f ? (kite ? f.w + ' KT ' + FX.compass(f.dir) + (f.g ? ' · G' + f.g : '') : (f.ground || '').toUpperCase() + (f.temp != null ? ' · ' + f.temp + '°C' : '')) : 'FORECAST SOON';
       var crewLine = c ? (function () { var hub = hubOf(c), cost = hub ? tripCost(hub, o.spot) : null, m = cost ? seatMath(cost, 4) : null, more = o.crews.length - 1;
-        return '<span class="sg">' + faces(c) + '<span><a class="sgl" href="?c=' + esc(c.code) + '" data-act="crew" data-code="' + esc(c.code) + '">' + esc(c.host) + '\'s crew</a> · ' + c.going + ' going' + (c.seats_free > 0 ? ' · ' + c.seats_free + ' seat' + (c.seats_free > 1 ? 's' : '') + (hub ? ' from ' + esc(title(hub.name)) : '') + (m ? ' ' + money(m.pay) : '') : '') + (more ? ' · +' + more + ' more' : '') + '</span></span>'; })()
-        : '<span class="sg none">Nobody yet. Go first: everyone near you sees it.</span>';
+        return '<span class="sg">' + faces(c) + '<span>' + (c.min && !c.min_met ? '<span class="needs">NEEDS ' + (c.min - c.going) + ' MORE</span> ' : '') + '<a class="sgl" href="?c=' + esc(c.code) + '" data-act="crew" data-code="' + esc(c.code) + '">' + esc(c.host) + '\'s crew</a> · ' + c.going + ' going' + (c.seats_free > 0 ? ' · ' + c.seats_free + ' seat' + (c.seats_free > 1 ? 's' : '') + (hub ? ' from ' + esc(title(hub.name)) : '') + (m ? ' ' + money(m.pay) : '') : '') + (more ? ' · +' + more + ' more' : '') + '</span></span>'; })()
+        : '<span class="sg none">Nobody yet. ' + (watchN(o.spot.slug) ? watchN(o.spot.slug) + ' riders watch ' + esc(o.spot.name) + ': go first and they hear it.' : 'Go first: everyone near you sees it.') + '</span>';
       return '<div class="ss' + (c ? ' has' : '') + (i === 0 ? ' top' : '') + '">' +
         '<div class="ss-t"><span class="ss-d">' + esc(dayRel(o.date)) + ' <b>' + pad(o.from) + '–' + pad(o.to) + '</b></span>' + (f ? '<span class="vd t-' + FX.tone(f.score != null ? f.score : f.s) + '">' + esc(f.label) + '</span>' : '') + (c && c.live ? '<span class="vd t-live">LIVE</span>' : '') + '</div>' +
         '<button class="ss-n" data-act="spotat" data-spot="' + o.spot.slug + '" data-date="' + o.date + '">' + esc(o.spot.name.toUpperCase()) + ' <small>' + (o.min ? o.min + ' MIN' : '') + ' ›</small></button>' +
@@ -776,7 +769,8 @@
       var sp = x.spot, fs = fxSpot(sp.slug), r0 = rowAt(sp.slug, t), rt0 = r0 ? rateAt(sp, t) : null;
       var why0 = rt0 && (rt0.s < 6 || (rt0.caps && rt0.caps.length)) ? FX.reason(rt0) : '';
       var nowCell = '<button class="bd-c now t-' + (rt0 ? (rt0.dark ? 'none' : FX.tone(rt0.s)) : 'none') + '" data-act="spot" data-spot="' + sp.slug + '" aria-label="' + esc(sp.name + ' now: ' + (rt0 ? rt0.label : 'no forecast') + (why0 ? ', ' + why0.toLowerCase() : '')) + '"><span aria-hidden="true">' + (r0 && rt0 ? (kite ? Math.round(r0.w) : Math.round(rt0.s)) : '–') + (why0 ? '<em>' + esc(SHORT[why0] || why0.slice(0, 4)) + '</em>' : '') + '</span></button>';
-      return '<div class="bd-r"><button class="bd-n" data-act="spot" data-spot="' + sp.slug + '">' + esc(sp.name.toUpperCase()) + (x.min ? '<small>' + x.min + ' MIN</small>' : '') + '</button>' + nowCell + days.map(function (d, i) {
+      var wn = watchN(sp.slug);
+      return '<div class="bd-r"><button class="bd-n" data-act="spot" data-spot="' + sp.slug + '">' + esc(sp.name.toUpperCase()) + (x.min || wn ? '<small>' + (x.min ? x.min + ' MIN' : '') + (wn ? (x.min ? ' · ' : '') + wn + ' WATCH' : '') + '</small>' : '') + '</button>' + nowCell + days.map(function (d, i) {
         var w = fs ? FX.windows(fs, d, S.sport, sp, fxo())[0] : null, val = '–', tone = 'none', lab = 'no forecast', why = '', late = false;
         if (i === 0 && w && S.nowH * 60 + S.nowM + (x.min || 0) > w.to * 60 - 90) { w = null; late = true; } // today: too late for it
         if (w) { val = kite ? Math.round(w.w) : Math.round(w.score); tone = FX.tone(w.score); why = w.caps && w.caps.length ? w.caps[0] : ''; lab = w.label + ' ' + pad(w.from) + '–' + pad(w.to) + (why ? ', ' + (CAP_TXT[why] || why).toLowerCase() : ''); }
@@ -799,7 +793,7 @@
     var withCrew = L.filter(function (o) { return o.crews.length; });
     el.innerHTML = head + boardHtml(upcoming(S.sport, 14)) +
       (withCrew.length ? '<div class="h2 sub"><span class="pdot"></span>CREWS GOING</div><div class="sess">' + withCrew.slice(0, 3).map(sessCard).join('') + '</div>' : '') + foot +
-      (withCrew.length ? '' : '<div class="alertw">' + alertBox() + '</div>');
+      '<div class="alertw">' + alertCta() + '</div>';
   }
 
   // NO CREW FROM YOUR TOWN YET? Crews leave from wherever riders live: the first one from a town puts it on the list
@@ -830,10 +824,10 @@
   }
   function route() {
     var h = location.hash.replace(/^#/, ''), c = new URLSearchParams(location.search).get('c');
-    if (c && h && h !== 'chat') { // a sheet over a crew link: leave the crew page for it
+    if (c && h && h !== 'chat' && h !== 'rate') { // a sheet over a crew link: leave the crew page for it
       history.replaceState(null, '', location.pathname + location.hash); S.crew = null; stopChat(); c = null;
     }
-    if (c) { if (!S.crew || S.crew.code !== c.toUpperCase()) openCrew(c, h === 'chat'); return; }
+    if (c) { if (!S.crew || S.crew.code !== c.toUpperCase()) { openCrew(c, h === 'chat'); if (h === 'rate') S.crew.rateGo = true; } return; }
     var sq = new URLSearchParams(location.search).get('s');
     if (sq && !h) { openSquad(sq); return; }
     if (h === 'join') { S.view = 'join'; }
@@ -845,9 +839,13 @@
         newStart({ spot: q.get('spot') || null, sport: sp && LIVE_SPORTS.indexOf(sp) >= 0 ? sp : null });
       }
     }
-    else if (h === 'me') { S.view = 'me'; if (signedIn()) { HI8.loadMine(true).then(renderSheet, noop); loadWallet(); loadAvatar(); loadSocial(); } }
+    else if (h === 'me') { S.view = 'me'; if (signedIn()) { HI8.loadMine(true).then(renderSheet, noop); loadWallet(); loadAvatar(); loadSocial(); loadAlerts(); S.prof = null; } }
     else if (h === 'city') { S.view = 'city'; }
-    else if (/^spot\//.test(h)) { S.view = 'spot'; S.spotSlug = h.slice(5); S.spotDay = S.spotDay || 0; }
+    else if (/^spot\//.test(h)) { var sq2 = h.split('/'); S.view = 'spot'; S.spotSlug = sq2[1]; S.spotDay = S.spotDay || 0;
+      if (/^\d{4}-\d\d-\d\d$/.test(sq2[2] || '')) { refreshToday(); S.spotDay = Math.max(0, Math.min(6, Math.round((dDate(sq2[2]) - dDate(S.today)) / 864e5))); history.replaceState(null, '', '#spot/' + sq2[1]); } }
+    else if (/^alerts/.test(h)) { var ap = h.split('/'), asp = LIVE_SPORTS.indexOf(ap[1]) >= 0 ? ap[1] : null; S.view = 'alerts';
+      if (!S.al || (asp && S.al.sport !== asp) || ap[2]) newAlert(asp || (S.al && S.al.sport) || S.sport, ap[2] || null); if (signedIn() && !S.walerts) loadAlerts(); }
+    else if (h === 'push') { S.view = 'push'; if (!PUSH.checked) pushCheck().then(renderSheet); }
     else if (/^soon\//.test(h)) { S.view = 'soon'; S.soonSport = h.slice(5); }
     else if (h === 'from') { S.view = 'from'; }
     else if (h === 'kg') { S.view = 'kg'; }
@@ -859,7 +857,7 @@
   }
   function renderSheet() {
     if (!S.view) return;
-    var fn = { join: sheetJoin, start: sheetStart, crew: sheetCrew, spot: sheetSpot, me: sheetMe, city: sheetCity, soon: sheetSoon, plan: sheetPlan, from: sheetFrom, kg: sheetKg, level: sheetLevel, pass: sheetPass, squad: sheetSquad }[S.view];
+    var fn = { join: sheetJoin, start: sheetStart, crew: sheetCrew, spot: sheetSpot, me: sheetMe, city: sheetCity, soon: sheetSoon, plan: sheetPlan, from: sheetFrom, kg: sheetKg, level: sheetLevel, pass: sheetPass, squad: sheetSquad, alerts: sheetAlerts, push: sheetPush }[S.view];
     if (!fn) return;
     var keep = sheet.querySelector('.sh-body'), top = keep ? keep.scrollTop : 0, focus = document.activeElement && document.activeElement.id;
     var vals = {}; sheet.querySelectorAll('input[id],textarea[id]').forEach(function (i) { vals[i.id] = i.value; });
@@ -987,7 +985,10 @@
         (qf ? '<div class="qs-m">' + esc(f.sport === 'kite' ? qf.w + ' kt ' + FX.compass(qf.dir) + ', gusts ' + qf.g + (qk ? (kgSet() ? ' · your kite: ' + qk + ' m' : ' · kite ' + kiteRange(qf.w) + ' m') : '') : (qf.ground || '') + ' · ' + qf.temp + '°C') + '</div>' : '') +
         (qs && qs.note ? '<p class="hint">' + esc(qs.note) + '</p>' : '') +
         '<button class="lnk" data-act="sffull">CHANGE THE DAY, TIME OR SPOT</button></div></div>';
-      body = pClash + pTop + pHow + (cap ? pLevels : '') + pYou + (f.noteOpen ? pNote : '<div class="f"><button class="lnk" data-act="sfnote">+ ADD A NOTE FOR THE CREW</button></div>') + pTail;
+      var wn = watchN(f.spot), pMin = '<div class="f"><span class="lb">IT GOES AHEAD <small>' + (wn ? wn + ' riders watch ' + esc(qs ? qs.name : 'this spot') + ': they hear about it' : 'everyone near you sees it') + '</small></span><div class="row">' +
+        [[0, 'EITHER WAY', 'I\'m going anyway'], [2, 'IF 1 MORE', 'only with a buddy'], [3, 'IF 2 MORE', 'only as a crew of 3']].map(function (o) { return '<button class="opt" data-act="sfmin" data-v="' + o[0] + '" aria-pressed="' + ((f.min || 0) === o[0]) + '">' + o[1] + '<small>' + o[2] + '</small></button>'; }).join('') + '</div>' +
+        (f.min ? '<p class="hint">It shows as NEEDS ' + (f.min - 1) + ' MORE. The moment ' + f.min + ' are in, everyone hears it\'s on.</p>' : '') + '</div>';
+      body = pClash + pTop + pHow + pMin + (cap ? pLevels : '') + pYou + (f.noteOpen ? pNote : '<div class="f"><button class="lnk" data-act="sfnote">+ ADD A NOTE FOR THE CREW</button></div>') + pTail;
     } else body = pSport + pWhen + pWhere + pClash + pHow + pLevels + pNote + pYou + pTail;
     return shell(f.quick ? 'START THIS CREW' : 'START A CREW', body, '<button class="big start' + (f.quick ? ' go' : '') + '" data-act="sfpost"' + (f.busy ? ' disabled' : '') + '>' + (f.busy ? '<span class="spin"></span>' : f.quick ? 'POST IT · I\'M GOING' : 'POST THE CREW') + '</button>');
   }
@@ -1007,7 +1008,7 @@
       var done = S.told && S.told[q.code + ':' + c.code];
       return '<button class="big ' + (done ? 'ghost' : 'start') + '" data-act="sqcall" data-squad="' + esc(q.code) + '" data-code="' + esc(c.code) + '"' + (done ? ' disabled' : '') + '>' + (done ? 'TOLD ' + esc(q.name.toUpperCase()) + ' ✓' : 'TELL ' + esc(q.name.toUpperCase()) + '<small style="display:block;font:700 10.5px var(--mono)">' + (q.size - 1) + ' RIDERS GET AN EMAIL</small>') + '</button>';
     }).join('');
-    return shell('YOUR CREW IS UP', (tell ? '<div class="f"><span class="lb">YOUR CREWS</span><div style="display:grid;gap:8px">' + tell + '</div></div>' : '') + '<div class="ok-box"><b>' + esc(SPORT[c.sport].em + ' ' + c.spot_name.toUpperCase() + ' · ' + dayRel(c.day) + ' ' + hm(c.start)) + '</b><br>Now get people in: share it to your group chats. They join in one tap, no app to install.</div>' +
+    return shell('YOUR CREW IS UP', (tell ? '<div class="f"><span class="lb">YOUR CREWS</span><div style="display:grid;gap:8px">' + tell + '</div></div>' : '') + '<div class="ok-box"><b>' + esc(SPORT[c.sport].em + ' ' + c.spot_name.toUpperCase() + ' · ' + dayRel(c.day) + ' ' + hm(c.start)) + '</b><br>' + (c.min && !c.min_met ? 'It goes ahead with ' + c.min + ': it needs ' + (c.min - (c.going || 1)) + ' more. ' : '') + 'Now get people in: share it to your group chats. They join in one tap, no app to install.</div>' +
       '<div class="f"><span class="lb">THE MESSAGE</span><pre class="box" style="margin:0;white-space:pre-wrap;font:400 12.5px/1.5 var(--mono)">' + esc(txt) + '</pre></div>' +
       '<div class="f"><div style="display:grid;gap:8px"><a class="big wa" href="https://wa.me/?text=' + encodeURIComponent(txt) + '" target="_blank" rel="noopener" data-act="shared">SHARE TO WHATSAPP</a>' +
       '<button class="big ghost" data-act="copy" data-text="' + esc(txt) + '">COPY THE MESSAGE</button>' + (navigator.share ? '<button class="big ghost" data-act="nshare" data-code="' + esc(c.code) + '">MORE APPS</button>' : '') + '</div></div>',
@@ -1031,12 +1032,13 @@
     }).then(function (d) {
       if (!S.crew || S.crew.code !== C.code) return;
       C.data = d; C.err = null;
-      if (S.autoJoin === C.code) { S.autoJoin = null; if (!d.me && d.status === 'on' && !d.past) { S.jf = null; setTimeout(openJoin, 0); } }
+      if (S.autoJoin === C.code) { S.autoJoin = null; if (!d.me && d.status === 'on' && !d.past) { S.jf = null; setTimeout(function () { quickJoin(d); }, 0); } }
       document.title = SPORT[d.sport].name + ' crew · ' + d.spot_name + ' · ' + dayRel(d.day) + ' ' + hm(d.start);
       if (d.city !== S.city) { S.city = d.city; drawAll(); initMap(); loadForecast(); }
-      if (d.me) { startChat(); if (!S.wallet) loadWallet(); loadPlan(); }
+      if (d.me) { startChat(); if (!S.wallet) loadWallet(); loadPlan(); if (!C.people) loadPeople(); if (!S.card) HI8.withKey('hi8_card', {}, { noQueue: true }).then(function (cd) { S.card = cd; }, noop); }
       renderSheet();
       if (C.chat && d.me) setTimeout(function () { var el = $('#chatBox'); if (el) el.scrollIntoView({ block: 'center' }); }, 60);
+      if (C.rateGo && d.me) { C.rateGo = false; setTimeout(function () { var el = $('#rateBox'); if (el) el.scrollIntoView({ block: 'start', behavior: 'smooth' }); }, 80); }
     }, function (e) { if (S.crew === C) { C.err = errText(e); renderSheet(); } });
   }
   // the smart pick-ups: where each car stops, in order, with times (names only: nobody sees where anyone starts)
@@ -1100,7 +1102,14 @@
     var hubName = c.meet_hub ? (HI8.hubsOf(c.city).filter(function (h) { return h.slug === c.meet_hub; })[0] || {}).name : null;
     var who = '<div class="who">' + M.map(function (m) {
       var how = m.getting === 'drive' ? 'drives · ' + m.seats + ' seat' + (m.seats === 1 ? '' : 's') : m.getting === 'seat' ? (m.car_with ? 'rides with ' + esc((M.filter(function (x) { return x.member_id === m.car_with; })[0] || {}).name || 'a driver') : 'needs a seat') : 'own way';
-      return '<div class="p"><span class="av' + (m.here ? ' here' : '') + (m.avatar ? ' img' : '') + '">' + (m.avatar ? '<img src="' + esc(HI8.avatarUrl(m.avatar)) + '" alt="" width="44" height="44" loading="lazy">' : esc(String(m.name).slice(0, 2).toUpperCase())) + '</span><span><b>' + esc(m.name) + '</b>' + (m.host ? ' · captain' : '') + (m.me ? ' · you' : '') + '<br><span style="color:var(--mute)">' + esc(LEVEL[m.level] || '') + (m.here ? ' · at the spot' : '') + '</span></span><small>' + how + '</small></div>';
+      var pp = personOf(m), started = c.past || c.live || (c.day === S.today && S.nowH * 60 + S.nowM >= minutes(c.start));
+      var pf = pp ? [pp.years != null ? pp.years + (pp.years === 1 ? ' YR' : ' YRS') + ' RIDING' : '', pp.home_spot_name ? 'HOME ' + pp.home_spot_name.toUpperCase() : '', (pp.rode || 0) + ' SESSION' + (pp.rode === 1 ? '' : 'S'),
+        pp.no_shows ? pp.no_shows + ' NO-SHOW' + (pp.no_shows > 1 ? 'S' : '') : ''].filter(Boolean).join(' · ') : '';
+      var tel = pp && pp.phone && !m.me ? '<a href="tel:' + esc(pp.phone) + '">CALL</a> · <a target="_blank" rel="noopener" href="https://wa.me/' + esc(pp.phone.replace('+', '')) + '">WHATSAPP</a>' : '';
+      return '<div class="p"><span class="av' + (m.here ? ' here' : '') + (m.avatar ? ' img' : '') + '">' + (m.avatar ? '<img src="' + esc(HI8.avatarUrl(m.avatar)) + '" alt="" width="44" height="44" loading="lazy">' : esc(String(m.name).slice(0, 2).toUpperCase())) + '</span><span><b>' + esc(m.name) + '</b>' + (m.host ? ' · captain' : '') + (m.me ? ' · you' : '') + '<br><span style="color:var(--mute)">' + esc(LEVEL[m.level] || '') + (m.here ? ' · at the spot' : '') + '</span>' +
+        (pf || tel || (pp && pp.insta) ? '<span class="pf">' + esc(pf) + (pp && pp.insta ? (pf ? ' · ' : '') + '<a target="_blank" rel="noopener" href="https://instagram.com/' + esc(pp.insta) + '">@' + esc(pp.insta) + '</a>' : '') + (tel ? (pf || (pp && pp.insta) ? ' · ' : '') + tel : '') + '</span>' : '') +
+        (c.host_is_me && !m.me && started && pp ? '<button class="ns" data-act="noshow" data-member="' + esc(m.member_id) + '" data-on="' + !pp.no_show + '" aria-pressed="' + !!pp.no_show + '">' + (pp.no_show ? 'MARKED NO-SHOW · UNDO' : 'DIDN\'T SHOW?') + '</button>' : '') +
+        '</span><small>' + how + '</small></div>';
     }).join('') + '</div>';
     var carHtml = cars.map(function (d) {
       var ps = M.filter(function (m) { return m.car_with === d.member_id; });
@@ -1115,9 +1124,10 @@
       if (!ps.length) return '';
       return '<div class="box"><h3>SETTLE UP <small style="font-weight:400;letter-spacing:0">fuel + tolls + parking</small></h3>' +
         '<div class="two"><label><span class="sr">What the car cost (€)</span><input class="inp" id="payCost" type="number" inputmode="decimal" min="0" max="500" step="0.5" placeholder="€ total" value="' + (me.trip_cost != null ? me.trip_cost : '') + '"></label>' +
-        '<label><span class="sr">Bizum number</span><input class="inp" id="payBizum" inputmode="tel" placeholder="Bizum 6XX XXX XXX" value="' + esc(me.bizum ? me.bizum.replace(/^\+34/, '') : '') + '"></label></div>' +
-        '<label class="sr" for="payLink">Payment link</label><input class="inp" id="payLink" style="margin-top:8px" inputmode="url" placeholder="or a Revolut / PayPal link" value="' + esc(me.pay_link || '') + '">' +
-        '<p class="hint">Split between you and ' + ps.length + ' rider' + (ps.length > 1 ? 's' : '') + ': €' + (me.trip_cost != null ? (me.trip_cost / (ps.length + 1)).toFixed(2) : '–') + ' each, all of it to you' + (me.trip_cost != null && !feeLive() ? ' (the ' + feePct() + '% Hi8 fee on top is free during the pilot)' : '') + '. Your Bizum number is shown only to the riders in your car. Paid: ' +
+        (spain(c.city) ? '<label><span class="sr">Bizum number</span><input class="inp" id="payBizum" inputmode="tel" placeholder="Bizum 6XX XXX XXX" value="' + esc(me.bizum ? me.bizum.replace(/^\+34/, '') : '') + '"></label></div>' +
+          '<label class="sr" for="payLink">Payment link</label><input class="inp" id="payLink" style="margin-top:8px" inputmode="url" placeholder="or a Revolut / PayPal link" value="' + esc(me.pay_link || '') + '">'
+        : '<label><span class="sr">Payment link</span><input class="inp" id="payLink" inputmode="url" placeholder="Tikkie link" value="' + esc(me.pay_link || '') + '"></label></div><p class="hint" style="margin:6px 0 0">Tikkie: open it, make a request with no amount, share, copy the link here. bunq, Revolut or PayPal links work too.</p>') +
+        '<p class="hint">Split between you and ' + ps.length + ' rider' + (ps.length > 1 ? 's' : '') + ': €' + (me.trip_cost != null ? (me.trip_cost / (ps.length + 1)).toFixed(2) : '–') + ' each, all of it to you' + (me.trip_cost != null && !feeLive() ? ' (the ' + feePct() + '% Hi8 fee on top is free during the pilot)' : '') + '. ' + (spain(c.city) ? 'Your Bizum number is shown only to the riders in your car. ' : 'Your link is shown only to the riders in your car. ') + 'Paid: ' +
         ps.map(function (p) { return esc(p.name) + (p.paid ? ' ✓' : ' ·'); }).join(' ') + '</p>' +
         (S.wallet && S.wallet.live ? '<p class="hint money">Riders can pay their seat in the app: it reaches your wallet the day after the ride, and you withdraw to your bank from Me.</p>' : '') +
         '<button class="big dark" data-act="settle" style="width:100%;margin-top:6px;font-size:17px">SAVE + TELL MY CAR</button></div>';
@@ -1162,6 +1172,14 @@
       '<button class="big join" data-act="jfgo" style="width:100%;margin-top:12px"' + (f.busy ? ' disabled' : '') + '>' + (f.busy ? '<span class="spin"></span>' : c.me ? 'SAVE' : "I'M GOING") + '</button>' +
       (me || c.me ? '' : '<p class="hint">Your founding plate comes with it. By joining you agree to the <a href="terms/">terms</a>.</p>') + '</div>';
   }
+  // I'M GOING for a rider who has joined before: straight in, the way they came last time (CHANGE in the toast)
+  function quickJoin(c) {
+    var lv = HI8.store.get('lv.' + c.sport, null), g = HI8.store.get('getting', null);
+    var lvls = c.levels === 'rookie' ? ['rookie'] : c.levels === 'all' ? ['rookie', 'regular', 'ripper'] : ['regular', 'ripper'];
+    if (!signedIn() || !lv || !g || lvls.indexOf(lv) < 0) { openJoin(); return; }
+    S.jf = { level: lv, getting: g, seats: Number(HI8.store.get('seats', 3)) || 3, err: null, busy: false, quick: true };
+    joinGo();
+  }
   // the join form, opened from I'M IN or straight from I'M GOING on a session
   function openJoin() {
         var c = S.crew.data, me = c.me;
@@ -1192,10 +1210,11 @@
     var status = c.status === 'off' ? '<span class="tag off">CALLED OFF</span>' : c.past ? '<span class="tag off">DONE</span>' : c.live ? '<span class="tag live">LIVE NOW</span>' : '';
     var maps = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent((c.maps || spot.maps || c.spot_name) + '');
     var hub = c.meet_hub ? HI8.hubsOf(c.city).filter(function (h) { return h.slug === c.meet_hub; })[0] : null;
-    var body = '<div class="hero art a-' + c.sport + '"><div class="k">' + tile(c.sport, 20) + esc(SPORT[c.sport].name.toUpperCase() + ' CREW') + ' ' + status + '</div><h2>' + esc(c.spot_name) + '</h2>' +
+    var body = '<div class="hero art a-' + c.sport + '"><div class="k">' + tile(c.sport, 20) + esc(SPORT[c.sport].name.toUpperCase() + ' CREW') + ' ' + status + (c.min && !c.min_met && c.status === 'on' ? ' <span class="needs">GOES AHEAD WITH ' + c.min + ': NEEDS ' + (c.min - c.going) + ' MORE</span>' : '') + '</div><h2>' + esc(c.spot_name) + '</h2>' +
       '<div class="when2">' + esc(dayRel(c.day)) + ' · ' + esc(hm(c.start)) + (c.end ? '–' + esc(hm(c.end)) : '') + '</div>' +
       '<div class="when2" style="color:var(--mint);font-weight:400;margin-top:4px">' + esc(CREW_LEVELS[c.levels] || '') + ' · captain ' + esc(c.host) + (c.host_plate ? ' #' + pad3(c.host_plate) : '') + '</div></div>' +
       (c.status === 'off' ? '<div class="err">Called off: ' + esc(c.off_reason || 'the captain called it off') + '</div>' : '') +
+      (!member && S.jf && !S.jf.quick && c.status === 'on' && !c.past ? joinForm(c) : '') + fxDrop(c, f) + rateBox(c) +
       crewStrip(c, f) + carBox(c, spot, hub) +
       (c.note ? '<div class="box"><h3>FROM THE CAPTAIN</h3><div style="font-size:13px">' + esc(c.note) + '</div></div>' : '') +
       '<div class="box"><h3>WHO\'S GOING <span class="tag' + (c.going >= c.max ? ' off' : '') + '">' + c.going + '/' + c.max + '</span></h3>' +
@@ -1207,8 +1226,9 @@
       body += '<div class="box"><h3>MEETING POINT</h3><div style="font-size:13px">' + (hub ? '<b>' + esc(hub.name) + '</b> · ' + esc(hub.sub || '') + (c.meet_time ? ' at <b>' + esc(hm(c.meet_time)) + '</b>' : '') + '<br>' : '') +
         (c.meet_note ? esc(c.meet_note) + '<br>' : '') + 'Spot: ' + esc(c.spot_name) + '</div><div class="row" style="margin-top:10px">' +
         (hub ? '<a class="opt" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=' + hub.lat + ',' + hub.lon + '">PICK-UP ON MAPS</a>' : '') +
-        '<a class="opt" target="_blank" rel="noopener" href="' + esc(maps) + '">DIRECTIONS TO THE SPOT</a><button class="opt" data-act="ics">ADD TO CALENDAR</button></div></div>';
-      if (isToday && c.status === 'on') {
+        '<a class="opt" target="_blank" rel="noopener" href="' + esc(maps) + '">DIRECTIONS TO THE SPOT</a><button class="opt" data-act="ics">ADD TO CALENDAR</button></div>' +
+        (c.past ? '' : (function () { var mp = personOf(c.me) || {}; return '<div class="two" style="margin-top:10px;align-items:center"><label><span class="sr">Your mobile for the crew</span><input class="inp" id="myPhone" inputmode="tel" autocomplete="tel" placeholder="Your mobile" value="' + esc(mp.phone || '') + '"></label><button class="opt" data-act="phonesave">' + (mp.phone ? 'SAVED ✓ · UPDATE' : 'SHARE WITH THE CREW') + '</button></div><p class="hint">Only the riders in this crew see it: handy at the pick-up.</p>'; })()) + '</div>';
+      if (isToday && c.status === 'on' && !sessionEnded(c)) {
         body += '<div class="box"><h3>AT THE SPOT ' + (c.me.here ? '<span class="tag live">YOU\'RE THERE</span>' : '') + '</h3>' +
           (c.me.here ? '<p class="hint" style="margin:0 0 8px">How is it? Your crew and everyone checking the map see it (without your name).</p><div class="row">' +
             [['on', 'ON'], ['meh', 'MEH'], ['off', 'OFF']].map(function (v) { return '<button class="opt" data-act="report" data-v="' + v[0] + '">' + v[1] + '</button>'; }).join('') + '</div>' +
@@ -1223,7 +1243,6 @@
       body += S.jf ? joinForm(c) : '<div class="f"><div class="row"><button class="opt" data-act="jfopen">CHANGE LEVEL OR RIDE</button><button class="opt" data-act="leave">' +
         (C.confirm === 'leave' ? (c.host_is_me ? 'TAP AGAIN: CALL IT OFF' : 'TAP AGAIN TO LEAVE') : c.host_is_me ? 'CALL IT OFF' : 'LEAVE THE CREW') + '</button></div></div>';
     } else if (c.status === 'on' && !c.past) {
-      body += S.jf ? joinForm(c) : '';
       body += '<div class="box"><h3>THE SPOT</h3><div style="font-size:12.5px">' + esc(spot.note || '') + '</div><div class="row" style="margin-top:10px"><a class="opt" target="_blank" rel="noopener" href="' + esc(maps) + '">DIRECTIONS</a><button class="opt" data-act="spot" data-spot="' + esc(c.spot) + '">FULL FORECAST</button></div></div>';
     }
     if (member) body += '<div class="box keepbox"><h3>RIDE WITH THEM AGAIN</h3><p class="hint">Keep this crew: the people in it stay together. When one of you goes, the rest hear about it first.</p><button class="big start" data-act="keep" data-code="' + esc(c.code) + '">KEEP THIS CREW</button></div>';
@@ -1232,9 +1251,35 @@
         return '<div class="rep"><span class="tag ' + (r.verdict === 'on' ? 'epic' : r.verdict === 'meh' ? 'ok' : 'no') + '">' + r.verdict.toUpperCase() + '</span><span>' + (r.name ? esc(r.name) + ' · ' : '') + (r.kite ? r.kite + ' m' : '') + (r.ground ? esc(r.ground) : '') + (r.note ? ' · ' + esc(r.note) : '') + '</span><small>' + esc(ago(r.at)) + '</small></div>';
       }).join('') + '</div></div>';
     }
-    var foot = !member && c.status === 'on' && !c.past ? '<button class="big join" data-act="' + (S.jf ? 'jfgo' : 'jfopen') + '"' + (S.jf && S.jf.busy ? ' disabled' : '') + '>' + (S.jf && S.jf.busy ? '<span class="spin"></span>' : 'I\'M GOING') + '</button><button class="big ghost" data-act="share" style="flex:0 0 34%">SHARE</button>'
+    var foot = !member && S.jf && S.jf.quick && S.jf.busy ? '<button class="big join" disabled><span class="spin"></span> PUTTING YOU IN…</button>' : !member && c.status === 'on' && !c.past ? '<button class="big join" data-act="' + (S.jf ? 'jfgo' : 'jfopen') + '"' + (S.jf && S.jf.busy ? ' disabled' : '') + '>' + (S.jf && S.jf.busy ? '<span class="spin"></span>' : 'I\'M GOING') + '</button><button class="big ghost" data-act="share" style="flex:0 0 34%">SHARE</button>'
       : '<a class="big wa" href="https://wa.me/?text=' + encodeURIComponent(shareText(c)) + '" target="_blank" rel="noopener">SHARE TO WHATSAPP</a>';
     return shell(esc(SPORT[c.sport].name.toUpperCase()) + ' CREW', body, foot, true);
+  }
+
+
+  // ---- 2.23 on a crew page: the forecast dropped, how was it, go again
+  function sessionEnded(c) { var endH = c.end ? Number(hm(c.end).slice(0, 2)) + (hm(c.end).slice(3) > '00' ? 1 : 0) : Number(hm(c.start).slice(0, 2)) + 3; return c.day < S.today || (c.day === S.today && S.nowH >= endH); }
+  function fxDrop(c, f) {
+    if (c.status !== 'on' || c.past || c.live || !f || f.score >= 4 || sessionEnded(c)) return '';
+    var kite = c.sport === 'kite', nx = nextWindowAt(c.spot, c.sport, null);
+    if (nx && nx.date === c.day && nx.from < Number(hm(c.start).slice(0, 2)) + 3 && nx.to > Number(hm(c.start).slice(0, 2))) nx = null;
+    var line = (kite ? f.w + ' KT ' + FX.compass(f.dir) : (f.ground || '').toUpperCase() + ' · ' + f.temp + '°C') + ' · ' + f.label;
+    return '<div class="fxdrop" role="status"><b>THE FORECAST DROPPED: ' + esc(line) + '</b><p>' +
+      (nx ? 'Next good window here: <b>' + esc(dayRel(nx.date) + ' ' + pad(nx.from) + '–' + pad(nx.to)) + '</b>' + (kite ? ', ' + nx.w + ' kt ' + FX.compass(nx.dir) : '') + ', ' + esc(nx.label) + '.' : 'No good window here in the next days.') +
+      (c.host_is_me ? ' You\'re the captain: move it, or call it off.' : ' The captain decides. If you\'re out, leave the crew below: your seat frees up.') + '</p>' +
+      (c.host_is_me ? '<div class="row">' + (nx ? '<button class="opt" data-act="movecrew" data-date="' + nx.date + '" data-from="' + nx.from + '" data-to="' + nx.to + '">MOVE IT TO ' + esc(dayRel(nx.date)) + ' ' + pad(nx.from) + '–' + pad(nx.to) + '</button>' : '') +
+        '<button class="opt" data-act="leave">' + (S.crew.confirm === 'leave' ? 'TAP AGAIN: CALL IT OFF' : 'CALL IT OFF') + '</button></div>' : '') + '</div>';
+  }
+  function rateBox(c) {
+    if (!c.me || c.status !== 'on' || !sessionEnded(c) || c.day < FX.addDays(S.today, -1)) return '';
+    var kite = c.sport === 'kite', me = (c.members || []).filter(function (m) { return m.me; })[0], mine = me ? (c.reports || []).filter(function (r) { return r.name === me.name; })[0] : null;
+    var nx = nextWindowAt(c.spot, c.sport, null);
+    var again = nx ? '<div class="box"><h3>GO AGAIN <span class="tag ' + FX.tone(nx.score) + '">' + esc(nx.label) + '</span></h3><p class="hint" style="margin:0 0 8px">The next good window at ' + esc(c.spot_name) + ': <b>' + esc(dayRel(nx.date) + ' ' + pad(nx.from) + '–' + pad(nx.to)) + '</b>' + (kite ? ', ' + nx.w + ' kt ' + FX.compass(nx.dir) : '') + '.</p>' +
+      '<button class="big start" data-act="startwin" data-spot="' + esc(c.spot) + '" data-date="' + nx.date + '" data-from="' + nx.from + '" data-to="' + nx.to + '" style="width:100%">START IT · SAME SPOT</button></div>' : '';
+    var size = kite ? '<div class="row" style="margin-top:8px">' + [7, 9, 10, 12, 14].map(function (k) { return '<button class="opt sm" data-act="rkite" data-v="' + k + '" aria-pressed="' + (S.crew.rkite === k) + '">' + k + ' M</button>'; }).join('') + '</div>' : '';
+    var btns = '<div class="row">' + [['on', 'ON', 'it worked'], ['meh', 'MEH', 'so-so'], ['off', 'OFF', 'it didn\'t']].map(function (v) { return '<button class="opt" data-act="report" data-v="' + v[0] + '" aria-pressed="' + !!(mine && mine.verdict === v[0]) + '">' + v[1] + '<small>' + v[2] + '</small></button>'; }).join('') + '</div>';
+    if (mine) return '<div class="box" id="rateBox"><h3>HOW WAS IT? <span class="tag good">STAMPED ✓</span></h3><div class="rated">You said ' + esc(mine.verdict.toUpperCase()) + (mine.kite ? ' on a ' + mine.kite + ' m' : '') + '. It\'s on your rider card' + (S.card ? ': ' + S.card.sessions + ' session' + (S.card.sessions === 1 ? '' : 's') + ' so far' : '') + '.</div><p class="hint">Changed your mind? Tap another one.</p>' + btns + '</div>' + again;
+    return '<div class="box" id="rateBox"><h3>HOW WAS IT?</h3><p class="hint" style="margin:0 0 8px">One tap. It goes on your rider card, and the next crew at ' + esc(c.spot_name) + ' sees it.</p>' + btns + size + '</div>' + again;
   }
 
   // ---- A SPOT: the forecast table, crews there, reports
@@ -1257,11 +1302,16 @@
         T.push(tr('WIND KT · ' + mname, function (r) { return cell(r, Math.round(r.w), windCell(r.w)); }));
         T.push(tr('GUSTS', function (r) { return cell(r, Math.round(r.g), windCell(r.g)); }));
         T.push(tr('DIRECTION', function (r) { return cell(r, arrow(r.dir) + '<span class="sr">' + FX.compass(r.dir) + '</span>'); }));
+        T.push(tr('SHORE', function (r) { var sh = spot.lake ? 'lagoon' : FX.shore(spot.face, r.dir), ok = spot.lake || spot.good_from == null || FX.inRange(r.dir, spot.good_from, spot.good_to);
+          var lab = { onshore: 'ON', 'cross-on': 'X-ON', 'side-shore': 'SIDE', 'cross-off': 'X-OFF', offshore: 'OFF', lagoon: 'FLAT' }[sh] || '';
+          var col = sh === 'offshore' || !ok ? 'no' : sh === 'cross-off' ? 'ok' : sh === 'onshore' ? 'ok' : 'good';
+          return cell(r, '<span class="shr">' + lab + '</span>', 'background:var(--' + col + ')'); }, 'shore'));
         ['ecmwf_ifs025', 'icon_seamless', 'gfs_seamless'].forEach(function (m) {
           if (rows.some(function (r) { return r.m && r.m[m]; })) T.push(tr(FX.MODEL_NAME[m], function (r) { var x = r.m && r.m[m]; return cell(r, x ? Math.round(x.w) : '', x ? windCell(x.w) + ';opacity:.8' : ''); }));
         });
         T.push(tr('<button class="kgth" data-act="kg">KITE M · ' + kg() + ' KG ✎</button>', function (r) { var k = FX.kiteSize(r.w, kg()); return cell(r, k || ''); }));
         if (rows.some(function (r) { return r.wv != null; })) T.push(tr('WAVES M', function (r) { return cell(r, r.wv != null ? r.wv.toFixed(1) : ''); }));
+        if (!spot.lake && rows.some(function (r) { return r.tide != null; })) T.push(tr('TIDE M', function (r) { return cell(r, r.tide != null ? (r.tide > 0 ? '+' : '') + r.tide.toFixed(1) : ''); }));
       } else {
         T.push(tr('GROUND', function (r) { return cell(r, r.rate && r.rate.ground ? r.rate.ground.slice(0, 5).toUpperCase() : ''); }));
         T.push(tr('RAIN 24H MM', function (r) { return cell(r, r.r24 != null ? r.r24 : ''); }));
@@ -1272,13 +1322,13 @@
       T.push(tr('RATING', function (r) { var t = r.rate ? FX.tone(r.rate.s) : 'none'; return cell(r, r.rate ? (r.rate.dark ? '·' : Math.round(r.rate.s)) : '', 'background:var(--' + (t === 'none' ? 'no' : t) + ')'); }, 'rate'));
       if (sport === 'kite') T.push(tr('KITE M · ' + kg() + ' KG', function (r) { return cell(r, r.rate && r.rate.kite && !r.rate.dark && r.rate.s > 0 ? r.rate.kite : ''); }));
       var ws = FX.windows(sp, date, sport, spot, fxo(sport)), day = sp.days[date] || {};
-      var di = FX.dayInfo(sp, date), ag = FX.agreement(rows.filter(function (r) { return r.rate && !r.rate.dark; }), sport);
+      var di = FX.dayInfo(sp, date), ag = FX.agreement(rows.filter(function (r) { return r.rate && !r.rate.dark; }), sport), tides = sport === 'kite' && !spot.lake ? FX.tides(sp, date) : [];
       var info = di ? '<div class="dinfo">' + [['RAIN', di.pop != null ? di.pop + '%' : '–'], ['CLOUD', di.cloud != null ? di.cloud + '%' : '–'], ['TEMP', di.tmin != null ? (di.tmin === di.tmax ? di.tmax : di.tmin + '-' + di.tmax) + '°' : '–'],
         sport === 'kite' ? ['WAVES', di.wave != null ? di.wave + ' M' + (di.period ? ' · ' + di.period + ' S' : '') : '–'] : ['RAIN TOTAL', di.mm + ' MM'], sport === 'kite' ? ['WATER', di.sst != null ? di.sst + '°C' : '–'] : ['WIND', di.w + ' KT'],
-        ['LIGHT', di.sunrise ? di.sunrise + '-' + di.sunset : '–'], ['MODELS', ag ? ag.n + '/' + ag.of + ' ' + ag.label : '–'], ['SOURCE', FX.sourceFor(S.city, date, S.today)]].map(function (x) { return '<span><small>' + x[0] + '</small>' + esc(x[1]) + '</span>'; }).join('') + '</div>' : '';
+        ['LIGHT', di.sunrise ? di.sunrise + '-' + di.sunset : '–']].concat(tides.length ? [['HIGH TIDE', tides.filter(function (x) { return x.kind === 'high'; }).map(function (x) { return x.t; }).join(' · ') || '–'], ['LOW TIDE', tides.filter(function (x) { return x.kind === 'low'; }).map(function (x) { return x.t; }).join(' · ') || '–']] : []).concat([['MODELS', ag ? ag.n + '/' + ag.of + ' ' + ag.label : '–'], ['SOURCE', FX.sourceFor(S.city, date, S.today)]]).map(function (x) { return '<span><small>' + x[0] + '</small>' + esc(x[1]) + '</span>'; }).join('') + '</div>' : '';
       table = info + '<div class="tbl-wrap"><table class="fx"><caption class="sr">Hourly forecast for ' + esc(spot.name) + '</caption>' + T.join('') + '</table></div>' +
         '<p class="legend2">' + (ws[0] ? 'Best: ' + pad(ws[0].from) + '–' + pad(ws[0].to) + ' · ' + esc(ws[0].label) + (ws[0].why && ws[0].why.length ? ' · ' + esc(ws[0].why.join(', ')) : '') : 'No good window this day.') +
-        (day.sunrise ? ' · Light ' + esc(day.sunrise) + '–' + esc(day.sunset) : '') + '. ' + (sport === 'kite' ? 'Wind in knots. Arrows point where it blows. ' + (spot.lake ? 'Lagoon: any direction works.' : 'This beach faces ' + FX.compass(spot.face) + '.') : 'Rating: rain now, mud from the last 24 h of rain, heat and wind.') + '</p>';
+        (day.sunrise ? ' · Light ' + esc(day.sunrise) + '–' + esc(day.sunset) : '') + '. ' + (sport === 'kite' ? 'Wind in knots. Arrows point where it blows. ' + (spot.lake ? 'Lagoon: any direction works.' : 'This beach faces ' + FX.compass(spot.face) + (spot.good_from != null ? ': it works from ' + FX.compass(spot.good_from) + ' to ' + FX.compass(spot.good_to) + ', and ' + FX.compass((spot.face + 180) % 360) + ' is offshore (no go).' : '.')) + (tides.length ? ' The tide comes from an 8 km sea model: a rough guide, check the local tide table.' : '') : 'Rating: rain now, mud from the last 24 h of rain, heat and wind.') + '</p>';
     }
     var crews = upcoming(sport, 14).filter(function (c) { return c.spot === spot.slug; });
     var reps = S.live ? (S.live.reports || []).filter(function (r) { return r.spot === spot.slug; }) : [];
@@ -1289,9 +1339,12 @@
       (dayCrews.length ? '<div class="sc-k">' + esc(FX.dayName(date, S.today).toUpperCase()) + ' · ' + dayCrews.length + ' CREW' + (dayCrews.length > 1 ? 'S' : '') + ' GOING</div><div class="crews">' + dayCrews.map(crewCard).join('') + '</div>' : '') +
       (bw ? '<button class="big start" data-act="startwin" data-spot="' + esc(spot.slug) + '" data-sport="' + esc(sport) + '" data-date="' + date + '" data-from="' + bw.from + '" data-to="' + bw.to + '">' + (dayCrews.length ? 'OR START YOUR OWN · ' : 'START A CREW · ') + esc(FX.dayName(date, S.today).toUpperCase()) + ' ' + pad(bw.from) + '–' + pad(bw.to) + '<small>' + esc(bw.label) + (sport === 'kite' && bw.w ? ' · ' + Math.round(bw.w) + ' KT' : '') + ' · THE BEST WINDOW THAT DAY</small></button>'
         : (!dayCrews.length ? '<p class="hint" style="padding:0 0 4px">No good window ' + esc(FX.dayName(date, S.today).toLowerCase()) + '. Try another day.</p>' : '')) +
-      '<button class="favbtn" data-act="fav" data-spot="' + esc(spot.slug) + '" aria-pressed="' + fav + '">' + (fav ? '★ YOUR SPOT' : '☆ SAVE AS YOUR SPOT') + '</button></div>';
+      '<div class="favrow"><button class="favbtn" data-act="fav" data-spot="' + esc(spot.slug) + '" aria-pressed="' + fav + '">' + (fav ? '★ YOUR SPOT' : '☆ SAVE AS YOUR SPOT') + '</button>' +
+      (function () { var a = signedIn() ? myAlert(sport) : null, inA = a && a.spots.indexOf(spot.slug) >= 0;
+        return '<button class="favbtn" data-act="alerts" data-sport="' + esc(sport) + '"' + (inA ? '' : ' data-spot="' + esc(spot.slug) + '"') + ' aria-pressed="' + !!inA + '">' + (inA ? '🔔 IN YOUR ALERT · EDIT' : '🔔 ALERT ME HERE') + '</button>'; })() + '</div></div>';
     var body = '<div class="hero"><div class="k">' + esc((spot.sports || []).filter(function (k) { return LIVE_SPORTS.indexOf(k) >= 0; }).map(function (k) { return SPORT[k].name.toUpperCase(); }).join(' · ')) + '</div><h2>' + esc(spot.name) + '</h2>' +
-      (spot.note ? '<div class="when2" style="font-weight:400">' + esc(spot.note) + '</div>' : '') + '</div>' +
+      (spot.note ? '<div class="when2" style="font-weight:400">' + esc(spot.note) + '</div>' : '') +
+      (watchN(spot.slug) || (sport === 'kite' && !spot.lake && spot.good_from != null) ? '<div class="when2" style="color:var(--mint);margin-top:6px">' + [sport === 'kite' && !spot.lake && spot.good_from != null ? 'WORKS IN ' + FX.compass(spot.good_from) + ' TO ' + FX.compass(spot.good_to) : sport === 'kite' && spot.lake ? 'ANY WIND DIRECTION' : '', watchN(spot.slug) ? watchN(spot.slug) + ' RIDERS WATCH THIS SPOT' : ''].filter(Boolean).join(' · ') + '</div>' : '') + '</div>' +
       (crews.length ? '<div class="sec"><h2>CREWS HERE <small>' + crews.length + ' COMING UP</small></h2><div class="crews">' + crews.map(crewCard).join('') + '</div></div>' : '') + tabs + call + table +
       (reps.length ? '<div class="box"><h3>REPORTS · LAST HOURS</h3><div class="reports">' + reps.map(function (r) { return '<div class="rep"><span class="tag ' + (r.verdict === 'on' ? 'epic' : r.verdict === 'meh' ? 'ok' : 'no') + '">' + r.verdict.toUpperCase() + '</span><span>' + (r.kite ? 'on a ' + r.kite + ' m' : '') + (r.ground ? esc(r.ground) : '') + '</span><small>' + esc(ago(r.at)) + '</small></div>'; }).join('') + '</div></div>' : '') +
       (S.plans || []).filter(function (p) { return p.spot === spot.slug; }).map(function (p) { return '<div class="f"><button class="opt wide" data-act="plan" data-plan="' + esc(p.slug) + '"><span>PLAN: ' + esc(p.title.toUpperCase()) + '<small>' + esc(p.blurb.split('. ')[0]) + '.</small></span><span class="tag good">' + (p.interested ? p.interested + ' IN' : 'SEE IT') + '</span></button></div>'; }).join('') +
@@ -1427,7 +1480,7 @@
     var body = '<div class="sec" style="display:flex;gap:16px;align-items:center">' + (pl ? '<div class="bigplate"><b>#' + pad3(pl) + '</b><small>' + esc((cityObj(S.city).name || '').toUpperCase()) + '</small></div>' : '') +
       (S.avatar ? '<img class="meav" src="' + esc(HI8.avatarUrl(S.avatar)) + '" alt="Your cartoon" width="72" height="72">' : '') +
       '<div><div style="font:400 30px/1 var(--big)">' + esc(m.name || '') + '</div><div class="hint">' + esc(m.email_hint || '') + (m.captain ? ' · captain' : '') + '</div></div></div>' +
-      cartoonBox() + cardBox() + squadsBox() + walletBox() + passBox() +
+      cartoonBox() + cardBox() + alertsBox() + profileBox() + squadsBox() + walletBox() + passBox() +
       '<div class="box"><h3>EMAIL ME NEW CREWS</h3><div class="row">' + LIVE_SPORTS.map(function (k) {
         var on = al.some(function (a) { return a.city === S.city && a.sport === k; });
         return '<button class="opt" data-act="alert" data-sport="' + k + '" data-on="' + (!on) + '" aria-pressed="' + on + '">' + SPORT[k].name.toUpperCase() + '</button>';
@@ -1438,6 +1491,239 @@
       '<div class="f"><p class="hint">Switching phones? Sign up with the same email there: your plate comes with you. To delete everything, email <a href="mailto:hello@hi8ctane.com">hello@hi8ctane.com</a>.</p>' +
       '<button class="opt" data-act="signout">' + (S.confirmOut ? 'TAP AGAIN: FORGET ME ON THIS PHONE' : 'NOT YOU? FORGET ME ON THIS PHONE') + '</button></div>';
     return shell('ME', body, '');
+  }
+  // ---------------------------------------------------------------- 2.23 ALERTS: your conditions, your spots, on your phone
+  var CFG = window.HI8_CONFIG || {};
+  var PUSH = { sub: null, checked: false, busy: false, saved: false };
+  function isIOS() { return /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); }
+  function isAndroid() { return /Android/i.test(navigator.userAgent); }
+  function standalone() { return (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true; }
+  function inAppBrowser() { return /Instagram|FBAN|FBAV|FB_IAB|Line\/|Snapchat|TikTok|musical_ly|LinkedInApp/i.test(navigator.userAgent); }
+  function pushSupported() { return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window; }
+  // on | off | ios (add to home screen first) | inapp | denied | unsupported | nokey
+  function vkey() { return CFG.vapidKey || (S.settings && S.settings.vapid_public) || ''; }
+  function pushState() {
+    if (!vkey()) return 'nokey';
+    if (inAppBrowser()) return 'inapp';
+    if (isIOS() && !standalone()) return 'ios';
+    if (!pushSupported()) return 'unsupported';
+    if (Notification.permission === 'denied') return 'denied';
+    return PUSH.sub ? 'on' : 'off';
+  }
+  function swReg() { return navigator.serviceWorker.register('sw.js', { scope: './' }); }
+  function pushCheck() {
+    if (!pushSupported()) { PUSH.checked = true; return Promise.resolve(null); }
+    return navigator.serviceWorker.getRegistration('./').then(function (r) { return r ? r.pushManager.getSubscription() : null; })
+      .then(function (s) { PUSH.sub = s; PUSH.checked = true; return s; }, function () { PUSH.checked = true; return null; });
+  }
+  function u8(b64) { var s = atob((b64 + '==='.slice((b64.length + 3) % 4)).replace(/-/g, '+').replace(/_/g, '/')), a = new Uint8Array(s.length); for (var i = 0; i < s.length; i++) a[i] = s.charCodeAt(i); return a; }
+  function pushSave(sub) {
+    var j = sub.toJSON();
+    return HI8.withKey('hi8_push_sub', { p_endpoint: j.endpoint, p_p256dh: j.keys.p256dh, p_auth: j.keys.auth, p_ua: isIOS() ? 'iPhone' : isAndroid() ? 'Android' : 'Computer' }, { noQueue: true })
+      .then(function (r) { PUSH.saved = true; return r; });
+  }
+  function pushOn() {
+    if (!signedIn()) { toast('First set an alert (it asks your email), then turn on push.', 5000); go('#alerts'); return; }
+    if (PUSH.busy) return;
+    PUSH.busy = true; renderSheet();
+    Notification.requestPermission().then(function (p) {
+      if (p !== 'granted') throw new Error(p === 'denied' ? 'denied' : 'dismissed');
+      return swReg();
+    }).then(function () { return navigator.serviceWorker.ready; }).then(function (reg) {
+      return reg.pushManager.getSubscription().then(function (s) { return s || reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: u8(vkey()) }); });
+    }).then(function (sub) { PUSH.sub = sub; return pushSave(sub); }).then(function () {
+      PUSH.busy = false; drawSessions(); renderSheet(); toast('Push is on for this phone. Send yourself a test to see one.', 5000);
+    }, function (e) {
+      PUSH.busy = false; renderSheet();
+      toast(e && e.message === 'denied' ? 'Blocked on this phone: the steps to allow it are on this page.' : e && e.message === 'dismissed' ? 'Nothing changed: tap again and choose Allow.' : 'Push didn\'t turn on here: ' + esc(errText(e)), 6000);
+    });
+  }
+  function pushOff() {
+    var s = PUSH.sub; PUSH.sub = null; renderSheet(); drawSessions(); if (!s) return;
+    var ep = s.endpoint; s.unsubscribe().catch(noop);
+    if (signedIn()) HI8.withKey('hi8_push_unsub', { p_endpoint: ep }, { noQueue: true }).catch(noop);
+    toast('Push is off on this phone. Your alerts come by email if you ticked it.', 5000);
+  }
+  function pushTest() {
+    navigator.serviceWorker.ready.then(function (reg) {
+      return reg.showNotification('Hi8ctane · test', { body: 'This is how an alert shows up: the spot, the hours, the wind, and who\'s going.', icon: 'icon-192.png', badge: 'badge-72.png', tag: 'test', data: { url: location.origin + location.pathname + '#alerts' } });
+    }).then(function () { toast('Sent. Look at the top of your screen (or your lock screen).'); }, function () { toast('The test didn\'t show: check notifications are allowed for this site.'); });
+  }
+
+  var HOURS = { all: [8, 20, 'ALL DAY', '08–20'], morning: [7, 13, 'MORNINGS', '07–13'], afternoon: [12, 19, 'AFTERNOONS', '12–19'], evening: [17, 21, 'AFTER WORK', '17–21'] };
+  function windy(k) { return k === 'kite' || k === 'wing' || k === 'windsurf'; }
+  function myAlert(sport) { return (S.walerts || []).filter(function (a) { return a.city === S.city && a.sport === sport; })[0] || null; }
+  function loadAlerts() {
+    if (!HI8.live || !signedIn()) return Promise.resolve();
+    return HI8.withKey('hi8_wind_alerts', {}, { noQueue: true }).then(function (r) { S.walerts = r.alerts || []; drawSessions(); if (S.view === 'alerts' || S.view === 'me' || S.view === 'spot') renderSheet(); }, noop);
+  }
+  function hoursKey(a) { var k = Object.keys(HOURS).filter(function (x) { return HOURS[x][0] === a.from_h && HOURS[x][1] === a.to_h; })[0]; return k || 'all'; }
+  function nearSpots(sport) { return spotsFor(S.city, sport).map(function (s) { return { s: s, m: driveFromMe(s) || 999 }; }).sort(function (a, b) { return a.m - b.m; }).map(function (x) { return x.s; }); }
+  function newAlert(sport, spot) {
+    var a = myAlert(sport);
+    var favs = favList().filter(function (sl) { var x = HI8.spot(sl); return x && x.city === S.city && (x.sports || []).indexOf(sport) >= 0; });
+    if (a) S.al = Object.assign({}, a, { spots: a.spots.slice(), saved: true });
+    else S.al = { sport: sport, spots: favs.length ? favs : nearSpots(sport).slice(0, 2).map(function (s) { return s.slug; }), min_kt: windy(sport) ? 15 : null, max_kt: windy(sport) ? 30 : null,
+      gust_max: windy(sport) ? 35 : null, days: 'any', from_h: 8, to_h: 20, min_hours: 2, min_score: 6, by_push: true, by_email: true, saved: false };
+    if (spot && S.al.spots.indexOf(spot) < 0) { S.al.spots.push(spot); S.al.saved = false; }
+    S.al.err = null; S.al.busy = false;
+  }
+  // what these settings would have sent this week (the same check the alert worker runs)
+  function alertPreview(al) {
+    if (!FX.data[S.city]) return null;
+    var out = [];
+    for (var i = 0; i < 7; i++) {
+      var d = FX.addDays(S.today, i), best = null;
+      al.spots.forEach(function (slug) {
+        var sp = HI8.spot(slug), fs = fxSpot(slug); if (!sp || !fs) return;
+        var ws = FX.alertWindows(fs, d, al.sport, sp, al, { kg: kg() });
+        if (i === 0) ws = ws.filter(function (x) { return x.to - Math.max(x.from, S.nowH + 1) >= (al.min_hours || 2); });
+        if (ws[0] && (!best || ws[0].score * Math.sqrt(ws[0].hours) > best.score * Math.sqrt(best.hours))) best = Object.assign({ spot: sp }, ws[0]);
+      });
+      if (best) out.push(best);
+    }
+    return out;
+  }
+  function alertLine(a) {
+    var names = a.spots.map(function (s) { return (HI8.spot(s) || { name: s }).name; });
+    return (names.length > 2 ? names.slice(0, 2).join(', ') + ' +' + (names.length - 2) : names.join(', ')) + ' · ' +
+      (windy(a.sport) ? (a.min_kt != null ? a.min_kt : 10) + (a.max_kt != null ? '–' + a.max_kt : '+') + ' kt' : a.min_score >= 9 ? 'epic only' : 'good or better') +
+      (a.days !== 'any' ? ' · ' + a.days + 's' : '') + ' · ' + pad(a.from_h) + '–' + pad(a.to_h);
+  }
+  function alertCta() {
+    var a = signedIn() ? myAlert(S.sport) : null, st = pushState();
+    if (a) return '<button class="alcta on" data-act="alerts"><span class="bell">' + BELL + '</span><span><b>ALERT ON · ' + esc(SPORT[S.sport].name.toUpperCase()) + '</b><small>' + esc(alertLine(a)) + ' · ' + (a.by_push && st === 'on' ? 'PUSH' : '') + (a.by_push && st === 'on' && a.by_email ? ' + ' : '') + (a.by_email || !(a.by_push && st === 'on') ? 'EMAIL' : '') + '</small></span><i>EDIT</i></button>';
+    return '<button class="alcta" data-act="alerts"><span class="bell">' + BELL + '</span><span><b>TELL ME WHEN IT\'S ON</b><small>Your ' + (windy(S.sport) ? 'wind' : 'conditions') + ', your spots, your hours. One message: the evening before or that morning.</small></span><i>SET IT</i></button>';
+  }
+  var BELL = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.4" stroke-linejoin="round" aria-hidden="true"><path d="M6 17V11a6 6 0 0 1 12 0v6l2 2H4z"/><path d="M10 21h4" stroke-linecap="round"/></svg>';
+  function sheetAlerts() {
+    if (!S.al) newAlert(S.sport);
+    var al = S.al, sp = al.sport, W = windy(sp), spots = nearSpots(sp), st = pushState(), mine = myAlert(sp);
+    var chip = function (act, v, label, on, sub) { return '<button class="opt" data-act="' + act + '" data-v="' + v + '" aria-pressed="' + on + '">' + label + (sub ? '<small>' + sub + '</small>' : '') + '</button>'; };
+    var f = function (lb, html, sub) { return '<div class="f"><span class="lb">' + lb + (sub ? ' <small>' + sub + '</small>' : '') + '</span>' + html + '</div>'; };
+    var head = '<div class="hero"><div class="k">' + BELL.replace('#111', '#8DF5E8') + ' WHEN IT\'S ON, YOU KNOW</div><h2>Your conditions. Your spots.</h2><div class="when2" style="font-weight:400">One message a day at most per sport: the evening before (18–22h) or that morning. Checked against the forecast every 10 minutes.</div></div>';
+    var tabs = '<div class="tabs" role="group" aria-label="Sport">' + LIVE_SPORTS.map(function (k) { return '<button class="tab" data-act="alsport" data-sport="' + k + '" aria-pressed="' + (k === sp) + '">' + esc(SPORT[k].name.toUpperCase()) + (myAlert(k) ? ' ●' : '') + '</button>'; }).join('') + '</div>';
+    var pSpots = f('SPOTS', '<div class="row">' + spots.map(function (s) {
+      var m = driveFromMe(s), dir = W ? (s.lake ? 'any direction' : s.good_from != null ? FX.compass(s.good_from) + ' to ' + FX.compass(s.good_to) : '') : '';
+      return chip('alspot', s.slug, esc(s.name.toUpperCase()), al.spots.indexOf(s.slug) >= 0, (m ? m + ' MIN' : '') + (m && dir ? ' · ' : '') + dir);
+    }).join('') + '</div>', W ? 'the wind direction is checked for each one' : '');
+    var pCond = W ? f('WIND FROM', '<div class="row">' + [12, 15, 18, 20, 25].map(function (k) { return chip('almin', k, k + ' KT', al.min_kt === k); }).join('') + '</div>') +
+        f('UP TO', '<div class="row">' + [25, 30, 35].map(function (k) { return chip('almax', k, k + ' KT', al.max_kt === k); }).join('') + chip('almax', '', 'NO LIMIT', al.max_kt == null) + '</div>') +
+        f('GUSTS UP TO', '<div class="row">' + [30, 35, 40].map(function (k) { return chip('algust', k, k + ' KT', al.gust_max === k); }).join('') + chip('algust', '', 'ANY', al.gust_max == null) + '</div>',
+          al.min_kt != null && FX.kiteSize(al.min_kt, kg()) ? 'at ' + al.min_kt + ' kt you\'re on ' + (/^(8|11|18)$/.test(String(FX.kiteSize(al.min_kt, kg()))) ? 'an ' : 'a ') + FX.kiteSize(al.min_kt, kg()) + ' m (' + kg() + ' kg)' : '')
+      : f('RATED AT LEAST', '<div class="row">' + chip('alscore', 6, 'GOOD', al.min_score < 9, sp === 'mtb' ? 'dry enough, not too hot' : 'a good day on the track') + chip('alscore', 9, 'EPIC', al.min_score >= 9, sp === 'mx' ? 'tacky: hero dirt' : 'dry, 10-24°C') + '</div>');
+    var pDays = f('DAYS', '<div class="row">' + [['any', 'ANY DAY'], ['weekend', 'WEEKENDS'], ['weekday', 'WEEKDAYS']].map(function (x) { return chip('aldays', x[0], x[1], al.days === x[0]); }).join('') + '</div>');
+    var hk = hoursKey(al);
+    var pHours = f('HOURS', '<div class="row">' + Object.keys(HOURS).map(function (k) { return chip('alhours', k, HOURS[k][2], hk === k, HOURS[k][3]); }).join('') + '</div>');
+    var pLen = f('FOR AT LEAST', '<div class="row">' + [1, 2, 3, 4].map(function (k) { return chip('allen', k, k + (k === 1 ? ' HOUR' : ' HOURS'), al.min_hours === k); }).join('') + '</div>');
+    var P = alertPreview(al), prev;
+    if (!P) prev = '<div class="box alprev"><h3>THIS WEEK</h3><p class="hint" style="margin:0"><span class="spin"></span> Loading the forecast…</p></div>';
+    else prev = '<div class="box alprev"><h3>THIS WEEK YOU\'D GET <span class="tag ' + (P.length ? 'good' : 'none') + '">' + P.length + ' ALERT' + (P.length === 1 ? '' : 'S') + '</span></h3>' +
+      (P.length ? P.map(function (w) {
+        return '<button class="alrow" data-act="spotat" data-spot="' + w.spot.slug + '" data-date="' + w.date + '"><b>' + esc(dayRel(w.date)) + '</b><span>' + esc(w.spot.name) + ' · ' + pad(w.from) + '–' + pad(w.to) + '</span><em>' +
+          esc(W ? (w.wmin === w.wmax ? w.w : w.wmin + '–' + w.wmax) + ' KT ' + FX.compass(w.dir) : w.label + (w.ground ? ' · ' + w.ground.toUpperCase() : '')) + '</em></button>';
+      }).join('') : '<p class="hint" style="margin:0">Nothing this week with these settings' + (W && al.min_kt > 12 ? ': a lower minimum would catch more.' : '.') + ' The alert still waits for the day it\'s on.</p>') +
+      '<p class="hint">From the forecast right now. It changes: the alert goes out on the forecast of the evening before or that morning.</p></div>';
+    var pushTxt = { on: 'ON ON THIS PHONE ✓', off: 'NOT SET UP ON THIS PHONE YET', ios: 'IPHONE: ADD TO HOME SCREEN FIRST', inapp: 'OPEN IN SAFARI OR CHROME FIRST', denied: 'BLOCKED ON THIS PHONE', unsupported: 'THIS BROWSER CAN\'T', nokey: 'COMING SOON' }[st];
+    var pHow = f('HOW YOU HEAR IT', '<div class="row">' + chip('alpush', '', 'PUSH', al.by_push, pushTxt) + chip('almail', '', 'EMAIL', al.by_email, 'with a stop link in every one') + '</div>' +
+      (al.by_push && st !== 'on' ? '<button class="pushset" data-act="pushguide"><b>' + (st === 'off' ? 'TURN ON PUSH: ONE TAP →' : st === 'ios' ? 'HOW TO GET PUSH ON IPHONE (1 MIN) →' : st === 'denied' ? 'HOW TO ALLOW IT AGAIN →' : 'HOW PUSH WORKS →') + '</b><small>' +
+        (st === 'nokey' || st === 'unsupported' || st === 'inapp' ? 'Until then, it comes by email.' : 'Until it\'s on, the alert comes by email.') + '</small></button>' : ''));
+    var pYou = signedIn() ? '' : f('YOUR EMAIL', '<label class="sr" for="alEmail">Email</label><input class="inp" id="alEmail" type="email" inputmode="email" autocomplete="email" placeholder="you@email.com"><p class="hint">Your founding plate comes with it. Only the app sees your email.</p>');
+    var body = head + tabs + pSpots + pCond + pDays + pHours + pLen + prev + pHow + pYou +
+      (al.err ? '<div class="err" role="alert">' + al.err + '</div>' : '') +
+      (mine ? '<div class="f"><button class="lnk" data-act="aloff">TURN OFF MY ' + esc(SPORT[sp].name.toUpperCase()) + ' ALERT</button></div>' : '');
+    var foot = '<button class="big start" data-act="alsave"' + (al.busy || (al.saved && mine) ? ' disabled' : '') + '>' + (al.busy ? '<span class="spin"></span>' : al.saved && mine ? 'SAVED ✓' : mine ? 'SAVE CHANGES' : 'SET MY ALERT') + '</button>';
+    return shell('ALERTS', body, foot, true);
+  }
+  function alertSave() {
+    var al = S.al; if (!al || al.busy) return;
+    if (!al.spots.length) { al.err = 'Pick at least one spot.'; renderSheet(); return; }
+    if (!al.by_push && !al.by_email) { al.err = 'Pick push, email or both.'; renderSheet(); return; }
+    var rule = { spots: al.spots, min_kt: al.min_kt, max_kt: al.max_kt, gust_max: al.gust_max, days: al.days, from_h: al.from_h, to_h: al.to_h, min_hours: al.min_hours, min_score: al.min_score, by_push: al.by_push, by_email: al.by_email };
+    var ready;
+    if (signedIn()) ready = Promise.resolve();
+    else {
+      var em = (($('#alEmail') || {}).value || '').trim();
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) { al.err = "Add your email: that's where alerts go until push is on."; renderSheet(); return; }
+      ready = HI8.rpc('hi8_alert_signup', { p_email: em, p_city: S.city, p_sport: al.sport, p_source: src().source || 'alert', p_ref: src().ref || null }).then(function (out) { HI8.saveMe(out); al.plate = out.plate; drawTop(); HI8.loadMine(true).catch(noop); });
+    }
+    al.busy = true; al.err = null; renderSheet();
+    ready.then(function () { return HI8.withKey('hi8_wind_alert', { p_city: S.city, p_sport: al.sport, p_rule: rule, p_on: true }, { noQueue: true }); }).then(function (r) {
+      S.walerts = r.alerts || []; al.busy = false; al.saved = true; drawSessions(); renderSheet();
+      if (PUSH.sub && !PUSH.saved) pushSave(PUSH.sub).catch(noop);
+      var st = pushState();
+      toast((al.plate ? 'Founding plate #' + pad3(al.plate) + ' is yours. ' : '') + (al.by_push && st !== 'on' ? 'Saved. Push isn\'t on for this phone yet: until it is, the alert comes by email.' : 'Saved. You hear it the evening before or that morning.'), 6000); al.plate = null;
+    }, function (e) { al.busy = false; al.err = errText(e); renderSheet(); });
+  }
+  var SHARE_I = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0A6CFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-label="the Share icon"><path d="M12 3v12M7.5 7.5 12 3l4.5 4.5"/><path d="M8.5 10H6.5a1.5 1.5 0 0 0-1.5 1.5v8A1.5 1.5 0 0 0 6.5 21h11a1.5 1.5 0 0 0 1.5-1.5v-8a1.5 1.5 0 0 0-1.5-1.5h-2"/></svg>';
+  var ADD_I = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.2" stroke-linecap="round" aria-label="the Add icon"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="M12 8.5v7M8.5 12h7"/></svg>';
+  function steps(list) { return '<ol class="psteps">' + list.map(function (x, i) { return '<li><b>' + (i + 1) + '</b><span>' + x + '</span></li>'; }).join('') + '</ol>'; }
+  function sheetPush() {
+    var st = pushState(), body, foot = '';
+    var head = '<div class="hero"><div class="k">' + BELL.replace('#111', '#8DF5E8') + ' PUSH · NO APP NEEDED</div><h2>Alerts on your phone</h2>' +
+      '<div class="when2" style="font-weight:400">A message on your lock screen, like a text, from hi8ctane.com. You get one when your alert hits or when a crew you\'re in changes. Nothing from the app store.</div></div>';
+    var state = { on: ['good', 'ON FOR THIS PHONE'], off: ['ok', 'ONE TAP AWAY'], ios: ['ok', 'IPHONE: 3 STEPS'], inapp: ['no', 'OPEN IN YOUR BROWSER FIRST'], denied: ['no', 'BLOCKED: 4 TAPS TO FIX'], unsupported: ['no', 'NOT IN THIS BROWSER'], nokey: ['none', 'COMING SOON'] }[st];
+    var how;
+    if (st === 'on') {
+      how = '<p class="hint" style="margin:0 0 10px">It\'s set. Send yourself a test to see how an alert looks.</p><div style="display:grid;gap:8px"><button class="big ghost" data-act="pushtest">SEND ME A TEST</button><button class="opt" data-act="pushoff">TURN PUSH OFF ON THIS PHONE</button></div>';
+    } else if (st === 'off') {
+      how = steps(['Tap <b>TURN ON PUSH</b> below.', 'Your ' + (isIOS() ? 'iPhone' : isAndroid() ? 'phone' : 'browser') + ' asks if hi8ctane.com may send notifications: tap <b>Allow</b>.', 'Done. Send yourself a test to see one.']) +
+        (signedIn() ? '' : '<p class="hint">First set an alert: it asks your email, so we know whose phone this is.</p>');
+      foot = signedIn() ? '<button class="big start" data-act="pushon"' + (PUSH.busy ? ' disabled' : '') + '>' + (PUSH.busy ? '<span class="spin"></span>' : 'TURN ON PUSH') + '</button>' : '<button class="big start" data-act="alerts">SET AN ALERT FIRST</button>';
+    } else if (st === 'ios') {
+      how = steps(['In <b>Safari</b>, tap <b>Share</b> ' + SHARE_I + '. Don\'t see it? Tap <b>⋯</b> next to the address first.', 'Scroll down, tap <b>Add to Home Screen</b> ' + ADD_I + ', then <b>Add</b>.', 'Open <b>Hi8ctane</b> from your home screen, set your alert there (just your email) and tap <b>TURN ON PUSH</b>. Then tap <b>Allow</b>.']) +
+        '<p class="hint">Why: on iPhone, only sites on your home screen may send notifications (iOS 16.4 or newer: Settings › General › About › iOS Version). It opens full screen, like an app. Your alerts by email keep working meanwhile.</p>';
+      foot = '<button class="big ghost" data-act="copy" data-text="https://hi8ctane.com/">COPY THE LINK FOR SAFARI</button>';
+    } else if (st === 'inapp') {
+      how = steps(['Tap <b>⋯</b> or <b>⋮</b> (top right of this screen).', 'Choose <b>Open in browser</b> (or Open in Safari / Chrome).', 'Come back to Alerts there and turn on push.']) + '<p class="hint">Apps like Instagram open links in their own browser, and that one can\'t keep notifications.</p>';
+      foot = '<button class="big ghost" data-act="copy" data-text="https://hi8ctane.com/#alerts">COPY THE LINK</button>';
+    } else if (st === 'denied') {
+      how = isIOS() ? steps(['Open <b>Settings</b> on your iPhone.', 'Tap <b>Notifications</b>, then <b>Hi8ctane</b>.', 'Switch on <b>Allow Notifications</b>.', 'Come back here and tap TURN ON PUSH.'])
+        : isAndroid() ? steps(['In Chrome, tap <b>⋮</b> › <b>Settings</b> › <b>Site settings</b> › <b>Notifications</b>.', 'Find <b>hi8ctane.com</b> under Blocked and tap it.', 'Choose <b>Allow</b>.', 'Come back here and tap TURN ON PUSH.'])
+        : steps(['Click the icon left of the address (the lock or the sliders).', 'Find <b>Notifications</b> and set it to <b>Allow</b>.', 'Reload this page.', 'Tap TURN ON PUSH.']);
+      foot = '<button class="big start" data-act="pushon">TURN ON PUSH</button>';
+    } else if (st === 'unsupported') {
+      how = '<p class="hint" style="margin:0">This browser can\'t do push. On a phone, open hi8ctane.com in ' + (isAndroid() ? 'Chrome' : 'Safari (iPhone) or Chrome (Android)') + '. Your alerts by email work the same, with a stop link in each one.</p>';
+    } else how = '<p class="hint" style="margin:0">Push is almost ready on our side. Until then your alerts come by email, with a stop link in each one.</p>';
+    body = head + '<div class="box"><h3>ON THIS PHONE <span class="tag ' + state[0] + '">' + state[1] + '</span></h3>' + how + '</div>' +
+      '<div class="box"><h3>FAIR QUESTIONS</h3><div class="faq"><b>How many?</b><span>At most one wind alert a day per sport. Crew messages only for crews you\'re in.</span>' +
+      '<b>Battery, data?</b><span>Nothing runs on your phone. It arrives like a text.</span><b>Stop it?</b><span>Here, in your phone\'s settings, or with the stop link in any email.</span>' +
+      '<b>Who sees my phone?</b><span>Nobody. We keep an address your browser gives us for this site, nothing else.</span></div></div>' +
+      '<div class="f"><button class="lnk" data-act="alerts">← MY ALERTS</button></div>';
+    return shell('PUSH', body, foot, true);
+  }
+
+  // ---------------------------------------------------------------- 2.23 trust: your rider profile, the crew's people
+  function loadPeople() {
+    var C = S.crew; if (!C || !C.data || !C.data.me || !HI8.live) return;
+    HI8.withKey('hi8_crew_people', { p_code: C.code }, { noQueue: true }).then(function (p) { if (S.crew === C) { C.people = p; renderSheet(); } }, noop);
+  }
+  function personOf(m) { var P = (S.crew && S.crew.people) || []; return P.filter(function (x) { return x.member_id === m.member_id; })[0] || null; }
+  function profileBox() {
+    var p = S.prof; if (!p) { if (HI8.live && signedIn() && !S.profLoading) { S.profLoading = true; HI8.withKey('hi8_rider_profile', {}, { noQueue: true }).then(function (r) { S.prof = r || {}; S.profLoading = false; if (S.view === 'me') renderSheet(); }, function () { S.profLoading = false; }); } return ''; }
+    var spots = HI8.spotsOf(S.city).filter(function (s) { return (s.sports || []).some(function (k) { return LIVE_SPORTS.indexOf(k) >= 0; }); });
+    return '<div class="box"><h3>YOUR RIDER PROFILE <span class="tag">' + (p.rode || 0) + ' SESSION' + (p.rode === 1 ? '' : 'S') + ' RIDDEN</span></h3><p class="hint" style="margin:0 0 8px">What your crews see next to your name. All optional.</p>' +
+      '<div class="two"><label><span class="lb">YEARS RIDING</span><input class="inp" id="prYears" type="number" inputmode="numeric" min="0" max="60" value="' + (p.years != null ? p.years : '') + '" placeholder="e.g. 4"></label>' +
+      '<label><span class="lb">HOME SPOT</span><select class="inp" id="prHome"><option value="">–</option>' + spots.map(function (s) { return '<option value="' + s.slug + '"' + (p.home_spot === s.slug ? ' selected' : '') + '>' + esc(s.name) + '</option>'; }).join('') + '</select></label></div>' +
+      '<label><span class="lb" style="margin-top:8px">INSTAGRAM</span><input class="inp" id="prInsta" autocapitalize="off" autocomplete="off" maxlength="40" value="' + esc(p.insta ? '@' + p.insta : '') + '" placeholder="@yourname"></label>' +
+      '<button class="big dark" data-act="profsave" style="width:100%;margin-top:10px;font-size:17px">SAVE</button></div>';
+  }
+  function alertsBox() {
+    var A = (S.walerts || []).filter(function (a) { return a.city === S.city; }), st = pushState();
+    return '<div class="box"><h3>YOUR ALERTS <span class="tag ' + (st === 'on' ? 'good' : 'none') + '">PUSH ' + (st === 'on' ? 'ON' : 'OFF') + '</span></h3>' +
+      (A.length ? '<div class="row">' + A.map(function (a) { return '<button class="opt wide" data-act="alerts" data-sport="' + a.sport + '"><span>' + esc(SPORT[a.sport].name.toUpperCase()) + '<small>' + esc(alertLine(a)) + '</small></span><span class="tag good">EDIT</span></button>'; }).join('') + '</div>'
+        : '<p class="hint" style="margin:0 0 8px">None yet: tell us your wind and your spots, we tell you when it\'s on.</p>') +
+      '<div class="row" style="margin-top:8px"><button class="opt" data-act="alerts">' + (A.length ? '+ ANOTHER SPORT' : 'SET AN ALERT') + '</button><button class="opt" data-act="pushguide">PUSH ON THIS PHONE</button></div></div>';
+  }
+  // the next good window at this crew's spot, after the session (for "go again")
+  function nextWindowAt(spotSlug, sport, fromDate) {
+    var sp = HI8.spot(spotSlug), fs = fxSpot(spotSlug); if (!sp || !fs) return null;
+    for (var i = 0; i < 7; i++) {
+      var d = FX.addDays(S.today, i); if (fromDate && d < fromDate) continue;
+      var w = FX.windows(fs, d, sport, sp, fxo(sport)).filter(function (x) { return x.score >= 6 && (d !== S.today || x.from >= S.nowH + 1); })[0]; // today: only what's still ahead
+      if (w) return w;
+    }
+    return null;
   }
   // ---- YOUR CARTOON (2.18): a selfie, drawn as a surf-mag cartoon by an image AI; only the cartoon is kept
   var CT = { step: 'idle', photo: null, consent: false, err: '', left: null };
@@ -1650,6 +1936,7 @@
   }
   function joinGo() {
     if (S.jf && S.jf.getting) HI8.store.set('getting', S.jf.getting);
+    if (S.jf && S.jf.getting === 'drive') HI8.store.set('seats', S.jf.seats);
     var C = S.crew, c = C.data, f = S.jf;
     if (f.busy) return;
     var email = ($('#jfEmail') || {}).value, name = ($('#jfName') || {}).value;
@@ -1669,11 +1956,14 @@
       var was = !!c.me; f.busy = false; S.jf = null; C.data = d; S.me = HI8.me(); drawTop();
       HI8.loadCrews(true).catch(noop); HI8.loadMine(true).catch(noop); loadLive();
       startChat(); renderSheet(); if (home()) loadPlan(true);
-      if (!was) {
+      if (!was && f.quick) {
+        var how = f.getting === 'drive' ? 'you drive, ' + f.seats + ' seat' + (f.seats > 1 ? 's' : '') + ' free' : f.getting === 'seat' ? (d.me && d.me.car_with ? 'you have a seat' : 'you\'re on the list for a seat') : 'you meet there';
+        toast("You're in: " + how + '. <button class="opt" data-act="jfopen" style="margin-left:8px">CHANGE</button>', 8000);
+      } else if (!was) {
         var al = (HI8.mine && HI8.mine.alerts) || [];
         toast("You're in" + (d.plate ? ': founding plate #' + pad3(d.plate) : '') + '.' + (al.some(function (a) { return a.sport === c.sport; }) ? '' : ' <button class="opt" data-act="alert" data-sport="' + c.sport + '" data-on="true" style="margin-left:8px">EMAIL ME NEW ' + esc(SPORT[c.sport].name.toUpperCase()) + ' CREWS</button>'), 7000);
       } else toast('Saved.');
-    }, function (e) { f.busy = false; f.err = errText(e); renderSheet(); });
+    }, function (e) { f.busy = false; f.quick = false; f.err = errText(e); renderSheet(); });
   }
   function startPost() {
     var f = S.sf; if (f.busy) return;
@@ -1710,6 +2000,7 @@
         .then(function (out) { HI8.saveMe(out); return out; });
     });
     f.busy = true; f.dup = null; renderSheet();
+    if (f.min) p = p.then(function (c) { return HI8.withKey('hi8_crew_min', { p_code: c.code, p_min: f.min }, { noQueue: true }).then(function (c2) { return Object.assign({}, c, c2); }, function () { return c; }); });
     p.then(function (c) {
       HI8.loadPlaces && HI8.loadPlaces(true).then(function () { drawTowns(); }, noop);
       f.busy = false; f.done = c; f.force = false; drawTop();
@@ -1763,6 +2054,7 @@
       case 'allsess': S.allSess = true; drawSessions(); break;
       case 'top': { var sc = $('#sessions'); if (sc) sc.scrollIntoView({ behavior: 'smooth', block: 'start' }); var pn = $('#panel'); if (pn && pn.scrollHeight > pn.clientHeight) pn.scrollTo({ top: 0, behavior: 'smooth' }); break; }
       case 'sffull': S.sf.quick = false; if (!S.sf.getting) S.sf.getting = 'drive'; renderSheet(); break;
+      case 'sfmin': S.sf.min = Number(d.v) || null; renderSheet(); break;
       case 'sfnote': S.sf.noteOpen = true; renderSheet(); setTimeout(function () { var n = $('#sfNote'); if (n) n.focus(); }, 30); break;
       case 'startspot': if (d.sport !== S.sport) setSport(d.sport); newStart({ spot: d.spot, sport: d.sport }); go('#start'); break;
       case 'me': go('#me'); break;
@@ -1791,6 +2083,30 @@
       case 'fav': { var on = toggleFav(d.spot); if (signedIn()) HI8.withKey('hi8_watch', { p_spot: d.spot, p_on: on }, { noQueue: true }).catch(noop);
         toast(on ? (signedIn() ? 'Saved: it glows on your map, and you get an email when a crew goes there.' : 'Saved: it glows on your map.') : 'Removed from your spots.'); renderSheet(); drawMapSpots(); break; }
       case 'squad': openSquad(d.code); break;
+      case 'movecrew': after(HI8.withKey('hi8_move_crew', { p_code: S.crew.code, p_day: d.date, p_start: pad(Number(d.from)) + ':00', p_end: pad(Math.min(23, Number(d.to))) + ':00' }, { noQueue: true }), function (dd) { S.crew.data = dd; renderSheet(); pollChat(); HI8.loadCrews(true).then(drawAll, noop); toast('Moved. Everyone in the crew hears it.', 5000); }).catch(noop); break;
+      case 'phonesave': after(HI8.withKey('hi8_set_phone', { p_code: S.crew.code, p_phone: ($('#myPhone') || {}).value || null }, { noQueue: true }), function (pp) { S.crew.people = pp; renderSheet(); toast('Shared with this crew only.'); }).catch(noop); break;
+      case 'noshow': after(HI8.withKey('hi8_no_show', { p_code: S.crew.code, p_member: d.member, p_on: d.on === 'true' }, { noQueue: true }), function (pp) { S.crew.people = pp; renderSheet(); }).catch(noop); break;
+      case 'alerts': S.al = null; if (S.view === 'crew') closeSheet(); go('#alerts/' + (d.sport || S.sport) + (d.spot ? '/' + d.spot : '')); break;
+      case 'alsport': if (S.al && S.al.sport !== d.sport) { newAlert(d.sport); history.replaceState(null, '', '#alerts/' + d.sport); } renderSheet(); break;
+      case 'alspot': { var L2 = S.al.spots, ix = L2.indexOf(d.v); if (ix >= 0) L2.splice(ix, 1); else L2.push(d.v); S.al.saved = false; renderSheet(); break; }
+      case 'almin': S.al.min_kt = Number(d.v); if (S.al.max_kt != null && S.al.max_kt <= S.al.min_kt) S.al.max_kt = null; S.al.saved = false; renderSheet(); break;
+      case 'almax': S.al.max_kt = d.v === '' ? null : Number(d.v); if (S.al.max_kt != null && S.al.min_kt != null && S.al.min_kt >= S.al.max_kt) S.al.min_kt = S.al.max_kt - 5; S.al.saved = false; renderSheet(); break;
+      case 'algust': S.al.gust_max = d.v === '' ? null : Number(d.v); S.al.saved = false; renderSheet(); break;
+      case 'alscore': S.al.min_score = Number(d.v); S.al.saved = false; renderSheet(); break;
+      case 'aldays': S.al.days = d.v; S.al.saved = false; renderSheet(); break;
+      case 'alhours': S.al.from_h = HOURS[d.v][0]; S.al.to_h = HOURS[d.v][1]; S.al.saved = false; renderSheet(); break;
+      case 'allen': S.al.min_hours = Number(d.v); S.al.saved = false; renderSheet(); break;
+      case 'alpush': S.al.by_push = !S.al.by_push; S.al.saved = false; renderSheet(); break;
+      case 'almail': S.al.by_email = !S.al.by_email; S.al.saved = false; renderSheet(); break;
+      case 'alsave': alertSave(); break;
+      case 'aloff': after(HI8.withKey('hi8_wind_alert', { p_city: S.city, p_sport: S.al.sport, p_rule: null, p_on: false }, { noQueue: true }), function (r) { S.walerts = r.alerts || []; newAlert(S.al.sport); drawSessions(); renderSheet(); toast('Alert off.'); }).catch(noop); break;
+      case 'pushguide': go('#push'); break;
+      case 'pushon': pushOn(); break;
+      case 'pushoff': pushOff(); break;
+      case 'pushtest': pushTest(); break;
+      case 'profsave': {
+        var yv = ($('#prYears') || {}).value, hv = ($('#prHome') || {}).value, iv = ($('#prInsta') || {}).value;
+        after(HI8.withKey('hi8_rider_profile', { p_save: true, p_years: yv === '' ? null : Number(yv), p_home_spot: hv || null, p_insta: iv || null }, { noQueue: true }), function (r) { S.prof = r; renderSheet(); toast('Saved: your crews see it next to your name.'); }).catch(noop); break; }
       case 'sqjoin': squadJoin(); break;
       case 'sqleave':
         if (!S.sq.confirm) { S.sq.confirm = true; renderSheet(); break; }
@@ -1839,7 +2155,8 @@
       case 'rground': S.crew.rground = d.v; renderSheet(); break;
       case 'report':
         after(HI8.withKey('hi8_report', { p_code: S.crew.code, p_verdict: d.v, p_kite: S.crew.data.sport === 'kite' ? (S.crew.rkite || null) : null, p_ground: S.crew.data.sport !== 'kite' ? (S.crew.rground || null) : null, p_note: null }, { noQueue: true }),
-          function (dd) { S.crew.data = dd; renderSheet(); loadLive(); pollChat(); toast('Thanks: the crew and the map have it.'); }).catch(noop); break;
+          function (dd) { var was = sessionEnded(dd); S.crew.data = dd; renderSheet(); loadLive(); pollChat(); toast(was ? 'Stamped on your rider card. Thanks: the next crew sees it.' : 'Thanks: the crew and the map have it.');
+            if (was) HI8.withKey('hi8_card', {}, { noQueue: true }).then(function (cd) { S.card = cd; renderSheet(); }, noop); }).catch(noop); break;
       case 'settle': {
         var cost = Number(($('#payCost') || {}).value), link = ($('#payLink') || {}).value, bz = ($('#payBizum') || {}).value;
         if (!(cost >= 0)) { toast('Add what the car cost.'); break; }
@@ -1965,6 +2282,7 @@
   }
   function loadLive() {
     if (!HI8.live) return Promise.resolve();
+    HI8.rpc('hi8_watchers', { p_city: S.city }).then(function (w) { S.watch = w || {}; drawSessions(); if (S.view === 'spot') renderSheet(); }, noop);
     return HI8.rpc('hi8_live', { p_city: S.city }).then(function (l) { S.live = l; drawMapSpots(); drawCrews(); drawSessions(); drawNow(); drawLive(); if (S.view && S.view !== 'start') renderSheet(); }, noop);
   }
   // WHO'S LOOKING: a random visitor id (not the rider key), one "I'm here" a minute while the page is open.
@@ -1989,15 +2307,22 @@
       [2500, 7000].forEach(function (t) { setTimeout(loadWallet, t); });
     }
     var stop = P.get('stop');
-    if (stop && HI8.live) HI8.rpc('hi8_unsubscribe', { p_token: stop }).then(function (r) { toast(r.stopped ? 'Stopped: no more ' + esc((SPORT[r.sport] || { name: r.sport }).name) + ' crew emails.' : 'Already stopped.', 6000); }, function () { toast('That stop link didn\'t work. Email hello@hi8ctane.com and we\'ll do it.'); });
+    if (stop && HI8.live) HI8.rpc('hi8_unsubscribe', { p_token: stop }).then(function (r) { toast(r.kind === 'wind' ? (r.stopped ? 'Stopped: no more alert emails.' + (pushState() === 'on' ? ' Push on this phone keeps them: change it in Alerts.' : '') : 'Already stopped.') : r.stopped ? 'Stopped: no more ' + esc((SPORT[r.sport] || { name: r.sport }).name) + ' crew emails.' : 'Already stopped.', 6000); }, function () { toast('That stop link didn\'t work. Email hello@hi8ctane.com and we\'ll do it.'); });
     drawAll(); initMap();
     if (HI8.live) {
       loadAvatar();
-      HI8.rpc('hi8_settings', {}).then(function (s) { S.settings = s; drawTop(); drawSave(); drawWeek(); drawPass(); if (S.view) renderSheet(); }, noop); // prices and the fee can change what an open sheet says
+      HI8.rpc('hi8_settings', {}).then(function (s) { S.settings = s; drawTop(); drawSave(); drawWeek(); drawPass(); drawSessions(); if (S.view) renderSheet(); }, noop); // prices and the fee can change what an open sheet says
       HI8.onData(function () { drawTop(); drawCrews(); drawSessions(); drawMapSpots(); if (S.view === 'join' || S.view === 'me') renderSheet(); });
       window.addEventListener('focus', function () { if (Date.now() - (S.plansAt || 0) > 120000) { S.plansAt = Date.now(); loadPlans(); } });
       HI8.loadPlaces().then(function () { fitMap(); loadForecast(); drawAll(); }, function () { loadForecast(); });
-      loadLive(); loadPlans(); look(); setInterval(look, 60000); if (signedIn()) loadSocial();
+      loadLive(); loadPlans(); look(); setInterval(look, 60000); if (signedIn()) { loadSocial(); loadAlerts(); }
+      if (pushSupported()) pushCheck().then(function (sub) {
+        if (sub && signedIn()) pushSave(sub).catch(noop); // keeps this phone tied to the rider (the address can change)
+        else if (!sub && standalone() && Notification.permission === 'default' && !HI8.store.get('pushAsked', false)) {
+          HI8.store.set('pushAsked', true); setTimeout(function () { toast('Alerts on this phone? <button class="opt" data-act="pushguide" style="margin-left:8px">TURN ON</button>', 9000); }, 1500);
+        }
+        drawSessions();
+      });
       document.addEventListener('visibilitychange', function () { if (!document.hidden) look(); });
       setInterval(function () { if (!document.hidden) { loadLive(); HI8.loadCrews(true).catch(noop); } }, 60000);
     } else loadForecast();
