@@ -48,7 +48,7 @@ bal = lambda e: int(sql(f"select public.hi8_balance('{e}')"))
 
 print('switched off until the Stripe keys are in')
 s, w = rpc('hi8_wallet', {'p_key': sam})
-check(s == 200 and w['live'] is False and w['balance_cents'] == 0 and w['topups'] == [1000, 2000, 5000] and w['pass_month_cents'] == 1699, 'the wallet: off, empty, top-ups of €10, €20, €50, the Pass at €16.99 (0013)')
+check(s == 200 and w['live'] is False and w['balance_cents'] == 0 and w['topups'] == [1000, 2000, 5000] and w['pass_month_cents'] == 1699, 'the wallet: off, empty, top-ups of €10, €20, €50, the Pass at €16.99 (0016)')
 s, b = rpc('hi8_pay_seat', {'p_key': sam, 'p_code': code})
 check(s == 400 and b['message'] == 'payments_off', 'paying a seat: not yet')
 sql("update public.app_settings set value = 'true' where key = 'payments_live'")
@@ -88,7 +88,7 @@ rpc('hi8_pass_update', {'p_email': 'joost@example.com', 'p_plan': 'month', 'p_st
 s, w = rpc('hi8_wallet', {'p_key': joost})
 check(w['pass']['active'] is True and w['pass']['plan'] == 'month', 'Joost takes the Hi8 Pass')
 pj = json.loads(sql("select public.hi8_seat_price(c.id, 'joost@example.com') from crews c where code = '" + code + "'"))
-check(pj['member'] is True and pj['fee_pct'] == 10, 'with the Pass, his seats carry the 10% member fee instead of 15% (0013)')
+check(pj['member'] is True and pj['fee_pct'] == 10, 'with the Pass, his seats carry the 10% member fee instead of 15% (0016)')
 sql("update public.app_settings set value = 'false' where key = 'fee_live'")
 
 print('refunds and paying the driver')

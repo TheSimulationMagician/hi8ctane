@@ -1,4 +1,4 @@
--- 0015 (2.18): lock down what Supabase grants the website's roles by default.
+-- 0018 (2.18, written as 0015): lock down what Supabase grants the website's roles by default.
 --
 -- Supabase gives anon and authenticated (the publishable key) ALL rights on every new table, sequence and function
 -- in public. Hi8ctane never relies on that: every table has row level security with no policies, and every function
@@ -8,7 +8,7 @@
 --      purpose, and a new table can't be read even if someone forgets row level security.
 -- Check the result any time with supabase/security_check.sql (no rows = locked down).
 --
--- Safe to run more than once. Needs 0001 to 0014.
+-- Safe to run more than once. Needs 0001 to 0017.
 
 revoke all on all sequences in schema public from anon, authenticated;
 revoke all on all tables in schema public from anon, authenticated;

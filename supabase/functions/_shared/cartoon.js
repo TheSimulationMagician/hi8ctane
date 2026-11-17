@@ -2,7 +2,7 @@
 // Plain JavaScript (fetch, FormData, Blob), so the same file runs in Supabase Edge Functions (Deno) and in the tests (Node).
 //
 // The selfie is only passed through: it goes to OpenAI and is never stored. The cartoon is kept in Storage
-// (bucket "avatars", a random file name) and recorded with hi8_cartoon_done (0014_cartoons.sql).
+// (bucket "avatars", a random file name) and recorded with hi8_cartoon_done (0017_cartoons.sql).
 //
 // env: OPENAI_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, SITE_URL
 //      optional: OPENAI_IMAGE_MODEL (gpt-image-1), CARTOON_QUALITY (medium), CARTOON_PROMPT

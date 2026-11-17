@@ -1,4 +1,4 @@
--- 0013 (2.15): fixes from the UX & conversion audit of 15 Nov 2026.
+-- 0016 (2.15, written as 0013): fixes from the UX & conversion audit of 15 Nov 2026.
 --
 --   1. Test crews never show in public: crews.is_test, left out of hi8_crews, hi8_live and the hub counts.
 --      The "Frankie again" test crews (and any crew whose host email ends in +test@…) are flagged now.

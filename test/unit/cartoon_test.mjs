@@ -86,6 +86,7 @@ check(unk && unk.status === 400 && ai.length === before, 'an unknown key: refuse
 console.log('in a crew');
 out = await cartoon({ key: key2, image: SELFIE, consent: true }, env, deps);
 const kai = out.path;
+sql(`delete from crews where code = 'CART01'`); // a rerun starts clean
 sql(`insert into crews (city, sport, spot, day, start_time, levels, host_email, code) values ('amsterdam','kite','zandvoort', hi8_today('amsterdam')+1, '10:00', 'regular', 'kai@example.com', 'CART01')`);
 sql(`insert into crew_members (crew_id, email, level, getting) select id, 'kai@example.com', 'regular', 'own' from crews where code = 'CART01'`);
 sql(`insert into crew_members (crew_id, email, level, getting) select id, 'lu@example.com', 'regular', 'seat' from crews where code = 'CART01'`);

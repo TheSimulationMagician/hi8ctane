@@ -56,7 +56,7 @@ with sync_playwright() as p:
     check('CATALONIA' in A.locator('.tbcity').inner_text().upper() and 'PILOT' in A.locator('.tbcity').inner_text(), '?city=barcelona opens the Barcelona pilot (Catalonia)')
     check(A.locator('.ransom span').count() == 8 and 'THE FORECAST SAYS GO.' in txt(A, '.hero .hl') and A.locator('#verdict').count() == 0, "the ransom-note logo and the 2.14 hero: the forecast says go")
     A.locator('.mapsec').scroll_into_view_if_needed(); A.wait_for_timeout(1200)
-    check(A.locator('.mapsec .mapwrap').bounding_box()['height'] <= 345, 'on a phone the live map sits under the crews, smaller')
+    check(320 <= A.locator('.mapsec .mapwrap').bounding_box()['height'] <= 525, 'on a phone the live map closes the page, tall')
     px = A.evaluate("""(() => { const c = document.querySelector('.map-canvas'), x = c.getContext('2d').getImageData(0, 0, c.width, c.height).data, seen = new Set();
                         for (let i = 0; i < x.length; i += 4 * 997) seen.add(x[i] >> 4 << 8 | x[i + 1] >> 4 << 4 | x[i + 2] >> 4); return seen.size; })()""")
     check(px > 25, f'the map is drawn: wind colours, coast, spots ({px} colours)')
@@ -282,7 +282,7 @@ with sync_playwright() as p:
     check(D.locator('.hero').bounding_box()['height'] > 200, 'computer: the hero keeps its full height')
     ctxV, V = fresh()
     V.goto(BASE + '/'); V.wait_for_timeout(1500)
-    check(V.locator('.hero .hl').bounding_box()['y'] < V.locator('#sessions').bounding_box()['y'] < V.locator('.mapwrap').bounding_box()['y'] < V.locator('#how').bounding_box()['y'] < V.locator('#moWeek').bounding_box()['y'] and V.locator('#night').count() == 0, 'phone: the hero, the board, the live map, how it works, then MORE; no Founding Night')
+    check(V.locator('.hero .hl').bounding_box()['y'] < V.locator('#sessions').bounding_box()['y'] < V.locator('#how').bounding_box()['y'] < V.locator('#moWeek').bounding_box()['y'] < V.locator('.mapwrap').bounding_box()['y'] and V.locator('#night').count() == 0 and V.locator('.seeyou').count() == 0, 'phone: the hero, the board, how it works, MORE, and the page ends on the live map')
     V.goto(BASE + '/?v=1'); V.wait_for_timeout(1500)
     check(V.locator('#crews').count() == 1 and V.locator('#sessions').count() == 0, 'iteration 1 (?v=1): the crew cards')
     V.goto(BASE + '/?v=2'); V.wait_for_timeout(1500)

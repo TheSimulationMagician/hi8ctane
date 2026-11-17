@@ -1,4 +1,4 @@
--- 0014 (2.18): cartoon avatars. A rider takes a selfie, an image AI draws it as a surf-mag cartoon, and the
+-- 0017 (2.18, written as 0014): cartoon avatars. A rider takes a selfie, an image AI draws it as a surf-mag cartoon, and the
 -- cartoon (never the selfie) is kept in Supabase Storage, bucket "avatars" (public files, random names).
 --
 -- Who sees it: the rider on their own plate (Me), and the riders of a crew they're in (WHO'S GOING). Public crew
@@ -6,7 +6,7 @@
 -- Cost control: 3 cartoons per rider per day, and at most cartoon_daily_max (100) for everyone per day.
 -- The drawing is done by supabase/functions/cartoon (OPENAI_API_KEY). Erasing a rider queues their file for deletion.
 --
--- Safe to run more than once. Needs 0001 to 0013.
+-- Safe to run more than once. Needs 0001 to 0016.
 
 create table if not exists public.rider_avatars (
   email      text primary key,          -- lower(email)
@@ -100,7 +100,7 @@ language sql security definer set search_path = public as $$
   select coalesce(json_agg(path), '[]'::json) from t;
 $$;
 
--- erasing a rider (erase_email deletes their keys last): the cartoon goes, and so does the Pass list entry (0013)
+-- erasing a rider (erase_email deletes their keys last): the cartoon goes, and so does the Pass list entry (0016)
 create or replace function public.hi8_on_key_gone() returns trigger
 language plpgsql security definer set search_path = public as $$
 declare em text := lower(old.email); p text;

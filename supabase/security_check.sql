@@ -9,7 +9,9 @@ with expected_public_functions(name) as (values
   ('hi8_log_error'), ('hi8_me'), ('hi8_messages'), ('hi8_my_avatar'), ('hi8_paid'), ('hi8_partner'), ('hi8_pass_interest'), ('hi8_pay_seat'),
   ('hi8_places'), ('hi8_plan_interest'), ('hi8_plan_leave'), ('hi8_plans'), ('hi8_profile'), ('hi8_quick_join'), ('hi8_quick_start'),
   ('hi8_report'), ('hi8_rsvp'), ('hi8_send'), ('hi8_set_from'), ('hi8_settings'), ('hi8_settle'), ('hi8_start_crew'), ('hi8_unsubscribe'),
-  ('hi8_waitlist'), ('hi8_wallet')
+  ('hi8_waitlist'), ('hi8_wallet'),
+  -- 2.20 who's looking, 2.22 crews that stay together
+  ('hi8_look'), ('hi8_card'), ('hi8_squad'), ('hi8_squad_call'), ('hi8_squad_join'), ('hi8_squad_keep'), ('hi8_squad_leave'), ('hi8_squads'), ('hi8_watch')
 ), problems(problem, object) as (
   -- 1. every table has row level security on
   select 'table without row level security', n.nspname || '.' || c.relname
@@ -30,10 +32,12 @@ with expected_public_functions(name) as (values
   from pg_class c join pg_namespace n on n.oid = c.relnamespace
   where n.nspname = 'public' and c.relkind = 'S' and (has_sequence_privilege('anon', c.oid, 'USAGE') or has_sequence_privilege('anon', c.oid, 'UPDATE'))
   union all
-  -- 4. views run as their owner and skip row level security: there should be none in public
-  select 'view in public (bypasses row level security)', n.nspname || '.' || c.relname
+  -- 4. views run as their owner and skip row level security: none may be readable by the website
+  --    (server-only report views, like hi8_looks_report, are fine while the website's roles can't select them)
+  select 'view the website can read (bypasses row level security)', n.nspname || '.' || c.relname
   from pg_class c join pg_namespace n on n.oid = c.relnamespace
   where n.nspname = 'public' and c.relkind in ('v', 'm')
+    and (has_table_privilege('anon', c.oid, 'SELECT') or has_table_privilege('authenticated', c.oid, 'SELECT'))
   union all
   -- 5. SECURITY DEFINER functions pin their search_path
   select 'SECURITY DEFINER function without a fixed search_path', p.proname

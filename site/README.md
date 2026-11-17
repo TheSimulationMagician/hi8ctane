@@ -6,7 +6,7 @@ What runs at hi8ctane.com. Two things to do: **JOIN A CREW** or **START A CREW**
 
 The 2.7 identity, kept on purpose: surf mag meets 90s music TV. Cream paper, 3px ink outlines, hard offset shadows (black, pink on the dark blocks), square corners, halftone steel blues, lime and hot pink. Anton for headlines, Archivo Black for labels, Space Mono for data. The ransom-note wordmark cuts one letter each from Archivo Black, Anton, Bowlby One, Special Elite, Shrikhand and Permanent Marker. Verdicts: EPIC pink, GOOD lime, OK yellow, NO GO sand. Buttons are the clipped-corner `.jn` stickers; crews are the `.sc` cards (sport tile, the spot on its halftone, chips, who's going, the seat price).
 
-## 2.18: cartoons (`supabase/migrations/0014_cartoons.sql`, `supabase/functions/cartoon`)
+## 2.18: cartoons (`supabase/migrations/0017_cartoons.sql`, `supabase/functions/cartoon`)
 
 In Me, a rider takes a selfie (or picks a photo), ticks the consent box and taps DRAW ME. The app squares the photo to 1024 px (~200 KB JPEG), the `cartoon` Edge Function sends it to OpenAI's image edit API (`gpt-image-1`, high face fidelity, transparent WebP) with a surf-mag prompt (`PROMPT` in `supabase/functions/_shared/cartoon.js`), stores the cartoon in the Storage bucket `avatars` under a random name and records it. **The selfie is never stored.**
 
@@ -16,7 +16,7 @@ In Me, a rider takes a selfie (or picks a photo), ticks the consent box and taps
 - OpenAI keeps API inputs up to 30 days for abuse checks and doesn't train on them. Say so in the privacy page before switching on.
 
 ### Switch cartoons on
-1. SQL Editor: run `0014_cartoons.sql` (creates the public `avatars` bucket too).
+1. SQL Editor: run `0017_cartoons.sql` (creates the public `avatars` bucket too).
 2. `supabase secrets set OPENAI_API_KEY=sk-...` (an OpenAI project key with a monthly budget limit set in OpenAI's dashboard).
 3. `supabase functions deploy cartoon --no-verify-jwt`
 4. Off again any time: `update public.app_settings set value = 'false' where key = 'cartoons_on';` (the box disappears from Me).
@@ -28,7 +28,7 @@ In Me, a rider takes a selfie (or picks a photo), ticks the consent box and taps
 - **The board explains itself**: NO GO cells carry a short reason (GUST, ONSH, LITE, OFF…), also read out by screen readers; today's column is LATER once the day is underway and past hours don't count.
 - **Join before you create**: a session with nobody going says START IT (not I'M GOING); starting a crew at a spot where one already leaves within 2 hours that day shows that crew first, with JOIN IT; START IT on a session that turns out to have a crew opens that crew. Spot pages list their crews above the forecast and the footer becomes JOIN.
 - **Honest when it's empty**: BE THE FIRST CREW instead of LIVE CREWS when a region has none; the empty list offers the week's best window as one tap.
-- **Test crews never show** (`crews.is_test`, `0013_audit_fixes.sql`). Flag one: `update public.crews set is_test = true where code = 'ABC123';`
+- **Test crews never show** (`crews.is_test`, `0016_audit_fixes.sql`). Flag one: `update public.crews set is_test = true where code = 'ABC123';`
 - **The Hi8 Pass**: €16.99 a month, €9.99 for founding riders (kept for good: Stripe keeps a subscription's price; close it with `pass_founding_open` = false). Monthly only. The 15% fee is for life; members pay 10%. Free while the pilot runs. It shows under MORE, in Me and from the seat price on a crew page, with COUNT ME IN (`pass_interest`): `select email, city, source, created_at from public.pass_interest order by created_at desc;`
 - **New visitors open on the Netherlands** (the kite launch), wherever their phone is. `?city=barcelona` and the region switch still work.
 - Smaller: share messages use the date (MON 16 NOV) instead of TOMORROW; a crew with no driver says NEED A DRIVER instead of YOU SAVE; INDEPENDENT RIDERS instead of RIDE SOLO; one model-agreement wording everywhere; the right model credited per region; savings rounded once; Me opens from a crew link; darker NO GO text and 10.5 px labels; focus moves into sheets and back; a web manifest and home-screen icons.
@@ -169,7 +169,7 @@ The link and Google sign-in land on onboarding, where `live.js` swaps the sign-i
 
 ### How it stays safe with a public key
 
-**Checked 16 Nov 2026 (`test/live/security_api.py`, 25 checks).** Every table (28) has row level security on and no policies; the website's roles hold no table or sequence rights (0015 also makes new tables, sequences and functions start closed). The website can call 40 `hi8_` functions, all `SECURITY DEFINER` with a fixed `search_path`; each works out who you are from your secret key and only touches your own rows. Tested as an attacker: direct reads and writes of every table, server-only functions (erase, wallet, secrets, cartoons, Stripe), a stranger reading or posting in a crew chat, setting herself up as the driver, marking seats paid, made-up keys, SQL and HTML in fields, a forged service token, sign-up spam.
+**Checked 16 Nov 2026 (`test/live/security_api.py`, 25 checks).** Every table (28) has row level security on and no policies; the website's roles hold no table or sequence rights (0018 also makes new tables, sequences and functions start closed). The website can call 49 `hi8_` functions, all `SECURITY DEFINER` with a fixed `search_path`; each works out who you are from your secret key and only touches your own rows. Tested as an attacker: direct reads and writes of every table, server-only functions (erase, wallet, secrets, cartoons, Stripe), a stranger reading or posting in a crew chat, setting herself up as the driver, marking seats paid, made-up keys, SQL and HTML in fields, a forged service token, sign-up spam.
 
 **Check the live database:** paste `supabase/security_check.sql` into Supabase → SQL Editor → Run. It only reads. No rows = locked down; each row names a problem (a table without row level security, a policy or grant open to the website, a view, a function that shouldn't be public, a secret-looking public setting, a Storage policy letting the website upload or delete). Run it after every migration or dashboard change.
 
