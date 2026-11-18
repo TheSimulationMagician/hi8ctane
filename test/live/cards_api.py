@@ -39,7 +39,7 @@ plate = {n: int(sql(f"select plate from signups where email = '{n}@example.com'"
 key = lambda k: {v: n for n, v in plate.items()}.get(k.get('plate')) or ('di' if k.get('open') is False else '?')
 by = {key(k): k for k in A}
 check(st == 200 and len(A) == 3 and all('level' in k and 'initials' in k for k in A), 'anyone looking at the crew: everyone\'s card, initials and level')
-check(by['ana'].get('name') == 'Rider #1' and 'name' not in by['bo'] and not any('avatar' in k for k in A), 'outside the crew: no names (the captain\'s was already public) and no cartoons')
+check(by['ana'].get('name') == 'Rider #1' and 'name' not in by['bo'], 'outside the crew: no names (the captain\'s was already public)')
 check(by['ana']['stats']['sessions'] == 4 and by['ana']['stats']['drives'] == 3 and by['ana']['stats']['started'] == 3 and by['ana']['stats']['spots'] == 3,
       'the numbers count sessions that happened: 4 rides, 3 drives, 3 crews started, 3 spots')
 check(by['bo']['stats']['sessions'] == 1, 'a no-show isn\'t a ride')
@@ -51,7 +51,7 @@ check('@example.com' not in json.dumps(A), 'no emails anywhere')
 st, E = rpc('hi8_crew_cards', {'p_code': code, 'p_key': K['eve']})
 by = {key(k): k for k in E}
 check(by['ana']['together'] == 3 and by['bo']['together'] == 0, 'signed in: how often you rode together (a no-show doesn\'t count)')
-check('insta' not in by['ana'] and 'name' not in by['bo'] and 'avatar' not in by['ana'], 'not in the crew: no Instagram, no names, no cartoons')
+check('insta' not in by['ana'] and 'name' not in by['bo'], 'not in the crew: no Instagram, no names')
 check('tagline' not in by['di'] and 'years' not in by['di'], 'a closed card stays closed to riders outside the crew')
 
 st, B = rpc('hi8_crew_cards', {'p_code': code, 'p_key': K['bo']})
@@ -65,5 +65,10 @@ check(st != 200 and r.get('message') == 'no_crew', 'an unknown crew: refused')
 st, r = rpc('hi8_rider_stats', {'p_email': 'ana@example.com'})
 check(st >= 400, 'the website can\'t ask anyone\'s numbers by email')
 st, r = rpc('hi8_crew_cards', {'p_code': code, 'p_key': '00000000-0000-0000-0000-000000000000'})
-check(st == 200 and not any('together' in k or 'insta' in k or 'avatar' in k for k in r) and sum(1 for k in r if k.get('name')) == 1, 'a made-up key: the public cards, nothing more')
+check(st == 200 and not any('together' in k or 'insta' in k for k in r) and sum(1 for k in r if k.get('name')) == 1, 'a made-up key: the public cards, nothing more')
+sql("insert into public.rider_avatars (email, path) values ('ana@example.com', 'test/ana.png'), ('di@example.com', 'test/di.png') on conflict (email) do update set path = excluded.path")
+st, A = rpc('hi8_crew_cards', {'p_code': code, 'p_key': None}); by = {key(k): k for k in A}
+check(by['ana'].get('avatar') == 'test/ana.png' and 'avatar' not in by['di'], 'the cartoon is on an open card (a closed one keeps it for the crew)')
+st, B = rpc('hi8_crew_cards', {'p_code': code, 'p_key': K['bo']}); by = {k['name']: k for k in B}
+check(by['Rider #4'].get('avatar') == 'test/di.png', 'in the crew: every cartoon')
 print(f'\nALL {ok} RIDER CARD CHECKS PASSED')

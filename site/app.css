@@ -821,3 +821,50 @@ table.fx tr.rate td { color: var(--ink); }
 .pc-note { margin: 10px 0 0; font-size: 11.5px; line-height: 1.4; color: #E7E2D4; }
 .pc-x { width: 100%; margin-top: 12px; min-height: 48px; background: var(--cream); color: var(--ink); border: 3px solid var(--cream); font: 400 16px/1 var(--word); }
 @media (prefers-reduced-motion: reduce) { .pc, .pc-shine { animation: none; } }
+
+/* 2.25: a map you can use with a thumb */
+.map-hint { position: absolute; left: 50%; top: 45%; z-index: 4; transform: translate(-50%, -50%); padding: 9px 12px; background: rgba(17, 17, 17, .88); color: var(--cream); border: 2px solid var(--cream); font: 700 11px/1 var(--mono); letter-spacing: .6px; opacity: 0; pointer-events: none; transition: opacity .2s; white-space: nowrap; }
+.map-hint.on { opacity: 1; }
+.timebar { gap: 8px; padding: 8px 8px 9px; }
+.hours { display: flex; gap: 4px; overflow-x: auto; scroll-snap-type: x proximity; scrollbar-width: none; padding: 2px 0 3px; }
+.hours::-webkit-scrollbar { display: none; }
+.hours .hr { flex: 0 0 38px; height: 40px; scroll-snap-align: center; position: relative; border: 2px solid #3d4652; background: #1c232c; color: var(--cream); font: 400 15px/1 var(--big); padding: 0 0 6px; cursor: pointer; }
+.hours .hr::after { content: ''; position: absolute; left: 3px; right: 3px; bottom: 3px; height: 5px; background: #4a525c; }
+.hours .hr.t-good::after { background: var(--lime); } .hours .hr.t-epic::after { background: var(--pink); } .hours .hr.t-ok::after { background: var(--yellow); } .hours .hr.t-no::after { background: #8a8578; }
+.hours .hr.win { border-color: #6b7686; }
+.hours .hr.win::after { height: 7px; }
+.hours .hr[aria-pressed=true] { background: var(--cream); color: var(--ink); border-color: var(--lime); box-shadow: 0 0 0 2px var(--ink) inset; }
+.mapdays button { padding-bottom: 6px; }
+.mapdays button .dt { position: absolute; left: 6px; right: 6px; bottom: 3px; height: 4px; background: #4a525c; }
+.mapdays button .dt.t-good { background: var(--lime); } .mapdays button .dt.t-epic { background: var(--pink); } .mapdays button .dt.t-ok { background: var(--yellow); } .mapdays button .dt.t-no { background: #8a8578; }
+.mapdays button[aria-pressed=true] .dt { box-shadow: 0 0 0 1.5px var(--ink); }
+.mapcard { position: absolute; left: 8px; right: 8px; bottom: 70px; z-index: 5; max-width: 420px; margin: 0 auto; padding: 11px 12px 12px; background: var(--cream); color: var(--ink); border: 3px solid var(--ink); box-shadow: 5px 5px 0 var(--pink); animation: mcIn .22s cubic-bezier(.2, .9, .2, 1) both; max-height: calc(100% - 140px); overflow-y: auto; }
+@keyframes mcIn { from { transform: translateY(18px); opacity: 0; } to { transform: none; opacity: 1; } }
+.mapcard .mc-x { position: absolute; right: 6px; top: 6px; width: 36px; height: 36px; border: 2px solid var(--ink); background: #fff; font: 700 15px/1 var(--mono); }
+.mapcard .mc-k { padding-right: 40px; font: 700 10.5px/1.3 var(--mono); letter-spacing: .5px; }
+.mapcard .mc-h { margin-top: 5px; font: 400 13px/1.3 var(--mono); }
+.mapcard .mc-h b { font: 400 24px/1 var(--big); }
+.mapcard .mc-h small { display: block; margin-top: 3px; color: var(--mute); font-size: 11px; }
+.mapcard .mc-w { margin-top: 8px; padding-top: 8px; border-top: 1.5px solid var(--sand); font: 700 11px/1.5 var(--mono); }
+.mapcard .mc-w b { font: 400 14px/1 var(--word); }
+.mapcard .mc-c { display: flex; align-items: center; gap: 8px; margin-top: 8px; padding-top: 8px; border-top: 1.5px solid var(--sand); font-size: 12px; line-height: 1.3; }
+.mapcard .mc-c > span:not(.avs) { flex: 1; min-width: 0; }
+.mapcard .mc-c small { display: block; color: var(--mute); font-size: 11px; }
+.mapcard .mc-c .big { flex: none; min-height: 44px; padding: 0 12px; font-size: 14px; width: auto; }
+.mapcard .mc-c.none { display: block; color: var(--mute); }
+.mapcard .mc-f { display: flex; gap: 8px; margin-top: 10px; }
+.mapcard .mc-f .big { flex: 1; min-height: 46px; font-size: 14px; }
+.mapcard .lnk { font-size: 11px; }
+@media (prefers-reduced-motion: reduce) { .mapcard { animation: none; } }
+.map-layer { position: absolute; left: 0; top: 0; pointer-events: none; transform-origin: 0 0; }
+.map-flow { transition: opacity .25s; }
+.map-canvas { position: relative; }
+/* phones: the spot card opens under the map, the map keeps its size */
+.mapsec .mapwrap.carded { height: calc(56vh + var(--cardh, 0px)); max-height: calc(520px + var(--cardh, 0px)); }
+.mapsec .mapwrap.carded #map { bottom: var(--cardh, 0px); }
+.mapsec .mapwrap.carded .timebar { bottom: var(--cardh, 0px); }
+.mapsec .mapcard { left: 0; right: 0; bottom: 0; max-width: none; margin: 0; max-height: none; overflow: visible; box-shadow: none; border-width: 3px 0 0; }
+.mapsec .mapcard { padding: 9px 12px 10px; }
+.mapsec .mapcard .mc-h small { display: inline; margin: 0 0 0 6px; }
+.mapsec .mapcard .mc-w, .mapsec .mapcard .mc-c { margin-top: 6px; padding-top: 6px; }
+.mapsec .mapcard .mc-f { margin-top: 8px; }

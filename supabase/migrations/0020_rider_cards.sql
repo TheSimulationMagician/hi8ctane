@@ -4,13 +4,13 @@
 --
 -- Every rider in a crew has a card: their level, how long they've ridden, their home spot, a line about themselves,
 -- and what they've ridden (sessions, spots, drives, crews started, since when). Who sees what:
---   * anyone looking at a crew (before joining): the card WITHOUT the name, the cartoon or Instagram: initials,
---     plate, level, the numbers, years riding, home spot and their line. A signed-in rider also sees how often
---     they've ridden with each one. (Names, cartoons, cars and the chat stay for the crew, as the privacy page says.
---     The captain's name was already on every crew.)
---   * the riders in that crew: the whole card, with the name, the cartoon and Instagram (phones stay in hi8_crew_people).
+--   * anyone looking at a crew (before joining): the card with their cartoon (the selfie drawn as a salty surf
+--     cartoon, never the photo), plate, level, the numbers, years riding, home spot and their line, but WITHOUT the
+--     name or Instagram. A signed-in rider also sees how often they've ridden with each one. (Names, cars and the
+--     chat stay for the crew; the captain's name was already on every crew.)
+--   * the riders in that crew: the whole card, with the name and Instagram (phones stay in hi8_crew_people).
 -- A rider can switch their card to "just the basics" (signups.card_public = false): then, outside their crews,
--- only initials and level show.
+-- only initials and level show: no cartoon, no numbers.
 
 alter table public.signups add column if not exists tagline text check (tagline is null or char_length(tagline) <= 70);
 alter table public.signups add column if not exists card_public boolean not null default true;
@@ -51,7 +51,7 @@ begin
       'name', case when inside or lower(m.email) = lower(c.host_email) then public.hi8_name(m.email, c.city) end,
       'initials', upper(left(public.hi8_name(m.email, c.city), 2)),
       'plate', case when coalesce(p.card_public, true) or inside then public.hi8_plate(m.email, c.city) end,
-      'avatar', case when inside then public.hi8_avatar(m.email) end,
+      'avatar', case when coalesce(p.card_public, true) or inside then public.hi8_avatar(m.email) end,
       'level', m.level,
       'host', lower(m.email) = lower(c.host_email),
       'me', em is not null and lower(m.email) = em,

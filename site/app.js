@@ -214,8 +214,8 @@
       '<button class="mbtn txt" id="layerBtn" data-act="layer" aria-pressed="false">RAIN</button></div>' +
       '<div class="legend" aria-hidden="true">0 <i id="legendBar"></i> 40 KT</div>' +
       '<div class="timebar"><button class="play" id="play" data-act="play" aria-label="Play the next hours">▶</button>' +
-      '<div class="tl"><label class="sr" for="hour">Forecast time</label><input type="range" id="hour" min="0" max="0" value="0"><div class="days" id="tlDays"></div></div>' +
-      '<div class="when" id="when"></div></div></section>' +
+      '<div class="tl"><div class="hours" id="hours" role="group" aria-label="Hour on the map"></div></div>' +
+      '<div class="when" id="when"></div></div><div class="mapcard" id="mapcard" hidden></div></section>' +
       '<main class="panel" id="panel">' +
       '<section class="hero ht" id="hero"><canvas class="herofx" id="heroFx" aria-hidden="true"></canvas>' +
       '<div class="kick"><span class="blink pdot"></span><span id="heroKick">LIVE CREWS · KITE · MTB · MX</span></div>' +
@@ -253,7 +253,7 @@
   function placeMap() {
     var mw = $('.mapwrap'); if (!mw) return;
     var want = wide.matches ? app : $('#mapslot');
-    if (mw.parentNode !== want) { want.appendChild(mw); if (map) setTimeout(fitMap, 30); }
+    if (mw.parentNode !== want) { want.appendChild(mw); if (map) { map.setCoop(!wide.matches); setTimeout(fitMap, 30); } }
   }
   if (wide.addEventListener) wide.addEventListener('change', placeMap);
 
@@ -346,7 +346,8 @@
   function initMap() {
     var geo = (window.HI8_GEO || {})[S.city];
     if (map) { map.destroy(); map = null; }
-    map = window.HI8Map($('#map'), { geo: geo, onSpot: function (slug) { var t = times()[S.hi]; S.spotDay = t ? Math.max(0, Math.min(6, Math.round((dDate(t.slice(0, 10)) - dDate(S.today)) / 864e5))) : 0; go('#spot/' + slug); }, still: P.get('still') === '1' });
+    map = window.HI8Map($('#map'), { geo: geo, coop: !wide.matches, onSpot: pickSpot, onEmpty: function () { if (S.mapSel) { S.mapSel = null; drawMapCard(); drawMapSpots(); } }, still: P.get('still') === '1' });
+    $('#map')._map = map; // for tests and the console: where a spot is on the map
     fitMap();
   }
   function fitMap() {
@@ -375,7 +376,7 @@
     map.setSpots(spotsFor(S.city, S.sport).map(function (s) {
       var r = t ? rowAt(s.slug, t) : null, rt = t ? rateAt(s, t) : null, mine = crews.filter(function (c) { return c.spot === s.slug; });
       var here = live ? (live.crews || []).filter(function (c) { return c.spot === s.slug; }).reduce(function (n, c) { return n + (c.here || 0); }, 0) : 0;
-      var o = { slug: s.slug, name: s.name, lat: s.lat, lon: s.lon, crews: mine.length, here: here, live: mine.some(function (c) { return c.live; }), fav: favs.indexOf(s.slug) >= 0,
+      var o = { slug: s.slug, name: s.name, lat: s.lat, lon: s.lon, crews: mine.length, sel: s.slug === S.mapSel, here: here, live: mine.some(function (c) { return c.live; }), fav: favs.indexOf(s.slug) >= 0,
         going: mine.reduce(function (n, c) { return n + (c.going || 0); }, 0), seats: mine.reduce(function (n, c) { return n + (c.seats_free || 0); }, 0) };
       if (!r || !rt) { o.tone = 'none'; o.big = null; o.small = FX.error ? 'NO FORECAST' : ''; return o; }
       o.tone = rt.dark ? 'dark' : FX.tone(rt.s);
@@ -393,6 +394,7 @@
     else if (FX.data[S.city] && FX.data[S.city].stale) note.push('<span class="chip">FORECAST FROM ' + new Date(FX.data[S.city].at).toTimeString().slice(0, 5) + '</span>');
     $('#mapnote').innerHTML = note.join('');
     keepOut();
+    drawMapCard();
   }
   // your spots: a star on the spot page, a glow on the map (kept on this phone)
   function watchN(slug) { var n = S.watch ? S.watch[slug] || 0 : 0; return n >= 2 ? n : 0; } // never "1 watching" (that's maybe you)
@@ -400,22 +402,80 @@
   function toggleFav(slug) { var f = favList(), i = f.indexOf(slug); if (i >= 0) f.splice(i, 1); else f.push(slug); HI8.store.set('favs', f); return i < 0; }
   // wind for kite, rain for MTB and MX, unless the rider switched it
   function effLayer() { return S.layerSet ? S.layer : (S.sport === 'kite' ? 'wind' : 'rain'); }
+  // the best verdict over this sport's spots at one hour (for the hour strip) and over a day (for the day chips)
+  function bestAt(t) {
+    var b = null; spotsFor(S.city, S.sport).forEach(function (sp) { var r = rateAt(sp, t); if (r && !r.dark && (!b || r.s > b.s)) b = r; }); return b;
+  }
+  function bestDay(d) {
+    var b = null; if (!FX.data[S.city]) return null;
+    spotsFor(S.city, S.sport).forEach(function (sp) { var fs = fxSpot(sp.slug); if (!fs) return; var w = FX.windows(fs, d, S.sport, sp, fxo(S.sport)).filter(function (x) { return d !== S.today || x.to > S.nowH + 1; })[0]; if (w && (!b || w.score > b.score)) b = Object.assign({ spot: sp }, w); });
+    return b;
+  }
   function drawTime() {
-    var T = times(), el = $('#hour');
-    if (!T.length) { $('#when').innerHTML = ''; $('#tlDays').innerHTML = ''; return; }
+    var T = times(), hs = $('#hours');
+    if (!T.length) { $('#when').innerHTML = ''; hs.innerHTML = ''; return; }
     if (S.hi == null || S.hi >= T.length) S.hi = defaultHour();
-    el.max = T.length - 1; el.value = S.hi;
-    var t = T[S.hi], isNow = t === S.today + 'T' + pad(S.nowH) + ':00';
-    $('#when').innerHTML = esc(FX.dayName(t.slice(0, 10), S.today)) + ' ' + t.slice(11, 16) + (isNow ? '<small>NOW</small>' : '<small><button data-act="now">BACK TO NOW</button></small>');
-    var ds = []; T.forEach(function (x, i) { if (x.slice(11, 13) === '12') ds.push(FX.dayName(x.slice(0, 10), S.today)); });
-    $('#tlDays').innerHTML = ds.map(function (d) { return '<span>' + esc(d) + '</span>'; }).join('');
+    var t = T[S.hi], cur = t.slice(0, 10), isNow = t === S.today + 'T' + pad(S.nowH) + ':00';
+    $('#when').innerHTML = esc(FX.dayName(cur, S.today)) + ' ' + t.slice(11, 16) + (isNow ? '<small>NOW</small>' : '<small><button data-act="now">BACK TO NOW</button></small>');
+    // the hours of that day you'd ride in: big enough for a thumb, the colour of the best spot then
+    var first = cur === S.today ? Math.max(6, S.nowH) : 6, cells = [];
+    for (var h = first; h <= 21; h++) { var i = T.indexOf(cur + 'T' + pad(h) + ':00'); if (i >= 0) cells.push([h, i]); }
+    var bw = bestDay(cur);
+    hs.innerHTML = cells.map(function (c) {
+      var b = bestAt(T[c[1]]), tone = !b ? 'none' : FX.tone(b.s), inW = bw && c[0] >= bw.from && c[0] < bw.to;
+      return '<button class="hr t-' + tone + (inW ? ' win' : '') + '" data-act="hourpick" data-i="' + c[1] + '" aria-pressed="' + (c[1] === S.hi) + '" aria-label="' + pad(c[0]) + ':00' + (b ? ', best ' + b.label : '') + '">' + pad(c[0]) + '</button>';
+    }).join('');
+    var sel = hs.querySelector('[aria-pressed=true]');
+    if (sel && !S.hoursTouched) { var L = sel.offsetLeft - hs.clientWidth / 2 + sel.offsetWidth / 2; hs.scrollLeft = Math.max(0, L); }
     var dates = []; T.forEach(function (x) { var d = x.slice(0, 10); if (dates.indexOf(d) < 0 && T.indexOf(d + 'T12:00') >= 0) dates.push(d); });
-    var cur = t.slice(0, 10), crewDays = upcoming(S.sport, 7).map(function (c) { return c.day; });
+    var crewDays = upcoming(S.sport, 7).map(function (c) { return c.day; });
     $('#mapdays').innerHTML = dates.map(function (d) {
-      var n = crewDays.filter(function (x) { return x === d; }).length;
-      return '<button data-act="mapday" data-date="' + d + '" aria-pressed="' + (d === cur) + '">' + esc(d === S.today ? 'TODAY' : FX.dayName(d, S.today).slice(0, 3).toUpperCase()) + (n ? '<i>' + n + '</i>' : '') + '</button>';
+      var n = crewDays.filter(function (x) { return x === d; }).length, b = bestDay(d);
+      return '<button data-act="mapday" data-date="' + d + '" aria-pressed="' + (d === cur) + '" aria-label="' + esc(FX.dayName(d, S.today)) + (b ? ': ' + b.label + ' at ' + esc(b.spot.name) + ' ' + pad(b.from) + '–' + pad(b.to) : ': nothing good') + (n ? ', ' + n + ' crew' + (n > 1 ? 's' : '') : '') + '">' +
+        esc(d === S.today ? 'TODAY' : FX.dayName(d, S.today).slice(0, 3).toUpperCase()) + '<b class="dt t-' + (b ? FX.tone(b.score) : 'none') + '"></b>' + (n ? '<i>' + n + '</i>' : '') + '</button>';
     }).join('');
     $('#layerBtn').textContent = effLayer() === 'rain' ? 'WIND' : 'RAIN';
+  }
+
+  // ---- the spot card on the map: the hour you're looking at, the best window that day, and the crews: hop on, or start one
+  function pickSpot(slug) {
+    S.mapSel = slug; drawMapSpots();
+    var sp = HI8.spot(slug), el = $('#map');
+    if (sp && map && el) map.center(sp.lat, sp.lon, el.clientWidth / 2, Math.max(80, el.clientHeight * (wide.matches ? 0.3 : 0.62)));
+    look();
+  }
+  function drawMapCard() {
+    var el = $('#mapcard'); if (!el) return;
+    var sp = S.mapSel ? HI8.spot(S.mapSel) : null, T = times(), t = T[S.hi];
+    var mw = el.parentNode;
+    if (!sp || !t) { el.hidden = true; el.innerHTML = ''; if (mw) mw.classList.remove('carded'); return; }
+    var day = t.slice(0, 10), r = rowAt(sp.slug, t), rt = t ? rateAt(sp, t) : null, kite = S.sport === 'kite' || S.sport === 'wing' || S.sport === 'windsurf';
+    var fs = fxSpot(sp.slug), ws = fs ? FX.windows(fs, day, S.sport, sp, fxo(S.sport)).map(function (x) { return day === S.today ? Object.assign({}, x, { from: Math.max(x.from, S.nowH + 1) }) : x; }).filter(function (x) { return x.to - x.from >= 1; }) : [];
+    var w = ws[0] || null, crews = upcoming(S.sport, 7).filter(function (c) { return c.day === day && c.spot === sp.slug; });
+    var now = !r || !rt ? '<span class="tag none">NO FORECAST</span>' : rt.dark ? '<b>DARK</b>' :
+      '<b>' + (kite ? Math.round(r.w) + ' KT ' + esc(FX.compass(r.dir)) : esc((rt.ground || '').toUpperCase()) + ' · ' + Math.round(r.temp) + '°C') + '</b> <span class="tag ' + FX.tone(rt.s) + '">' + esc(rt.label) + '</span>' +
+      (kite && r.g ? '<small>gusts ' + Math.round(r.g) + (rt.shore ? ' · ' + esc(rt.shore) : '') + '</small>' : '');
+    var win = w ? '<div class="mc-w">BEST HERE ' + esc(dayRel(day).toUpperCase()) + ': <b>' + pad(w.from) + '–' + pad(w.to) + (kite ? ' · ' + w.w + ' KT' : '') + '</b> <span class="tag ' + FX.tone(w.score) + '">' + esc(w.label) + '</span>' +
+        (S.hi !== T.indexOf(day + 'T' + pad(w.from) + ':00') && T.indexOf(day + 'T' + pad(w.from) + ':00') >= 0 ? ' <button class="lnk" data-act="hourpick" data-i="' + T.indexOf(day + 'T' + pad(w.from) + ':00') + '">SHOW</button>' : '') + '</div>'
+      : (function () { var b = bestDay(day); return '<div class="mc-w">No good window here ' + esc(dayRel(day)) + '.' + (b && b.spot.slug !== sp.slug ? ' Best: <button class="lnk" data-act="mapspot" data-spot="' + esc(b.spot.slug) + '">' + esc(b.spot.name.toUpperCase()) + ' ' + pad(b.from) + '–' + pad(b.to) + '</button>' : '') + '</div>'; })();
+    var list = crews.slice(0, 2).map(function (c) {
+      var mine = !!(c.me || (HI8.mine && (HI8.mine.crews || []).some(function (x) { return x.code === c.code; })));
+      return '<div class="mc-c">' + faces(c) + '<span><b>' + esc(c.host) + '\'s crew</b> ' + esc(hm(c.start).replace(':00', '')) + (c.end ? '–' + esc(hm(c.end).replace(':00', '')) : '') + '<small>' + c.going + ' going' + (c.seats_free > 0 ? ' · ' + c.seats_free + ' seat' + (c.seats_free > 1 ? 's' : '') + ' free' : '') + (c.min && !c.min_met ? ' · needs ' + (c.min - c.going) + ' more' : '') + '</small></span>' +
+        '<button class="big ' + (mine ? 'ghost' : 'join') + '" data-act="' + (mine ? 'crew' : 'going') + '" data-code="' + esc(c.code) + '">' + (mine ? 'YOUR CREW' : 'I\'M GOING') + '</button></div>';
+    }).join('') + (crews.length > 2 ? '<button class="lnk" data-act="spot" data-spot="' + esc(sp.slug) + '">+' + (crews.length - 2) + ' MORE CREWS</button>' : '');
+    var start = w && !(day === S.today && w.to <= S.nowH + 1) ? '<button class="big start" data-act="startwin" data-spot="' + esc(sp.slug) + '" data-date="' + day + '" data-from="' + w.from + '" data-to="' + w.to + '">' + (crews.length ? 'START YOUR OWN' : 'START IT · ' + pad(w.from) + '–' + pad(w.to)) + '</button>' : '';
+    el.innerHTML = '<button class="mc-x" data-act="mapcardx" aria-label="Close">✕</button>' +
+      '<div class="mc-k">' + esc(dayRel(day).toUpperCase()) + ' ' + t.slice(11, 16) + ' · ' + esc(sp.name.toUpperCase()) + (watchN(sp.slug) ? ' · ' + watchN(sp.slug) + ' WATCH' : '') + '</div>' +
+      '<div class="mc-h">' + now + '</div>' + win +
+      (list || '<div class="mc-c none">Nobody\'s going ' + esc(dayRel(day)) + ' yet.' + (watchN(sp.slug) ? ' ' + watchN(sp.slug) + ' riders watch it: go first and they hear it.' : '') + '</div>') +
+      '<div class="mc-f">' + start + '<button class="big ghost" data-act="spot" data-spot="' + esc(sp.slug) + '">FULL FORECAST</button></div>';
+    var was = !el.hidden;
+    el.hidden = false;
+    // phones: the card opens under the map (the map keeps its size), not over it
+    if (!wide.matches && mw) {
+      mw.style.setProperty('--cardh', el.offsetHeight + 'px'); mw.classList.add('carded');
+      if (!was) setTimeout(function () { var r = el.getBoundingClientRect(), dock = $('.dock'), db = dock ? dock.getBoundingClientRect().top : innerHeight; if (r.bottom > db - 8) scrollBy({ top: r.bottom - db + 16, behavior: 'smooth' }); }, 60);
+    }
   }
 
   // ---------------------------------------------------------------- crews
@@ -1289,7 +1349,7 @@
     var known = K.filter(function (k) { return k.together; }).length;
     return '<div class="box rcbox"><h3>' + (c.me ? 'YOUR CREW' : 'WHO YOU\'D RIDE WITH') + ' <span class="tag">' + K.length + ' RIDER' + (K.length > 1 ? 'S' : '') + '</span>' + (known && !c.me ? ' <span class="tag good">' + known + ' YOU KNOW</span>' : '') + '</h3>' +
       '<div class="rcards" role="list">' + K.map(miniCard).join('') + '</div>' +
-      '<p class="hint" style="margin:8px 0 0">Tap a card: how long they\'ve ridden, where, and how much.' + (c.me ? '' : ' Names and cartoons show once you\'re in.') + '</p></div>';
+      '<p class="hint" style="margin:8px 0 0">Tap a card: how long they\'ve ridden, where, and how much.' + (c.me ? '' : ' Names show once you\'re in.') + '</p></div>';
   }
   function bigCard(k) {
     var st = cardStats(k), sp = S.crew.data.sport;
@@ -1306,13 +1366,13 @@
       (k.together ? '<div class="pc-tog">YOU\'VE RIDDEN TOGETHER ' + k.together + (k.together === 1 ? ' TIME' : ' TIMES') + '</div>' : '') +
       '<div class="pc-facts">' + facts.map(function (x) { return '<span>' + x[0] + '</span><b>' + esc(x[1]) + '</b>'; }).join('') + '</div>' +
       (k.insta ? '<a class="pc-ig" target="_blank" rel="noopener" href="https://instagram.com/' + esc(k.insta) + '">@' + esc(k.insta) + ' ON INSTAGRAM</a>' : '') +
-      (!k.stats ? '<p class="pc-note">This rider keeps their card for their crews. Join, and you\'ll see it.</p>' : !k.name ? '<p class="pc-note">Their name and cartoon show once you\'re in the crew.' + (signedIn() ? '' : ' Signed in, you also see if you\'ve ridden together.') + '</p>' : '') +
+      (!k.stats ? '<p class="pc-note">This rider keeps their card for their crews. Join, and you\'ll see it.</p>' : !k.name ? '<p class="pc-note">Their name shows once you\'re in the crew.' + (signedIn() ? '' : ' Signed in, you also see if you\'ve ridden together.') + '</p>' : '') +
       '<button class="pc-x" data-act="rcardx">CLOSE</button></div></div>';
   }
   function myCardPreview(p) {
     var st = p.stats || {};
     var k = { member_id: 'me', name: (HI8.mine && (HI8.mine.name || HI8.mine.first_name)) || (myPlate() ? 'Rider #' + myPlate() : 'You'), plate: myPlate(), avatar: S.avatar, level: HI8.store.get('lv.' + S.sport, 'regular'), me: true, stats: st, tagline: p.tagline };
-    return '<div class="rcards solo">' + miniCard(k).replace('data-act="rcard"', 'data-act="noop" tabindex="-1"') + '<p class="hint" style="margin:0;align-self:center">This is your card on every crew you join.' + (p.card_public === false ? ' Right now riders outside your crews see just your initials and level.' : ' Riders deciding to join see it without your name or cartoon: those are for your crew.') + '</p></div>';
+    return '<div class="rcards solo">' + miniCard(k).replace('data-act="rcard"', 'data-act="noop" tabindex="-1"') + '<p class="hint" style="margin:0;align-self:center">This is your card on every crew you join.' + (p.card_public === false ? ' Right now riders outside your crews see just your initials and level.' : ' Riders deciding to join see it with your cartoon, without your name: that\'s for your crew.') + '</p></div>';
   }
 
   // ---- 2.23 on a crew page: the forecast dropped, how was it, go again
@@ -1765,7 +1825,7 @@
       '<div class="two"><label><span class="lb">YEARS RIDING</span><input class="inp" id="prYears" type="number" inputmode="numeric" min="0" max="60" value="' + (p.years != null ? p.years : '') + '" placeholder="e.g. 4"></label>' +
       '<label><span class="lb">HOME SPOT</span><select class="inp" id="prHome"><option value="">–</option>' + spots.map(function (s) { return '<option value="' + s.slug + '"' + (p.home_spot === s.slug ? ' selected' : '') + '>' + esc(s.name) + '</option>'; }).join('') + '</select></label></div>' +
       '<label><span class="lb" style="margin-top:8px">INSTAGRAM</span><input class="inp" id="prInsta" autocapitalize="off" autocomplete="off" maxlength="40" value="' + esc(p.insta ? '@' + p.insta : '') + '" placeholder="@yourname"></label>' +
-      '<div class="row" style="margin-top:10px"><button class="opt" data-act="prcard" aria-pressed="' + (p.card_public !== false) + '">SHOW MY CARD TO RIDERS DECIDING TO JOIN<small>' + (p.card_public !== false ? 'on: your numbers, years, home spot and line (never your name)' : 'off: outside your crews, just your initials and level') + '</small></button></div>' +
+      '<div class="row" style="margin-top:10px"><button class="opt" data-act="prcard" aria-pressed="' + (p.card_public !== false) + '">SHOW MY CARD TO RIDERS DECIDING TO JOIN<small>' + (p.card_public !== false ? 'on: your cartoon, numbers, years, home spot and line (never your name)' : 'off: outside your crews, just your initials and level') + '</small></button></div>' +
       '<button class="big dark" data-act="profsave" style="width:100%;margin-top:10px;font-size:17px">SAVE</button></div>';
   }
   function alertsBox() {
@@ -1804,13 +1864,13 @@
     if (CT.step === 'busy') return '<div class="box ct">' + head + '<div class="ctstage"><div class="ctframe drawing"><img src="' + CT.photo + '" alt=""><span class="ctpen" aria-hidden="true"></span></div>' +
       '<p class="lede" role="status" aria-live="polite"><span class="spin"></span> <b id="ctMsg">Drawing you…</b><br><span class="hint">Takes about 30 seconds. Keep this open.</span></p></div></div>';
     if (CT.step === 'photo') return '<div class="box ct">' + head + '<div class="ctstage"><div class="ctframe"><img src="' + CT.photo + '" alt="Your photo"></div>' +
-      '<div><label class="ckline"><input type="checkbox" data-change="ctconsent"' + (CT.consent ? ' checked' : '') + '> <span>Send this photo to OpenAI to draw my cartoon. Hi8ctane keeps only the cartoon, never the photo.</span></label>' +
+      '<div><label class="ckline"><input type="checkbox" data-change="ctconsent"' + (CT.consent ? ' checked' : '') + '> <span>Send this photo to OpenAI to draw my cartoon. Hi8ctane keeps only the cartoon, never the photo. The cartoon goes on my rider card.</span></label>' +
       (CT.err ? '<p class="err" role="alert">' + esc(CT.err) + '</p>' : '') +
       '<div class="row"><button class="jn lm" data-act="ctdraw"' + (CT.consent ? '' : ' disabled') + '>DRAW ME</button><button class="jn wh" data-act="ctcancel">CANCEL</button></div></div></div></div>';
     if (S.avatar) return '<div class="box ct">' + head + '<div class="ctstage"><div class="ctframe done"><img src="' + esc(HI8.avatarUrl(S.avatar)) + '" alt="Your cartoon"></div>' +
-      '<div><p class="hint" style="margin-top:0">Your crew sees it next to your name. Public crew cards keep your initials.</p>' + (CT.err ? '<p class="err" role="alert">' + esc(CT.err) + '</p>' : '') +
+      '<div><p class="hint" style="margin-top:0">It\'s the picture on your rider card: riders deciding to join see it (not your name), your crew sees it next to your name.' + (S.prof && S.prof.card_public === false ? ' Your card is set to just the basics: outside your crews, only your initials show.' : '') + '</p>' + (CT.err ? '<p class="err" role="alert">' + esc(CT.err) + '</p>' : '') +
       '<p class="hint" style="margin:8px 0 4px">New one?' + (CT.left != null ? ' ' + CT.left + ' left today.' : '') + '</p>' + pick + '<button class="lnk" data-act="ctremove" style="margin-top:8px">Remove my cartoon</button></div></div></div>';
-    return '<div class="box ct">' + head + '<div class="ctstage"><div class="ctframe empty" aria-hidden="true"><span>?</span></div><div><p class="hint" style="margin-top:0">Snap a selfie and we draw you as a Hi8ctane cartoon, surf-mag style. It\'s what your crew sees next to your name.</p>' +
+    return '<div class="box ct">' + head + '<div class="ctstage"><div class="ctframe empty" aria-hidden="true"><span>?</span></div><div><p class="hint" style="margin-top:0">Snap a selfie and we draw you as a salty surf-mag cartoon: sun-bleached, sea-spray, ready to ride. It\'s the picture on your rider card.</p>' +
       (CT.err ? '<p class="err" role="alert">' + esc(CT.err) + '</p>' : '') + pick + '</div></div></div>';
   }
   // the photo: turned upright, cropped square around the middle, 1024 px, JPEG (so a 12 MB phone photo goes up as ~200 KB)
@@ -2131,13 +2191,16 @@
       case 'sport': setSport(d.sport); break;
       case 'soon': go('#soon/' + d.sport); break;
       case 'soonpick': S.soonSport = d.sport; history.replaceState(null, '', '#soon/' + d.sport); renderSheet(); break;
-      case 'spot': closeSheet(); go('#spot/' + d.spot); break;
+      case 'spot': { closeSheet(); var tm = times()[S.hi]; if (d.spot === S.mapSel && tm) S.spotDay = Math.max(0, Math.min(6, Math.round((dDate(tm.slice(0, 10)) - dDate(S.today)) / 864e5))); go('#spot/' + d.spot); break; }
       case 'crew': e.preventDefault(); openCrew(d.code); break;
       case 'zoom': if (map) map.zoom(Number(d.d)); break;
       case 'layer': S.layer = effLayer() === 'rain' ? 'wind' : 'rain'; S.layerSet = true; drawTime(); drawMapSpots(); break;
       case 'play': togglePlay(); break;
+      case 'hourpick': S.hi = Number(d.i); stopPlay(); drawTime(); drawMapSpots(); break;
+      case 'mapcardx': S.mapSel = null; drawMapSpots(); break;
+      case 'mapspot': pickSpot(d.spot); break;
       case 'now': S.hi = Math.max(0, times().indexOf(S.today + 'T' + pad(S.nowH) + ':00')); drawTime(); drawMapSpots(); break;
-      case 'mapday': { // that day at the best hour: now if it's today and light, else the best window of the day, else noon
+      case 'mapday': { S.hoursTouched = false; // that day at the best hour: now if it's today and light, else the best window of the day, else noon
         var T2 = times(), want = d.date === S.today && S.nowH >= 8 && S.nowH < 18 ? S.today + 'T' + pad(S.nowH) + ':00' : null;
         if (!want && FX.data[S.city]) { var b2 = null; spotsFor(S.city, S.sport).forEach(function (sp) { var fs = fxSpot(sp.slug); if (!fs) return; var w = FX.windows(fs, d.date, S.sport, sp, { kg: kg() })[0]; if (w && (!b2 || w.score > b2.score)) b2 = w; }); if (b2) want = d.date + 'T' + pad(b2.from) + ':00'; }
         var i2 = T2.indexOf(want || d.date + 'T12:00'); if (i2 < 0) i2 = T2.indexOf(d.date + 'T12:00');
@@ -2331,7 +2394,11 @@
   document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && S.view) closeSheet(); });
 
   var playT = null;
-  function togglePlay() { if (playT) return stopPlay(); var T = times(); $('#play').textContent = '❚❚'; playT = setInterval(function () { S.hi = (S.hi + 1) % T.length; drawTime(); drawMapSpots(); }, 650); }
+  function togglePlay() { // plays the day on the map, hour by hour (6 to 21), then stops on the best hour
+    if (playT) return stopPlay(); var T = times(), day = (T[S.hi] || '').slice(0, 10), H = [];
+    for (var h = day === S.today ? Math.max(6, S.nowH) : 6; h <= 21; h++) { var i = T.indexOf(day + 'T' + pad(h) + ':00'); if (i >= 0) H.push(i); }
+    if (!H.length) return; var k = 0; $('#play').textContent = '❚❚';
+    playT = setInterval(function () { S.hi = H[k++]; drawTime(); drawMapSpots(); if (k >= H.length) stopPlay(); }, 600); }
   function stopPlay() { if (playT) { clearInterval(playT); playT = null; var b = $('#play'); if (b) b.textContent = '▶'; } }
 
   // ---------------------------------------------------------------- data
