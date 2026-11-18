@@ -114,8 +114,10 @@ async function main() {
         const line = (WINDY[c.sport] ? s.w + ' kt ' + FX.compass(s.dir) : (s.ground || 'bad') + ', ' + s.temp + '°C') + ' at ' + c.start + ' ' + dayWord(c.day, today) + ', ' + s.label;
         let next = null;
         for (let i = 0; i < 4 && !next; i++) {
-          const d = FX.addDays(today, i), w = FX.windows(sp, d, c.sport, meta, { kg: 75 }).filter((x) => x.score >= 6 && (d !== today || x.from > nowH + 1))[0];
-          if (w) next = dayWord(d, today) + ' ' + pad(w.from) + '–' + pad(w.to) + (WINDY[c.sport] ? ', ' + w.w + ' kt' : '') + ', ' + w.label;
+          // today: a window still running counts, from the next hour, if 2 good hours are left
+          const d = FX.addDays(today, i), soon = d === today ? nowH + 1 : 0;
+          const w = FX.windows(sp, d, c.sport, meta, { kg: 75 }).filter((x) => x.score >= 6 && x.to - Math.max(x.from, soon) >= 2)[0];
+          if (w) next = dayWord(d, today) + ' ' + pad(Math.max(w.from, soon)) + '–' + pad(w.to) + (WINDY[c.sport] ? ', ' + w.w + ' kt' : '') + ', ' + w.label;
         }
         if (!DRY) drops += await rpc('hi8_fx_drop', { p_code: c.code, p_line: line, p_next: next });
         log('forecast dropped:', c.code, line, next ? '· next ' + next : '');
