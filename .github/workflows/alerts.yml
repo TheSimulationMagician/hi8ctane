@@ -1,6 +1,6 @@
-# The alert worker (scripts/alerts.mjs): wind alerts at each rider's own conditions, "forecast dropped" for crews,
-# "how was it?" the morning after, and every message waiting for a phone. Every 10 minutes (GitHub may run it a few
-# minutes late), and from the Actions tab ("Run workflow").
+# The alert worker, by hand: since 2.27 it runs inside Supabase every 10 minutes (the Edge Function "alerts", started
+# by pg_cron, migration 0021), because GitHub's timer ran it far too rarely. This stays as a manual run from the
+# Actions tab ("Run workflow"), the same code (scripts/alerts.mjs -> supabase/functions/_shared/alerts.js).
 #
 # One-time setup, in GitHub: Settings → Secrets and variables → Actions → New repository secret
 #   SUPABASE_SECRET_KEY   Supabase → Project Settings → API Keys → Secret keys (sb_secret_…). Never in site/config.js.
@@ -11,8 +11,6 @@
 name: Alerts and push
 
 on:
-  schedule:
-    - cron: "*/10 * * * *"
   workflow_dispatch:
 
 permissions:

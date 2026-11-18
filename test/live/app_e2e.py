@@ -324,7 +324,7 @@ with sync_playwright() as p:
 
     print('no forecast')
     ctxN, N = fresh()
-    N.route(re.compile(r'.*/v1/(forecast|marine).*'), lambda r: r.abort())
+    N.route(re.compile(r'.*/v1/(forecast|marine).*|.*/storage/v1/object/public/fx/.*'), lambda r: r.abort())   # 2.27: and the shared forecast file
     N.goto(BASE + '/'); N.wait_for_timeout(2500)
     check('No forecast right now'.upper() in txt(N, '#week') and 'ALL SPOTS · THIS WEEK' in txt(N, '#sessions') and not N.errs, 'Open-Meteo down: says so, crews still work, nothing breaks')
     check('CHECKING' not in txt(N, '#heroWind') and 'wait' not in (N.locator('#heroWind').get_attribute('class') or ''), 'and the hero stops saying it is checking the forecast (2.17)')

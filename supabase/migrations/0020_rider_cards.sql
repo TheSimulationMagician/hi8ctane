@@ -94,9 +94,6 @@ begin
     if tl ~* '(https?://|www\.|[a-z0-9-]+\.(com|nl|es|net|org|me|io|app|co|ly|link|gg)(/|\M)|@[a-z0-9_.]{2,}|\+?[0-9][0-9 ]{7,})' then raise exception 'bad_tagline' using errcode = '22023', hint = 'No links, handles or numbers in your line: Instagram has its own box.'; end if;
     update public.signups set years_riding = p_years, home_spot = p_home_spot, insta = ig, tagline = tl,
       card_public = coalesce(p_card_public, card_public) where lower(email) = em;
-    if p_card_public is null and not exists (select 1 from public.signups where lower(email) = em and card_public is not null) then
-      raise exception 'pick_who' using errcode = '22023', hint = 'Choose who sees your card.';
-    end if;
   end if;
   return (select json_build_object('years', s.years_riding, 'home_spot', s.home_spot, 'insta', s.insta, 'tagline', s.tagline,
             'card_public', s.card_public, 'rode', public.hi8_rode(em), 'stats', public.hi8_rider_stats(em))

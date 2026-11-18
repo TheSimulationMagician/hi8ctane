@@ -899,7 +899,7 @@
         newStart({ spot: q.get('spot') || null, sport: sp && LIVE_SPORTS.indexOf(sp) >= 0 ? sp : null });
       }
     }
-    else if (h === 'me') { S.view = 'me'; if (signedIn()) { HI8.loadMine(true).then(renderSheet, noop); loadWallet(); loadAvatar(); loadSocial(); loadAlerts(); S.prof = null; } }
+    else if (h === 'me') { S.view = 'me'; if (signedIn()) { HI8.loadMine(true).then(renderSheet, noop); loadWallet(); loadAvatar(); loadSocial(); loadAlerts(); S.profP = null; loadProf(); } }
     else if (h === 'city') { S.view = 'city'; }
     else if (/^spot\//.test(h)) { var sq2 = h.split('/'); S.view = 'spot'; S.spotSlug = sq2[1]; S.spotDay = S.spotDay || 0;
       if (/^\d{4}-\d\d-\d\d$/.test(sq2[2] || '')) { refreshToday(); S.spotDay = Math.max(0, Math.min(6, Math.round((dDate(sq2[2]) - dDate(S.today)) / 864e5))); history.replaceState(null, '', '#spot/' + sq2[1]); } }
@@ -1331,8 +1331,14 @@
     p.then(function (k) { if (S.crew === C) { C.cards = k || []; renderSheet(); } }, noop);
   }
   function cardAv(k, size) {
-    return k.avatar ? '<img src="' + esc(HI8.avatarUrl(k.avatar)) + '" alt="" width="' + size + '" height="' + size + '" loading="lazy">' : '<span class="ini">' + esc(k.initials || String(k.name || '?').slice(0, 2).toUpperCase()) + '</span>';
+    var ini = esc(k.initials || String(k.name || '?').slice(0, 2).toUpperCase());
+    return k.avatar ? '<img src="' + esc(HI8.avatarUrl(k.avatar)) + '" alt="" width="' + size + '" height="' + size + '" loading="lazy" data-ini="' + ini + '">' : '<span class="ini">' + ini + '</span>';
   }
+  // a cartoon that won't load (removed, or Storage down) shows the initials instead of a broken image
+  document.addEventListener('error', function (e) {
+    var t = e.target; if (!t || t.tagName !== 'IMG' || !t.hasAttribute('data-ini')) return;
+    var sp = document.createElement('span'); sp.className = 'ini'; sp.textContent = t.getAttribute('data-ini'); t.replaceWith(sp);
+  }, true);
   function cardName(k) { return k.name || 'Rider' + (k.plate ? ' #' + pad3(k.plate) : ''); } // outside the crew: no names (privacy page)
   function cardStats(k) { return k.stats || { sessions: 0, spots: 0, drives: 0, started: 0 }; }
   function miniCard(k) {
@@ -1824,12 +1830,12 @@
   function loadProf(force) {
     if (!signedIn() || !HI8.live) return Promise.resolve(null);
     if (S.profP && !force) return S.profP;
-    S.profP = HI8.withKey('hi8_rider_profile', {}, { noQueue: true }).then(function (r) { S.prof = r || {}; return S.prof; }, function () { S.profP = null; return null; });
+    S.profP = HI8.withKey('hi8_rider_profile', {}, { noQueue: true }).then(function (r) { S.prof = r || {}; return S.prof; }, function () { return null; }); // a failure stays failed until the next visit (no retry loop)
     return S.profP;
   }
   function cardMade() { return !!(S.prof && S.prof.card_public != null); }
   function profileBox() {
-    var p = S.prof; if (!p) { loadProf().then(function () { if (S.view === 'me') renderSheet(); }); return ''; }
+    var p = S.prof; if (!p) { if (!S.profP) loadProf().then(function (r) { if (r && S.view === 'me') renderSheet(); }); return ''; }
     return '<div class="box"><h3>YOUR RIDER CARD <span class="tag ' + (cardMade() ? 'good' : 'ok') + '">' + (!cardMade() ? 'NOT MADE YET' : p.card_public ? 'RIDERS DECIDING TO JOIN SEE IT' : 'ONLY YOUR CREWS') + '</span></h3>' + myCardPreview(p) +
       '<button class="big ' + (cardMade() ? 'dark' : 'start') + '" data-act="mycard" style="width:100%;margin-top:10px;font-size:17px">' + (cardMade() ? 'EDIT MY CARD' : 'MAKE MY CARD · 1 MIN') + '</button></div>';
   }
@@ -1837,7 +1843,7 @@
   function sheetCard() {
     if (!signedIn()) return shell('YOUR CARD', '<div class="hero"><div class="k">YOUR RIDER CARD</div><h2>First, your rider number</h2><div class="when2" style="font-weight:400">Your card belongs to your rider number: join a crew or set an alert, then make it.</div></div>', '<button class="big start" data-act="alerts">SET AN ALERT</button>', true);
     var p = S.prof;
-    if (!p) { loadProf().then(renderSheet); if (!S.avatar) loadAvatar().then(renderSheet); return shell('YOUR CARD', '<div class="skel" style="height:300px;margin:16px"></div>', '', true); }
+    if (!p) { if (!S.profP) loadProf().then(function (r) { if (r && S.view === 'card') renderSheet(); }); return shell('YOUR CARD', '<div class="skel" style="height:300px;margin:16px"></div>', '', true); }
     var f = S.cf || (S.cf = { who: p.card_public == null ? null : p.card_public });
     var spots = HI8.spotsOf(S.city).filter(function (x) { return (x.sports || []).some(function (k) { return LIVE_SPORTS.indexOf(k) >= 0; }); });
     var step = function (n, title, sub, body, done) { return '<div class="cstep' + (done ? ' done' : '') + '"><div class="cs-h"><b>' + (done ? '✓' : n) + '</b><span>' + title + (sub ? '<small>' + sub + '</small>' : '') + '</span></div>' + body + '</div>'; };

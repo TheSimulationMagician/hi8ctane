@@ -20,10 +20,12 @@ def rpc(fn, body, ip='10.4.4.4'):
 
 sql("truncate public.signups, public.rider_keys, public.rate_hits, public.crews, public.crew_members, public.outbox, public.crew_alerts, public.spot_watch, public.spot_reports cascade")
 K = {n: rpc('hi8_join', {'p_email': n + '@example.com', 'p_city': 'amsterdam'})[1]['key'] for n in ('ana', 'bo', 'cy', 'di', 'eve')}
-st, _ = rpc('hi8_rider_profile', {'p_key': K['ana'], 'p_save': True, 'p_years': 6, 'p_home_spot': 'wijk-aan-zee', 'p_insta': '@ana.rides', 'p_tagline': 'Early mornings, big air.'})
+st, _ = rpc('hi8_rider_profile', {'p_key': K['ana'], 'p_save': True, 'p_years': 6, 'p_home_spot': 'wijk-aan-zee', 'p_insta': '@ana.rides', 'p_tagline': 'Early mornings, big air.', 'p_card_public': True})
 check(st == 200, 'a profile with a line about yourself')
 st, r = rpc('hi8_rider_profile', {'p_key': K['bo'], 'p_save': True, 'p_tagline': 'DM me on instagram.com/bo'})
 check(st != 200 and r.get('message') == 'bad_tagline', 'no links or handles in the line')
+st, r = rpc('hi8_rider_profile', {'p_key': K['bo'], 'p_save': True, 'p_card_public': True})
+check(st == 200 and r['card_public'] is True, 'a rider opens their card to riders deciding to join')
 st, r = rpc('hi8_rider_profile', {'p_key': K['di'], 'p_save': True, 'p_years': 3, 'p_tagline': 'Quiet one.', 'p_card_public': False})
 check(st == 200 and r['card_public'] is False, 'a rider can keep their card to their crews')
 # history: ana + eve rode together 3 times; ana + bo once (bo a no-show once)
