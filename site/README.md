@@ -178,3 +178,13 @@ The tables are locked (row-level security, no policies, no table rights for the 
 
 Tests: `test/live/` (see its README): 55 app checks in a browser, 57 pilot API checks, 63 sign-up checks, 42 crews API checks, 49 core-loop API checks, and 26 forecast-engine checks in `test/unit/`, against Postgres + PostgREST and a stand-in Open-Meteo.
 
+## 2.24 · going live polish (flow audit 2)
+
+- **The home knows you're going.** With a crew today or tomorrow, the hero says YOU'RE GOING with the spot, the pick-up and who's in, and the bottom button becomes OPEN MY CREW. Leave the crew and the home goes back to the forecast.
+- **On the day, the crew page starts with what you need there:** I'M AT THE SPOT, the meeting point and the chat; the forecast, the car and the money come after.
+- **Joining:** the form, the hours and one I'M GOING at the bottom; the rest of the crew page comes once you're in. "You're in · founding plate #…" sits in the crew page (with EMAIL ME NEW … CREWS), not in a box floating over the home.
+- **Starting:** skip "How are you getting there?" and the error shows under that question; any new error in a sheet scrolls into view instead of hiding behind the button.
+- **Tap targets:** the top bar and the sport row are 44 px tall; board cells 48 px.
+- **Links:** FOR SCHOOLS opens /schools/ (it opened the 2.7 mock-up); the footer adds The world.
+- **Alerts worker:** "Next good window" now counts a window that's still running today, from the next hour, if 2 good hours are left.
+

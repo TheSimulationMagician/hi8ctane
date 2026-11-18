@@ -770,3 +770,17 @@ table.fx tr.rate td { color: var(--ink); }
 .fxdrop p { margin: 6px 0 10px; font-size: 12.5px; }
 .rated { margin-top: 10px; padding: 10px; border: 2px solid var(--ink); background: var(--lime); font: 700 12px/1.35 var(--mono); }
 .hero .needs { text-shadow: none; color: var(--ink); }
+
+/* 2.24 · tap targets: 44 px tall in the top bar and the sport row; taller board cells */
+.tbcity, .tbme, .tbme.plate { height: 44px; line-height: 44px; }
+.stile.mini, .ctxfrom { height: 44px; }
+.bd-c { height: 48px; }
+
+/* 2.24 · you're in a crew: the hero says so */
+.hero.mine .lede0 b { color: var(--lime); font-weight: 700; }
+.hero.mine .herowind { display: none; }
+#dockGo[data-act="crew"] { background: var(--yellow); }
+
+/* 2.24 · the welcome after joining, in the crew page */
+.box.welcome { background: var(--lime); }
+.box.welcome .tag { background: var(--yellow); color: var(--ink); }
