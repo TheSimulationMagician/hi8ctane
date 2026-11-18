@@ -906,6 +906,7 @@
     else if (/^alerts/.test(h)) { var ap = h.split('/'), asp = LIVE_SPORTS.indexOf(ap[1]) >= 0 ? ap[1] : null; S.view = 'alerts';
       if (!S.al || (asp && S.al.sport !== asp) || ap[2]) newAlert(asp || (S.al && S.al.sport) || S.sport, ap[2] || null); if (signedIn() && !S.walerts) loadAlerts(); }
     else if (h === 'push') { S.view = 'push'; if (!PUSH.checked) pushCheck().then(renderSheet); }
+    else if (h === 'card') { S.view = 'card'; S.cf = null; loadProf(); if (signedIn()) loadAvatar().then(function () { if (S.view === 'card') renderSheet(); }); }
     else if (/^soon\//.test(h)) { S.view = 'soon'; S.soonSport = h.slice(5); }
     else if (h === 'from') { S.view = 'from'; }
     else if (h === 'kg') { S.view = 'kg'; }
@@ -917,7 +918,7 @@
   }
   function renderSheet() {
     if (!S.view) return;
-    var fn = { join: sheetJoin, start: sheetStart, crew: sheetCrew, spot: sheetSpot, me: sheetMe, city: sheetCity, soon: sheetSoon, plan: sheetPlan, from: sheetFrom, kg: sheetKg, level: sheetLevel, pass: sheetPass, squad: sheetSquad, alerts: sheetAlerts, push: sheetPush }[S.view];
+    var fn = { join: sheetJoin, start: sheetStart, crew: sheetCrew, spot: sheetSpot, me: sheetMe, city: sheetCity, soon: sheetSoon, plan: sheetPlan, from: sheetFrom, kg: sheetKg, level: sheetLevel, pass: sheetPass, squad: sheetSquad, alerts: sheetAlerts, push: sheetPush, card: sheetCard }[S.view];
     if (!fn) return;
     var keep = sheet.querySelector('.sh-body'), top = keep ? keep.scrollTop : 0, focus = document.activeElement && document.activeElement.id;
     var vals = {}; sheet.querySelectorAll('input[id],textarea[id]').forEach(function (i) { vals[i.id] = i.value; });
@@ -1069,6 +1070,7 @@
       return '<button class="big ' + (done ? 'ghost' : 'start') + '" data-act="sqcall" data-squad="' + esc(q.code) + '" data-code="' + esc(c.code) + '"' + (done ? ' disabled' : '') + '>' + (done ? 'TOLD ' + esc(q.name.toUpperCase()) + ' ✓' : 'TELL ' + esc(q.name.toUpperCase()) + '<small style="display:block;font:700 10.5px var(--mono)">' + (q.size - 1) + ' RIDERS GET AN EMAIL</small>') + '</button>';
     }).join('');
     return shell('YOUR CREW IS UP', (tell ? '<div class="f"><span class="lb">YOUR CREWS</span><div style="display:grid;gap:8px">' + tell + '</div></div>' : '') + '<div class="ok-box"><b>' + esc(SPORT[c.sport].em + ' ' + c.spot_name.toUpperCase() + ' · ' + dayRel(c.day) + ' ' + hm(c.start)) + '</b><br>' + (c.min && !c.min_met ? 'It goes ahead with ' + c.min + ': it needs ' + (c.min - (c.going || 1)) + ' more. ' : '') + 'Now get people in: share it to your group chats. They join in one tap, no app to install.</div>' +
+      (S.prof && !cardMade() ? '<div class="cardnudge"><span><b>Riders see your card before they join.</b> Yours is empty: make it so they see who they\'d ride with.</span><button class="big start" data-act="mycard">MAKE MY CARD · 1 MIN</button></div>' : '') +
       '<div class="f"><span class="lb">THE MESSAGE</span><pre class="box" style="margin:0;white-space:pre-wrap;font:400 12.5px/1.5 var(--mono)">' + esc(txt) + '</pre></div>' +
       '<div class="f"><div style="display:grid;gap:8px"><a class="big wa" href="https://wa.me/?text=' + encodeURIComponent(txt) + '" target="_blank" rel="noopener" data-act="shared">SHARE TO WHATSAPP</a>' +
       '<button class="big ghost" data-act="copy" data-text="' + esc(txt) + '">COPY THE MESSAGE</button>' + (navigator.share ? '<button class="big ghost" data-act="nshare" data-code="' + esc(c.code) + '">MORE APPS</button>' : '') + '</div></div>',
@@ -1335,19 +1337,21 @@
   function cardStats(k) { return k.stats || { sessions: 0, spots: 0, drives: 0, started: 0 }; }
   function miniCard(k) {
     var st = cardStats(k), tag = k.me ? 'YOU' : k.together ? 'RODE WITH YOU ' + k.together + '×' : k.host ? 'CAPTAIN' : st.sessions === 0 && k.stats ? 'FIRST SESSION' : '';
+    var none = k.made === false && !k.avatar;
     return '<button class="rc' + (k.me ? ' me' : '') + '" data-act="rcard" data-member="' + esc(k.member_id) + '" aria-label="' + esc(cardName(k)) + '\'s rider card">' +
       '<span class="rc-top"><b>' + (k.plate ? '#' + pad3(k.plate) : '') + '</b><i>' + esc((LEVEL[k.level] || '').toUpperCase()) + '</i></span>' +
-      '<span class="rc-av a-' + esc(S.crew && S.crew.data ? S.crew.data.sport : S.sport) + '">' + cardAv(k, 96) + '</span>' +
+      '<span class="rc-av a-' + esc(S.crew && S.crew.data ? S.crew.data.sport : S.sport) + (none ? ' none' : '') + '">' + (none ? '<span class="ini">?</span>' : cardAv(k, 96)) + '</span>' +
       '<span class="rc-name">' + esc(cardName(k)) + '</span>' +
-      (k.stats ? '<span class="rc-st"><span><em>' + st.sessions + '</em>RIDES</span><span><em>' + st.spots + '</em>SPOTS</span><span><em>' + st.drives + '</em>DRIVES</span></span>' : '<span class="rc-st closed">CARD FOR THEIR CREWS</span>') +
+      (k.stats ? '<span class="rc-st"><span><em>' + st.sessions + '</em>RIDES</span><span><em>' + st.spots + '</em>SPOTS</span><span><em>' + st.drives + '</em>DRIVES</span></span>' : '<span class="rc-st closed">' + (k.made === false ? 'NO CARD YET' : 'CARD FOR THEIR CREWS') + '</span>') +
       (tag ? '<span class="rc-tag' + (k.together ? ' tog' : '') + '">' + esc(tag) + '</span>' : '') + '</button>';
   }
   function cardsStrip(c) {
     var K = S.crew.cards;
     if (!K) return '<div class="box rcbox"><h3>' + (c.me ? 'YOUR CREW' : 'WHO YOU\'D RIDE WITH') + '</h3><div class="rcards"><div class="skel" style="height:190px;width:100%"></div></div></div>';
     if (!K.length) return '';
-    var known = K.filter(function (k) { return k.together; }).length;
-    return '<div class="box rcbox"><h3>' + (c.me ? 'YOUR CREW' : 'WHO YOU\'D RIDE WITH') + ' <span class="tag">' + K.length + ' RIDER' + (K.length > 1 ? 'S' : '') + '</span>' + (known && !c.me ? ' <span class="tag good">' + known + ' YOU KNOW</span>' : '') + '</h3>' +
+    var known = K.filter(function (k) { return k.together; }).length, made = K.filter(function (k) { return k.made !== false; }).length, mine = K.filter(function (k) { return k.me; })[0];
+    var nudge = mine && mine.made === false ? '<div class="cardnudge"><span><b>Your card is empty.</b> Your crew sees a “?” where you are.</span><button class="big start" data-act="mycard">MAKE MY CARD · 1 MIN</button></div>' : '';
+    return '<div class="box rcbox"><h3>' + (c.me ? 'YOUR CREW' : 'WHO YOU\'D RIDE WITH') + ' <span class="tag">' + K.length + ' RIDER' + (K.length > 1 ? 'S' : '') + '</span>' + (made < K.length ? ' <span class="tag">' + made + ' WITH A CARD</span>' : '') + (known && !c.me ? ' <span class="tag good">' + known + ' YOU KNOW</span>' : '') + '</h3>' + nudge +
       '<div class="rcards" role="list">' + K.map(miniCard).join('') + '</div>' +
       '<p class="hint" style="margin:8px 0 0">Tap a card: how long they\'ve ridden, where, and how much.' + (c.me ? '' : ' Names show once you\'re in.') + '</p></div>';
   }
@@ -1356,23 +1360,23 @@
     var since = st.since ? (function () { var a = st.since.split('-'); return ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'][Number(a[1]) - 1] + ' ' + a[0]; })() : null;
     var facts = [['LEVEL', (LEVEL[k.level] || '–').toUpperCase()], ['YEARS RIDING', k.years != null ? String(k.years) : null], ['HOME SPOT', k.home ? k.home.toUpperCase() : null],
       ['RIDES MOST AT', st.top_spot ? st.top_spot.toUpperCase() : null], ['ON HI8CTANE SINCE', since]].filter(function (x) { return x[1]; });
-    return '<div class="pc-over" role="dialog" aria-modal="true" aria-label="' + esc(cardName(k)) + '\'s rider card"><div class="pc">' +
-      '<div class="pc-shine" aria-hidden="true"></div>' +
-      '<div class="pc-top"><b>' + (k.plate ? '#' + pad3(k.plate) : 'RIDER') + '</b><span>' + (k.plate && k.plate <= 100 ? 'FOUNDING<br>RIDER' : esc(SPORT[sp].name.toUpperCase()) + '<br>RIDER') + '</span></div>' +
-      '<div class="pc-art a-' + esc(sp) + '">' + cardAv(k, 180) + (k.host ? '<span class="pc-stamp">CAPTAIN</span>' : '') + '</div>' +
-      '<div class="pc-name">' + esc(cardName(k)) + (k.me ? ' <small>YOU</small>' : '') + '</div>' +
-      (k.tagline ? '<div class="pc-line">“' + esc(k.tagline) + '”</div>' : '') +
-      (k.stats ? '<div class="pc-stats"><span><em>' + st.sessions + '</em>RIDES</span><span><em>' + st.spots + '</em>SPOTS</span><span><em>' + st.drives + '</em>DRIVES</span><span><em>' + st.started + '</em>CREWS<br>STARTED</span></div>' : '') +
-      (k.together ? '<div class="pc-tog">YOU\'VE RIDDEN TOGETHER ' + k.together + (k.together === 1 ? ' TIME' : ' TIMES') + '</div>' : '') +
-      '<div class="pc-facts">' + facts.map(function (x) { return '<span>' + x[0] + '</span><b>' + esc(x[1]) + '</b>'; }).join('') + '</div>' +
-      (k.insta ? '<a class="pc-ig" target="_blank" rel="noopener" href="https://instagram.com/' + esc(k.insta) + '">@' + esc(k.insta) + ' ON INSTAGRAM</a>' : '') +
-      (!k.stats ? '<p class="pc-note">This rider keeps their card for their crews. Join, and you\'ll see it.</p>' : !k.name ? '<p class="pc-note">Their name shows once you\'re in the crew.' + (signedIn() ? '' : ' Signed in, you also see if you\'ve ridden together.') + '</p>' : '') +
-      '<button class="pc-x" data-act="rcardx">CLOSE</button></div></div>';
+    return '<div class="bcard-over" role="dialog" aria-modal="true" aria-label="' + esc(cardName(k)) + '\'s rider card"><div class="bcard">' +
+      '<div class="bcard-shine" aria-hidden="true"></div>' +
+      '<div class="bcard-top"><b>' + (k.plate ? '#' + pad3(k.plate) : 'RIDER') + '</b><span>' + (k.plate && k.plate <= 100 ? 'FOUNDING<br>RIDER' : esc(SPORT[sp].name.toUpperCase()) + '<br>RIDER') + '</span></div>' +
+      '<div class="bcard-art a-' + esc(sp) + '">' + cardAv(k, 180) + (k.host ? '<span class="bcard-stamp">CAPTAIN</span>' : '') + '</div>' +
+      '<div class="bcard-name">' + esc(cardName(k)) + (k.me ? ' <small>YOU</small>' : '') + '</div>' +
+      (k.tagline ? '<div class="bcard-line">“' + esc(k.tagline) + '”</div>' : '') +
+      (k.stats ? '<div class="bcard-stats"><span><em>' + st.sessions + '</em>RIDES</span><span><em>' + st.spots + '</em>SPOTS</span><span><em>' + st.drives + '</em>DRIVES</span><span><em>' + st.started + '</em>CREWS<br>STARTED</span></div>' : '') +
+      (k.together ? '<div class="bcard-tog">YOU\'VE RIDDEN TOGETHER ' + k.together + (k.together === 1 ? ' TIME' : ' TIMES') + '</div>' : '') +
+      '<div class="bcard-facts">' + facts.map(function (x) { return '<span>' + x[0] + '</span><b>' + esc(x[1]) + '</b>'; }).join('') + '</div>' +
+      (k.insta ? '<a class="bcard-ig" target="_blank" rel="noopener" href="https://instagram.com/' + esc(k.insta) + '">@' + esc(k.insta) + ' ON INSTAGRAM</a>' : '') +
+      (!k.stats ? '<p class="bcard-note">This rider keeps their card for their crews. Join, and you\'ll see it.</p>' : !k.name ? '<p class="bcard-note">Their name shows once you\'re in the crew.' + (signedIn() ? '' : ' Signed in, you also see if you\'ve ridden together.') + '</p>' : '') +
+      '<button class="bcard-x" data-act="rcardx">CLOSE</button></div></div>';
   }
   function myCardPreview(p) {
     var st = p.stats || {};
-    var k = { member_id: 'me', name: (HI8.mine && (HI8.mine.name || HI8.mine.first_name)) || (myPlate() ? 'Rider #' + myPlate() : 'You'), plate: myPlate(), avatar: S.avatar, level: HI8.store.get('lv.' + S.sport, 'regular'), me: true, stats: st, tagline: p.tagline };
-    return '<div class="rcards solo">' + miniCard(k).replace('data-act="rcard"', 'data-act="noop" tabindex="-1"') + '<p class="hint" style="margin:0;align-self:center">This is your card on every crew you join.' + (p.card_public === false ? ' Right now riders outside your crews see just your initials and level.' : ' Riders deciding to join see it with your cartoon, without your name: that\'s for your crew.') + '</p></div>';
+    var k = { made: p.card_public != null || !!S.avatar, member_id: 'me', name: (HI8.mine && (HI8.mine.name || HI8.mine.first_name)) || (myPlate() ? 'Rider #' + myPlate() : 'You'), plate: myPlate(), avatar: S.avatar, level: HI8.store.get('lv.' + S.sport, 'regular'), me: true, stats: st, tagline: p.tagline };
+    return '<div class="rcards solo">' + miniCard(k).replace('data-act="rcard"', 'data-act="noop" tabindex="-1"') + '<p class="hint" style="margin:0;align-self:center">This is your card on every crew you join.' + (p.card_public == null ? ' Not made yet: riders see a “?” for now.' : p.card_public === false ? ' Riders outside your crews see just your initials and level.' : ' Riders deciding to join see it with your cartoon, without your name: that\'s for your crew.') + '</p></div>';
   }
 
   // ---- 2.23 on a crew page: the forecast dropped, how was it, go again
@@ -1817,16 +1821,61 @@
     HI8.withKey('hi8_crew_people', { p_code: C.code }, { noQueue: true }).then(function (p) { if (S.crew === C) { C.people = p; renderSheet(); } }, noop);
   }
   function personOf(m) { var P = (S.crew && S.crew.people) || []; return P.filter(function (x) { return x.member_id === m.member_id; })[0] || null; }
+  function loadProf(force) {
+    if (!signedIn() || !HI8.live) return Promise.resolve(null);
+    if (S.profP && !force) return S.profP;
+    S.profP = HI8.withKey('hi8_rider_profile', {}, { noQueue: true }).then(function (r) { S.prof = r || {}; return S.prof; }, function () { S.profP = null; return null; });
+    return S.profP;
+  }
+  function cardMade() { return !!(S.prof && S.prof.card_public != null); }
   function profileBox() {
-    var p = S.prof; if (!p) { if (HI8.live && signedIn() && !S.profLoading) { S.profLoading = true; HI8.withKey('hi8_rider_profile', {}, { noQueue: true }).then(function (r) { S.prof = r || {}; S.profLoading = false; if (S.view === 'me') renderSheet(); }, function () { S.profLoading = false; }); } return ''; }
-    var spots = HI8.spotsOf(S.city).filter(function (s) { return (s.sports || []).some(function (k) { return LIVE_SPORTS.indexOf(k) >= 0; }); });
-    return '<div class="box"><h3>YOUR RIDER CARD <span class="tag">' + (p.rode || 0) + ' SESSION' + (p.rode === 1 ? '' : 'S') + ' RIDDEN</span></h3>' + myCardPreview(p) + '<p class="hint" style="margin:10px 0 8px">What riders see before they join your crew, and you theirs. All optional.</p>' +
-      '<label><span class="lb">A LINE ABOUT YOU</span><input class="inp" id="prLine" maxlength="70" value="' + esc(p.tagline || '') + '" placeholder="e.g. Early mornings, big air, coffee after"></label>' +
-      '<div class="two"><label><span class="lb">YEARS RIDING</span><input class="inp" id="prYears" type="number" inputmode="numeric" min="0" max="60" value="' + (p.years != null ? p.years : '') + '" placeholder="e.g. 4"></label>' +
-      '<label><span class="lb">HOME SPOT</span><select class="inp" id="prHome"><option value="">–</option>' + spots.map(function (s) { return '<option value="' + s.slug + '"' + (p.home_spot === s.slug ? ' selected' : '') + '>' + esc(s.name) + '</option>'; }).join('') + '</select></label></div>' +
-      '<label><span class="lb" style="margin-top:8px">INSTAGRAM</span><input class="inp" id="prInsta" autocapitalize="off" autocomplete="off" maxlength="40" value="' + esc(p.insta ? '@' + p.insta : '') + '" placeholder="@yourname"></label>' +
-      '<div class="row" style="margin-top:10px"><button class="opt" data-act="prcard" aria-pressed="' + (p.card_public !== false) + '">SHOW MY CARD TO RIDERS DECIDING TO JOIN<small>' + (p.card_public !== false ? 'on: your cartoon, numbers, years, home spot and line (never your name)' : 'off: outside your crews, just your initials and level') + '</small></button></div>' +
-      '<button class="big dark" data-act="profsave" style="width:100%;margin-top:10px;font-size:17px">SAVE</button></div>';
+    var p = S.prof; if (!p) { loadProf().then(function () { if (S.view === 'me') renderSheet(); }); return ''; }
+    return '<div class="box"><h3>YOUR RIDER CARD <span class="tag ' + (cardMade() ? 'good' : 'ok') + '">' + (!cardMade() ? 'NOT MADE YET' : p.card_public ? 'RIDERS DECIDING TO JOIN SEE IT' : 'ONLY YOUR CREWS') + '</span></h3>' + myCardPreview(p) +
+      '<button class="big ' + (cardMade() ? 'dark' : 'start') + '" data-act="mycard" style="width:100%;margin-top:10px;font-size:17px">' + (cardMade() ? 'EDIT MY CARD' : 'MAKE MY CARD · 1 MIN') + '</button></div>';
+  }
+  // ---- 2.26 MAKE YOUR RIDER CARD: your face (a cartoon of your selfie), a line, and who sees it. Your choice, every part.
+  function sheetCard() {
+    if (!signedIn()) return shell('YOUR CARD', '<div class="hero"><div class="k">YOUR RIDER CARD</div><h2>First, your rider number</h2><div class="when2" style="font-weight:400">Your card belongs to your rider number: join a crew or set an alert, then make it.</div></div>', '<button class="big start" data-act="alerts">SET AN ALERT</button>', true);
+    var p = S.prof;
+    if (!p) { loadProf().then(renderSheet); if (!S.avatar) loadAvatar().then(renderSheet); return shell('YOUR CARD', '<div class="skel" style="height:300px;margin:16px"></div>', '', true); }
+    var f = S.cf || (S.cf = { who: p.card_public == null ? null : p.card_public });
+    var spots = HI8.spotsOf(S.city).filter(function (x) { return (x.sports || []).some(function (k) { return LIVE_SPORTS.indexOf(k) >= 0; }); });
+    var step = function (n, title, sub, body, done) { return '<div class="cstep' + (done ? ' done' : '') + '"><div class="cs-h"><b>' + (done ? '✓' : n) + '</b><span>' + title + (sub ? '<small>' + sub + '</small>' : '') + '</span></div>' + body + '</div>'; };
+    var face = S.cartoonsOn ? cartoonBox().replace('<div class="box ct"><h3>YOUR CARTOON <span class="tag">NEW</span></h3>', '<div class="ct ct-in">').replace(/<h3>YOUR CARTOON[^<]*<span class="tag">NEW<\/span><\/h3>/, '')
+      : '<p class="hint" style="margin:0">Cartoons are almost ready. Until then, your card shows your initials.</p>';
+    var about = '<label><span class="lb">A LINE ABOUT YOU</span><input class="inp" id="prLine" maxlength="70" value="' + esc(f.line != null ? f.line : p.tagline || '') + '" placeholder="e.g. Early mornings, big air, coffee after"></label>' +
+      '<div class="two" style="margin-top:8px"><label><span class="lb">YEARS RIDING</span><input class="inp" id="prYears" type="number" inputmode="numeric" min="0" max="60" value="' + (f.years != null ? f.years : p.years != null ? p.years : '') + '" placeholder="e.g. 4"></label>' +
+      '<label><span class="lb">HOME SPOT</span><select class="inp" id="prHome"><option value="">–</option>' + spots.map(function (x) { var hs = f.home != null ? f.home : p.home_spot; return '<option value="' + x.slug + '"' + (hs === x.slug ? ' selected' : '') + '>' + esc(x.name) + '</option>'; }).join('') + '</select></label></div>' +
+      '<label><span class="lb" style="margin-top:8px">INSTAGRAM <small>only your crews see it</small></span><input class="inp" id="prInsta" autocapitalize="off" autocomplete="off" maxlength="40" value="' + esc(f.insta != null ? f.insta : p.insta ? '@' + p.insta : '') + '" placeholder="@yourname"></label>';
+    var who = '<div class="cwho" role="radiogroup" aria-label="Who sees your card">' +
+      '<button class="opt" role="radio" data-act="cardwho" data-v="1" aria-pressed="' + (f.who === true) + '" aria-checked="' + (f.who === true) + '"><b>RIDERS DECIDING TO JOIN</b><small>Before they join your crew they see your cartoon, years, home spot, your line and how much you ride. Never your name: that\'s for your crew.</small></button>' +
+      '<button class="opt" role="radio" data-act="cardwho" data-v="0" aria-pressed="' + (f.who === false) + '" aria-checked="' + (f.who === false) + '"><b>ONLY MY CREWS</b><small>Outside your crews, riders see your initials and level. Inside, your whole card.</small></button></div>' +
+      '<p class="hint">Change it any time in Me.</p>';
+    var prev = Object.assign({}, p, { tagline: f.line != null ? f.line : p.tagline });
+    var body = '<div class="hero"><div class="k">YOUR RIDER CARD · ABOUT A MINUTE</div><h2>Ride with people you\'ve seen</h2><div class="when2" style="font-weight:400">Before anyone rides with you, they see your card, and you see theirs. Make yours: a cartoon of you, a line, and you choose who sees it.</div></div>' +
+      '<div class="box"><h3>HOW IT LOOKS</h3>' + myCardPreview(prev) + '</div>' +
+      step(1, 'YOUR FACE', 'a selfie, drawn as a salty surf cartoon. Optional', face, !!S.avatar) +
+      step(2, 'ABOUT YOU', 'all optional', about, !!(p.tagline || p.years != null || p.home_spot)) +
+      step(3, 'WHO SEES IT', 'you decide', who, f.who != null) +
+      (f.err ? '<div class="err" role="alert">' + esc(f.err) + '</div>' : '');
+    var foot = '<button class="big start" data-act="cardsave"' + (f.who == null || f.busy ? ' disabled' : '') + '>' + (f.busy ? '<span class="spin"></span>' : f.who == null ? 'CHOOSE WHO SEES IT' : cardMade() ? 'SAVE MY CARD' : 'MAKE MY CARD') + '</button>';
+    return shell('YOUR CARD', body, foot, true);
+  }
+  function cardKeep() { // keep what was typed when the sheet redraws (a cartoon arrives, a choice is tapped)
+    var f = S.cf; if (!f) return;
+    var g = function (id) { var e = $('#' + id); return e ? e.value : null; };
+    if (g('prLine') != null) { f.line = g('prLine'); f.years = g('prYears'); f.home = g('prHome'); f.insta = g('prInsta'); }
+  }
+  function cardSave() {
+    cardKeep(); var f = S.cf, p = S.prof || {}; if (!f || f.who == null || f.busy) return;
+    var yv = f.years != null ? f.years : (p.years != null ? String(p.years) : '');
+    f.busy = true; f.err = null; renderSheet();
+    HI8.withKey('hi8_rider_profile', { p_save: true, p_years: yv === '' ? null : Number(yv), p_home_spot: (f.home != null ? f.home : p.home_spot) || null,
+      p_insta: (f.insta != null ? f.insta : p.insta) || null, p_tagline: (f.line != null ? f.line : p.tagline) || null, p_card_public: f.who }, { noQueue: true }).then(function (r) {
+      S.prof = r; S.profP = Promise.resolve(r); S.cf = null;
+      toast(r.card_public ? 'Your card is out there. Riders deciding to join see it.' : 'Your card is made. Only your crews see it.', 5000);
+      if (S.cardFrom) { var code = S.cardFrom; S.cardFrom = null; openCrew(code); } else go('#me');
+    }, function (e) { f.busy = false; f.err = errText(e); renderSheet(); });
   }
   function alertsBox() {
     var A = (S.walerts || []).filter(function (a) { return a.city === S.city; }), st = pushState();
@@ -1848,12 +1897,13 @@
   }
   // ---- YOUR CARTOON (2.18): a selfie, drawn as a surf-mag cartoon by an image AI; only the cartoon is kept
   var CT = { step: 'idle', photo: null, consent: false, err: '', left: null };
+  function loadAvatarKeep() { if (S.view === 'card') cardKeep(); }
   function loadAvatar() {
     if (!signedIn() || !HI8.live) return Promise.resolve(null);
     return HI8.withKey('hi8_my_avatar', {}, { noQueue: true }).then(function (r) {
       var was = S.avatar; S.avatar = r && r.path || null; S.cartoonsOn = !!(r && r.on);
       if (was !== S.avatar) drawTop();
-      if (S.view === 'me') renderSheet(); return r;
+      if (S.view === 'me' || S.view === 'card') { loadAvatarKeep(); renderSheet(); } return r;
     }, function () { return null; });
   }
   function cartoonBox() {
@@ -2230,9 +2280,12 @@
       case 'pushon': pushOn(); break;
       case 'pushoff': pushOff(); break;
       case 'pushtest': pushTest(); break;
-      case 'rcard': S.crew.cardOpen = d.member; renderSheet(); setTimeout(function () { var b = $('.pc-x'); if (b) b.focus(); }, 30); break;
+      case 'rcard': S.crew.cardOpen = d.member; renderSheet(); setTimeout(function () { var b = $('.bcard-x'); if (b) b.focus(); }, 30); break;
       case 'rcardx': { var back = S.crew.cardOpen; S.crew.cardOpen = null; renderSheet(); setTimeout(function () { var b = document.querySelector('[data-act=rcard][data-member="' + back + '"]'); if (b) b.focus(); }, 30); break; }
       case 'prcard': S.prof.card_public = !S.prof.card_public; renderSheet(); break;
+      case 'mycard': S.cardFrom = S.view === 'crew' && S.crew ? S.crew.code : null; if (S.view === 'crew') closeSheet(); go('#card'); break;
+      case 'cardwho': cardKeep(); S.cf.who = d.v === '1'; renderSheet(); break;
+      case 'cardsave': cardSave(); break;
       case 'profsave': {
         var yv = ($('#prYears') || {}).value, hv = ($('#prHome') || {}).value, iv = ($('#prInsta') || {}).value, tv = ($('#prLine') || {}).value;
         after(HI8.withKey('hi8_rider_profile', { p_save: true, p_years: yv === '' ? null : Number(yv), p_home_spot: hv || null, p_insta: iv || null, p_tagline: tv || null, p_card_public: S.prof.card_public !== false }, { noQueue: true }), function (r) { S.prof = r; renderSheet(); toast('Saved: it\'s on your rider card.'); }).catch(noop); break; }
@@ -2448,7 +2501,7 @@
       HI8.onData(function () { drawTop(); drawCrews(); drawSessions(); drawMapSpots(); if (S.view === 'join' || S.view === 'me') renderSheet(); });
       window.addEventListener('focus', function () { if (Date.now() - (S.plansAt || 0) > 120000) { S.plansAt = Date.now(); loadPlans(); } });
       HI8.loadPlaces().then(function () { fitMap(); loadForecast(); drawAll(); }, function () { loadForecast(); });
-      loadLive(); loadPlans(); look(); setInterval(look, 60000); if (signedIn()) { loadSocial(); loadAlerts(); }
+      loadLive(); loadPlans(); look(); setInterval(look, 60000); if (signedIn()) { loadSocial(); loadAlerts(); loadProf(); }
       if (pushSupported()) pushCheck().then(function (sub) {
         if (sub && signedIn()) pushSave(sub).catch(noop); // keeps this phone tied to the rider (the address can change)
         else if (!sub && standalone() && Notification.permission === 'default' && !HI8.store.get('pushAsked', false)) {

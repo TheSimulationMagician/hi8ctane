@@ -9,11 +9,14 @@
 --     name or Instagram. A signed-in rider also sees how often they've ridden with each one. (Names, cars and the
 --     chat stay for the crew; the captain's name was already on every crew.)
 --   * the riders in that crew: the whole card, with the name and Instagram (phones stay in hi8_crew_people).
--- A rider can switch their card to "just the basics" (signups.card_public = false): then, outside their crews,
--- only initials and level show: no cartoon, no numbers.
+-- Each rider decides who sees their card (signups.card_public): true = riders deciding to join see it (as above),
+-- false = "only my crews": outside their crews, only initials and level. Until a rider has chosen (null), the card
+-- is treated as "only my crews": nobody's card is opened for them.
 
 alter table public.signups add column if not exists tagline text check (tagline is null or char_length(tagline) <= 70);
-alter table public.signups add column if not exists card_public boolean not null default true;
+alter table public.signups add column if not exists card_public boolean;
+alter table public.signups alter column card_public drop not null;
+alter table public.signups alter column card_public drop default;
 
 -- one rider's numbers (only sessions that happened: the crew was on and is over, and they weren't marked no-show)
 create or replace function public.hi8_rider_stats(p_email text) returns jsonb
@@ -50,16 +53,17 @@ begin
       'member_id', m.member_id,
       'name', case when inside or lower(m.email) = lower(c.host_email) then public.hi8_name(m.email, c.city) end,
       'initials', upper(left(public.hi8_name(m.email, c.city), 2)),
-      'plate', case when coalesce(p.card_public, true) or inside then public.hi8_plate(m.email, c.city) end,
-      'avatar', case when coalesce(p.card_public, true) or inside then public.hi8_avatar(m.email) end,
+      'plate', case when coalesce(p.card_public, false) or inside then public.hi8_plate(m.email, c.city) end,
+      'avatar', case when coalesce(p.card_public, false) or inside then public.hi8_avatar(m.email) end,
       'level', m.level,
       'host', lower(m.email) = lower(c.host_email),
       'me', em is not null and lower(m.email) = em,
-      'open', coalesce(p.card_public, true),
-      'stats', case when coalesce(p.card_public, true) or inside then public.hi8_rider_stats(m.email) end,
-      'years', case when coalesce(p.card_public, true) or inside then p.years_riding end,
-      'home', case when coalesce(p.card_public, true) or inside then (select name from public.spots where slug = p.home_spot) end,
-      'tagline', case when coalesce(p.card_public, true) or inside then p.tagline end,
+      'open', coalesce(p.card_public, false),
+      'made', p.card_public is not null,
+      'stats', case when coalesce(p.card_public, false) or inside then public.hi8_rider_stats(m.email) end,
+      'years', case when coalesce(p.card_public, false) or inside then p.years_riding end,
+      'home', case when coalesce(p.card_public, false) or inside then (select name from public.spots where slug = p.home_spot) end,
+      'tagline', case when coalesce(p.card_public, false) or inside then p.tagline end,
       'insta', case when inside then p.insta end,
       'together', case when em is not null and lower(m.email) <> em then (
         select count(*) from public.crews x
@@ -90,6 +94,9 @@ begin
     if tl ~* '(https?://|www\.|[a-z0-9-]+\.(com|nl|es|net|org|me|io|app|co|ly|link|gg)(/|\M)|@[a-z0-9_.]{2,}|\+?[0-9][0-9 ]{7,})' then raise exception 'bad_tagline' using errcode = '22023', hint = 'No links, handles or numbers in your line: Instagram has its own box.'; end if;
     update public.signups set years_riding = p_years, home_spot = p_home_spot, insta = ig, tagline = tl,
       card_public = coalesce(p_card_public, card_public) where lower(email) = em;
+    if p_card_public is null and not exists (select 1 from public.signups where lower(email) = em and card_public is not null) then
+      raise exception 'pick_who' using errcode = '22023', hint = 'Choose who sees your card.';
+    end if;
   end if;
   return (select json_build_object('years', s.years_riding, 'home_spot', s.home_spot, 'insta', s.insta, 'tagline', s.tagline,
             'card_public', s.card_public, 'rode', public.hi8_rode(em), 'stats', public.hi8_rider_stats(em))
