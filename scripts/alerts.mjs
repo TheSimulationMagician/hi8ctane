@@ -114,7 +114,9 @@ async function main() {
         const line = (WINDY[c.sport] ? s.w + ' kt ' + FX.compass(s.dir) : (s.ground || 'bad') + ', ' + s.temp + '°C') + ' at ' + c.start + ' ' + dayWord(c.day, today) + ', ' + s.label;
         let next = null;
         for (let i = 0; i < 4 && !next; i++) {
-          const d = FX.addDays(today, i), w = FX.windows(sp, d, c.sport, meta, { kg: 75 }).filter((x) => x.score >= 6 && (d !== today || x.from > nowH + 1))[0];
+          const d = FX.addDays(today, i), w = FX.windows(sp, d, c.sport, meta, { kg: 75 })
+            .map((x) => (d === today ? Object.assign({}, x, { from: Math.max(x.from, Math.ceil(nowH + 1)) }) : x)) // today: what's still ahead
+            .filter((x) => x.score >= 6 && x.to - x.from >= 2)[0];
           if (w) next = dayWord(d, today) + ' ' + pad(w.from) + '–' + pad(w.to) + (WINDY[c.sport] ? ', ' + w.w + ' kt' : '') + ', ' + w.label;
         }
         if (!DRY) drops += await rpc('hi8_fx_drop', { p_code: c.code, p_line: line, p_next: next });

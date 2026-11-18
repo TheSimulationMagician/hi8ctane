@@ -14,7 +14,9 @@ with expected_public_functions(name) as (values
   ('hi8_look'), ('hi8_card'), ('hi8_squad'), ('hi8_squad_call'), ('hi8_squad_join'), ('hi8_squad_keep'), ('hi8_squad_leave'), ('hi8_squads'), ('hi8_watch'),
   -- 0019 (2.23): alerts, push, crews needing a minimum, moving a crew, rider profiles
   ('hi8_wind_alert'), ('hi8_wind_alerts'), ('hi8_push_sub'), ('hi8_push_unsub'), ('hi8_watchers'), ('hi8_crew_min'), ('hi8_move_crew'),
-  ('hi8_rider_profile'), ('hi8_crew_people'), ('hi8_set_phone'), ('hi8_no_show')
+  ('hi8_rider_profile'), ('hi8_crew_people'), ('hi8_set_phone'), ('hi8_no_show'),
+  -- 0020 (2.24): rider cards
+  ('hi8_crew_cards')
 ), problems(problem, object) as (
   -- 1. every table has row level security on
   select 'table without row level security', n.nspname || '.' || c.relname

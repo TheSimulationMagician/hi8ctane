@@ -1035,6 +1035,7 @@
       if (S.autoJoin === C.code) { S.autoJoin = null; if (!d.me && d.status === 'on' && !d.past) { S.jf = null; setTimeout(function () { quickJoin(d); }, 0); } }
       document.title = SPORT[d.sport].name + ' crew · ' + d.spot_name + ' · ' + dayRel(d.day) + ' ' + hm(d.start);
       if (d.city !== S.city) { S.city = d.city; drawAll(); initMap(); loadForecast(); }
+      if (!C.cards || Date.now() - (C.cardsAt || 0) > 120000 || (C.cards.length !== d.going)) loadCards();
       if (d.me) { startChat(); if (!S.wallet) loadWallet(); loadPlan(); if (!C.people) loadPeople(); if (!S.card) HI8.withKey('hi8_card', {}, { noQueue: true }).then(function (cd) { S.card = cd; }, noop); }
       renderSheet();
       if (C.chat && d.me) setTimeout(function () { var el = $('#chatBox'); if (el) el.scrollIntoView({ block: 'center' }); }, 60);
@@ -1214,6 +1215,7 @@
       '<div class="when2">' + esc(dayRel(c.day)) + ' · ' + esc(hm(c.start)) + (c.end ? '–' + esc(hm(c.end)) : '') + '</div>' +
       '<div class="when2" style="color:var(--mint);font-weight:400;margin-top:4px">' + esc(CREW_LEVELS[c.levels] || '') + ' · captain ' + esc(c.host) + (c.host_plate ? ' #' + pad3(c.host_plate) : '') + '</div></div>' +
       (c.status === 'off' ? '<div class="err">Called off: ' + esc(c.off_reason || 'the captain called it off') + '</div>' : '') +
+      cardsStrip(c) +
       (!member && S.jf && !S.jf.quick && c.status === 'on' && !c.past ? joinForm(c) : '') + fxDrop(c, f) + rateBox(c) +
       crewStrip(c, f) + carBox(c, spot, hub) +
       (c.note ? '<div class="box"><h3>FROM THE CAPTAIN</h3><div style="font-size:13px">' + esc(c.note) + '</div></div>' : '') +
@@ -1253,9 +1255,65 @@
     }
     var foot = !member && S.jf && S.jf.quick && S.jf.busy ? '<button class="big join" disabled><span class="spin"></span> PUTTING YOU IN…</button>' : !member && c.status === 'on' && !c.past ? '<button class="big join" data-act="' + (S.jf ? 'jfgo' : 'jfopen') + '"' + (S.jf && S.jf.busy ? ' disabled' : '') + '>' + (S.jf && S.jf.busy ? '<span class="spin"></span>' : 'I\'M GOING') + '</button><button class="big ghost" data-act="share" style="flex:0 0 34%">SHARE</button>'
       : '<a class="big wa" href="https://wa.me/?text=' + encodeURIComponent(shareText(c)) + '" target="_blank" rel="noopener">SHARE TO WHATSAPP</a>';
+    if (C.cardOpen && C.cards) { var ko = C.cards.filter(function (k) { return k.member_id === C.cardOpen; })[0]; if (ko) body += bigCard(ko); }
     return shell(esc(SPORT[c.sport].name.toUpperCase()) + ' CREW', body, foot, true);
   }
 
+
+
+  // ---- 2.24 RIDER CARDS: see who you'd ride with before you join
+  function loadCards() {
+    var C = S.crew; if (!C || !HI8.live) return;
+    var p = signedIn() ? HI8.withKey('hi8_crew_cards', { p_code: C.code }, { noQueue: true }) : HI8.rpc('hi8_crew_cards', { p_code: C.code, p_key: null });
+    C.cardsAt = Date.now();
+    p.then(function (k) { if (S.crew === C) { C.cards = k || []; renderSheet(); } }, noop);
+  }
+  function cardAv(k, size) {
+    return k.avatar ? '<img src="' + esc(HI8.avatarUrl(k.avatar)) + '" alt="" width="' + size + '" height="' + size + '" loading="lazy">' : '<span class="ini">' + esc(k.initials || String(k.name || '?').slice(0, 2).toUpperCase()) + '</span>';
+  }
+  function cardName(k) { return k.name || 'Rider' + (k.plate ? ' #' + pad3(k.plate) : ''); } // outside the crew: no names (privacy page)
+  function cardStats(k) { return k.stats || { sessions: 0, spots: 0, drives: 0, started: 0 }; }
+  function miniCard(k) {
+    var st = cardStats(k), tag = k.me ? 'YOU' : k.together ? 'RODE WITH YOU ' + k.together + '×' : k.host ? 'CAPTAIN' : st.sessions === 0 && k.stats ? 'FIRST SESSION' : '';
+    return '<button class="rc' + (k.me ? ' me' : '') + '" data-act="rcard" data-member="' + esc(k.member_id) + '" aria-label="' + esc(cardName(k)) + '\'s rider card">' +
+      '<span class="rc-top"><b>' + (k.plate ? '#' + pad3(k.plate) : '') + '</b><i>' + esc((LEVEL[k.level] || '').toUpperCase()) + '</i></span>' +
+      '<span class="rc-av a-' + esc(S.crew && S.crew.data ? S.crew.data.sport : S.sport) + '">' + cardAv(k, 96) + '</span>' +
+      '<span class="rc-name">' + esc(cardName(k)) + '</span>' +
+      (k.stats ? '<span class="rc-st"><span><em>' + st.sessions + '</em>RIDES</span><span><em>' + st.spots + '</em>SPOTS</span><span><em>' + st.drives + '</em>DRIVES</span></span>' : '<span class="rc-st closed">CARD FOR THEIR CREWS</span>') +
+      (tag ? '<span class="rc-tag' + (k.together ? ' tog' : '') + '">' + esc(tag) + '</span>' : '') + '</button>';
+  }
+  function cardsStrip(c) {
+    var K = S.crew.cards;
+    if (!K) return '<div class="box rcbox"><h3>' + (c.me ? 'YOUR CREW' : 'WHO YOU\'D RIDE WITH') + '</h3><div class="rcards"><div class="skel" style="height:190px;width:100%"></div></div></div>';
+    if (!K.length) return '';
+    var known = K.filter(function (k) { return k.together; }).length;
+    return '<div class="box rcbox"><h3>' + (c.me ? 'YOUR CREW' : 'WHO YOU\'D RIDE WITH') + ' <span class="tag">' + K.length + ' RIDER' + (K.length > 1 ? 'S' : '') + '</span>' + (known && !c.me ? ' <span class="tag good">' + known + ' YOU KNOW</span>' : '') + '</h3>' +
+      '<div class="rcards" role="list">' + K.map(miniCard).join('') + '</div>' +
+      '<p class="hint" style="margin:8px 0 0">Tap a card: how long they\'ve ridden, where, and how much.' + (c.me ? '' : ' Names and cartoons show once you\'re in.') + '</p></div>';
+  }
+  function bigCard(k) {
+    var st = cardStats(k), sp = S.crew.data.sport;
+    var since = st.since ? (function () { var a = st.since.split('-'); return ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'][Number(a[1]) - 1] + ' ' + a[0]; })() : null;
+    var facts = [['LEVEL', (LEVEL[k.level] || '–').toUpperCase()], ['YEARS RIDING', k.years != null ? String(k.years) : null], ['HOME SPOT', k.home ? k.home.toUpperCase() : null],
+      ['RIDES MOST AT', st.top_spot ? st.top_spot.toUpperCase() : null], ['ON HI8CTANE SINCE', since]].filter(function (x) { return x[1]; });
+    return '<div class="pc-over" role="dialog" aria-modal="true" aria-label="' + esc(cardName(k)) + '\'s rider card"><div class="pc">' +
+      '<div class="pc-shine" aria-hidden="true"></div>' +
+      '<div class="pc-top"><b>' + (k.plate ? '#' + pad3(k.plate) : 'RIDER') + '</b><span>' + (k.plate && k.plate <= 100 ? 'FOUNDING<br>RIDER' : esc(SPORT[sp].name.toUpperCase()) + '<br>RIDER') + '</span></div>' +
+      '<div class="pc-art a-' + esc(sp) + '">' + cardAv(k, 180) + (k.host ? '<span class="pc-stamp">CAPTAIN</span>' : '') + '</div>' +
+      '<div class="pc-name">' + esc(cardName(k)) + (k.me ? ' <small>YOU</small>' : '') + '</div>' +
+      (k.tagline ? '<div class="pc-line">“' + esc(k.tagline) + '”</div>' : '') +
+      (k.stats ? '<div class="pc-stats"><span><em>' + st.sessions + '</em>RIDES</span><span><em>' + st.spots + '</em>SPOTS</span><span><em>' + st.drives + '</em>DRIVES</span><span><em>' + st.started + '</em>CREWS<br>STARTED</span></div>' : '') +
+      (k.together ? '<div class="pc-tog">YOU\'VE RIDDEN TOGETHER ' + k.together + (k.together === 1 ? ' TIME' : ' TIMES') + '</div>' : '') +
+      '<div class="pc-facts">' + facts.map(function (x) { return '<span>' + x[0] + '</span><b>' + esc(x[1]) + '</b>'; }).join('') + '</div>' +
+      (k.insta ? '<a class="pc-ig" target="_blank" rel="noopener" href="https://instagram.com/' + esc(k.insta) + '">@' + esc(k.insta) + ' ON INSTAGRAM</a>' : '') +
+      (!k.stats ? '<p class="pc-note">This rider keeps their card for their crews. Join, and you\'ll see it.</p>' : !k.name ? '<p class="pc-note">Their name and cartoon show once you\'re in the crew.' + (signedIn() ? '' : ' Signed in, you also see if you\'ve ridden together.') + '</p>' : '') +
+      '<button class="pc-x" data-act="rcardx">CLOSE</button></div></div>';
+  }
+  function myCardPreview(p) {
+    var st = p.stats || {};
+    var k = { member_id: 'me', name: (HI8.mine && (HI8.mine.name || HI8.mine.first_name)) || (myPlate() ? 'Rider #' + myPlate() : 'You'), plate: myPlate(), avatar: S.avatar, level: HI8.store.get('lv.' + S.sport, 'regular'), me: true, stats: st, tagline: p.tagline };
+    return '<div class="rcards solo">' + miniCard(k).replace('data-act="rcard"', 'data-act="noop" tabindex="-1"') + '<p class="hint" style="margin:0;align-self:center">This is your card on every crew you join.' + (p.card_public === false ? ' Right now riders outside your crews see just your initials and level.' : ' Riders deciding to join see it without your name or cartoon: those are for your crew.') + '</p></div>';
+  }
 
   // ---- 2.23 on a crew page: the forecast dropped, how was it, go again
   function sessionEnded(c) { var endH = c.end ? Number(hm(c.end).slice(0, 2)) + (hm(c.end).slice(3) > '00' ? 1 : 0) : Number(hm(c.start).slice(0, 2)) + 3; return c.day < S.today || (c.day === S.today && S.nowH >= endH); }
@@ -1702,10 +1760,12 @@
   function profileBox() {
     var p = S.prof; if (!p) { if (HI8.live && signedIn() && !S.profLoading) { S.profLoading = true; HI8.withKey('hi8_rider_profile', {}, { noQueue: true }).then(function (r) { S.prof = r || {}; S.profLoading = false; if (S.view === 'me') renderSheet(); }, function () { S.profLoading = false; }); } return ''; }
     var spots = HI8.spotsOf(S.city).filter(function (s) { return (s.sports || []).some(function (k) { return LIVE_SPORTS.indexOf(k) >= 0; }); });
-    return '<div class="box"><h3>YOUR RIDER PROFILE <span class="tag">' + (p.rode || 0) + ' SESSION' + (p.rode === 1 ? '' : 'S') + ' RIDDEN</span></h3><p class="hint" style="margin:0 0 8px">What your crews see next to your name. All optional.</p>' +
+    return '<div class="box"><h3>YOUR RIDER CARD <span class="tag">' + (p.rode || 0) + ' SESSION' + (p.rode === 1 ? '' : 'S') + ' RIDDEN</span></h3>' + myCardPreview(p) + '<p class="hint" style="margin:10px 0 8px">What riders see before they join your crew, and you theirs. All optional.</p>' +
+      '<label><span class="lb">A LINE ABOUT YOU</span><input class="inp" id="prLine" maxlength="70" value="' + esc(p.tagline || '') + '" placeholder="e.g. Early mornings, big air, coffee after"></label>' +
       '<div class="two"><label><span class="lb">YEARS RIDING</span><input class="inp" id="prYears" type="number" inputmode="numeric" min="0" max="60" value="' + (p.years != null ? p.years : '') + '" placeholder="e.g. 4"></label>' +
       '<label><span class="lb">HOME SPOT</span><select class="inp" id="prHome"><option value="">–</option>' + spots.map(function (s) { return '<option value="' + s.slug + '"' + (p.home_spot === s.slug ? ' selected' : '') + '>' + esc(s.name) + '</option>'; }).join('') + '</select></label></div>' +
       '<label><span class="lb" style="margin-top:8px">INSTAGRAM</span><input class="inp" id="prInsta" autocapitalize="off" autocomplete="off" maxlength="40" value="' + esc(p.insta ? '@' + p.insta : '') + '" placeholder="@yourname"></label>' +
+      '<div class="row" style="margin-top:10px"><button class="opt" data-act="prcard" aria-pressed="' + (p.card_public !== false) + '">SHOW MY CARD TO RIDERS DECIDING TO JOIN<small>' + (p.card_public !== false ? 'on: your numbers, years, home spot and line (never your name)' : 'off: outside your crews, just your initials and level') + '</small></button></div>' +
       '<button class="big dark" data-act="profsave" style="width:100%;margin-top:10px;font-size:17px">SAVE</button></div>';
   }
   function alertsBox() {
@@ -1720,7 +1780,8 @@
     var sp = HI8.spot(spotSlug), fs = fxSpot(spotSlug); if (!sp || !fs) return null;
     for (var i = 0; i < 7; i++) {
       var d = FX.addDays(S.today, i); if (fromDate && d < fromDate) continue;
-      var w = FX.windows(fs, d, sport, sp, fxo(sport)).filter(function (x) { return x.score >= 6 && (d !== S.today || x.from >= S.nowH + 1); })[0]; // today: only what's still ahead
+      var w = FX.windows(fs, d, sport, sp, fxo(sport)).map(function (x) { return d === S.today ? Object.assign({}, x, { from: Math.max(x.from, S.nowH + 1) }) : x; }) // today: what's still ahead
+        .filter(function (x) { return x.score >= 6 && x.to - x.from >= 2; })[0];
       if (w) return w;
     }
     return null;
@@ -2106,9 +2167,12 @@
       case 'pushon': pushOn(); break;
       case 'pushoff': pushOff(); break;
       case 'pushtest': pushTest(); break;
+      case 'rcard': S.crew.cardOpen = d.member; renderSheet(); setTimeout(function () { var b = $('.pc-x'); if (b) b.focus(); }, 30); break;
+      case 'rcardx': { var back = S.crew.cardOpen; S.crew.cardOpen = null; renderSheet(); setTimeout(function () { var b = document.querySelector('[data-act=rcard][data-member="' + back + '"]'); if (b) b.focus(); }, 30); break; }
+      case 'prcard': S.prof.card_public = !S.prof.card_public; renderSheet(); break;
       case 'profsave': {
-        var yv = ($('#prYears') || {}).value, hv = ($('#prHome') || {}).value, iv = ($('#prInsta') || {}).value;
-        after(HI8.withKey('hi8_rider_profile', { p_save: true, p_years: yv === '' ? null : Number(yv), p_home_spot: hv || null, p_insta: iv || null }, { noQueue: true }), function (r) { S.prof = r; renderSheet(); toast('Saved: your crews see it next to your name.'); }).catch(noop); break; }
+        var yv = ($('#prYears') || {}).value, hv = ($('#prHome') || {}).value, iv = ($('#prInsta') || {}).value, tv = ($('#prLine') || {}).value;
+        after(HI8.withKey('hi8_rider_profile', { p_save: true, p_years: yv === '' ? null : Number(yv), p_home_spot: hv || null, p_insta: iv || null, p_tagline: tv || null, p_card_public: S.prof.card_public !== false }, { noQueue: true }), function (r) { S.prof = r; renderSheet(); toast('Saved: it\'s on your rider card.'); }).catch(noop); break; }
       case 'sqjoin': squadJoin(); break;
       case 'sqleave':
         if (!S.sq.confirm) { S.sq.confirm = true; renderSheet(); break; }
