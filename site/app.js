@@ -302,8 +302,10 @@
     if (el) el.innerHTML = has ? '<b>' + f.w + '</b> KT ' + esc(FX.compass(f.dir)) + '<i style="transform:rotate(' + ((f.dir + 180) % 360) + 'deg)">↑</i><span>' + esc(o.spot.name.toUpperCase()) + ' · ' + esc(dayRel(o.date)) + ' ' + pad(o.from) + '–' + pad(o.to) + '</span>' : '';
     heroFx();
   }
+  // the wind streaks over the hero (2.14) are off: they crossed the text (2.24). true brings them back
+  var HERO_LINES = false;
   function heroFx() {
-    var cv = $('#heroFx'), box = $('#hero'); if (!cv || !box || !cv.getContext) return;
+    var cv = $('#heroFx'), box = $('#hero'); if (!HERO_LINES || !cv || !box || !cv.getContext) return;
     var dpr = Math.min(2, window.devicePixelRatio || 1), w = box.clientWidth, h = box.clientHeight;
     if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); HW.parts = []; }
     var n = Math.round(Math.min(90, w * h / 2600));

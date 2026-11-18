@@ -784,3 +784,9 @@ table.fx tr.rate td { color: var(--ink); }
 /* 2.24 · the welcome after joining, in the crew page */
 .box.welcome { background: var(--lime); }
 .box.welcome .tag { background: var(--yellow); color: var(--ink); }
+
+/* 2.24 · no wind streaks over the hero; WhatsApp buttons in the brand colours, not WhatsApp green */
+.herofx { display: none; }
+.big.wa { background: var(--ink); color: var(--lime); box-shadow: 5px 5px 0 var(--pink); }
+.big.wa:hover, .big.wa:focus-visible { background: #222; color: var(--lime); }
+
