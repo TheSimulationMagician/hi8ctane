@@ -12,6 +12,10 @@
 -- Needs: the "alerts" function deployed (the functions workflow does it with SUPABASE_ACCESS_TOKEN).
 -- If your project's functions live elsewhere: insert into app_secrets (name, value) values ('functions_url', 'https://<ref>.supabase.co/functions/v1');
 
+-- the timer (pg_cron) and web calls from the database (pg_net). On Supabase both are on the Extensions page too.
+do $$ begin create extension if not exists pg_cron; exception when others then raise notice 'pg_cron: turn it on in Database > Extensions, then run this file again'; end $$;
+do $$ begin create extension if not exists pg_net; exception when others then raise notice 'pg_net: turn it on in Database > Extensions, then run this file again'; end $$;
+
 -- the secret pg_cron sends to the function
 insert into public.app_secrets (name, value) values ('alerts_cron', replace(gen_random_uuid()::text || gen_random_uuid()::text, '-', ''))
 on conflict (name) do nothing;
@@ -85,3 +89,9 @@ grant execute on function public.hi8_fx_due() to service_role;
 grant execute on function public.hi8_fx_cached(text, int, boolean) to service_role;
 
 notify pgrst, 'reload schema';
+
+-- check: it should say "alerts scheduled every 10 minutes"
+select case
+  when to_regclass('cron.job') is null then 'pg_cron is OFF: turn it on in Database > Extensions, then run this file again'
+  when (query_to_xml('select 1 from cron.job where jobname = ''hi8-alerts'' and active', false, false, '')::text) like '%<row>%' then 'alerts scheduled every 10 minutes'
+  else 'not scheduled yet: run this file again' end as alerts_timer;

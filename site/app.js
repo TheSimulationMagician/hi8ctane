@@ -1380,7 +1380,7 @@
     p.then(function (k) { if (S.crew === C) { C.cards = k || []; renderSheet(); } }, noop);
   }
   function cardAv(k, size) {
-    var ini = esc(k.initials || String(k.name || '?').slice(0, 2).toUpperCase());
+    var ini = esc(k.initials || String(k.name || '?').slice(0, 1).toUpperCase());
     return k.avatar ? '<img src="' + esc(HI8.avatarUrl(k.avatar)) + '" alt="" width="' + size + '" height="' + size + '" loading="lazy" data-ini="' + ini + '">' : '<span class="ini">' + ini + '</span>';
   }
   // a cartoon that won't load (removed, or Storage down) shows the initials instead of a broken image
@@ -1897,14 +1897,14 @@
     var spots = HI8.spotsOf(S.city).filter(function (x) { return (x.sports || []).some(function (k) { return LIVE_SPORTS.indexOf(k) >= 0; }); });
     var step = function (n, title, sub, body, done) { return '<div class="cstep' + (done ? ' done' : '') + '"><div class="cs-h"><b>' + (done ? '✓' : n) + '</b><span>' + title + (sub ? '<small>' + sub + '</small>' : '') + '</span></div>' + body + '</div>'; };
     var face = S.cartoonsOn ? cartoonBox().replace('<div class="box ct"><h3>YOUR CARTOON <span class="tag">NEW</span></h3>', '<div class="ct ct-in">').replace(/<h3>YOUR CARTOON[^<]*<span class="tag">NEW<\/span><\/h3>/, '')
-      : '<p class="hint" style="margin:0">Cartoons are almost ready. Until then, your card shows your initials.</p>';
+      : '<p class="hint" style="margin:0">Cartoons are almost ready. Until then, your card shows your first letter.</p>';
     var about = '<label><span class="lb">A LINE ABOUT YOU</span><input class="inp" id="prLine" maxlength="70" value="' + esc(f.line != null ? f.line : p.tagline || '') + '" placeholder="e.g. Early mornings, big air, coffee after"></label>' +
       '<div class="two" style="margin-top:8px"><label><span class="lb">YEARS RIDING</span><input class="inp" id="prYears" type="number" inputmode="numeric" min="0" max="60" value="' + (f.years != null ? f.years : p.years != null ? p.years : '') + '" placeholder="e.g. 4"></label>' +
       '<label><span class="lb">HOME SPOT</span><select class="inp" id="prHome"><option value="">–</option>' + spots.map(function (x) { var hs = f.home != null ? f.home : p.home_spot; return '<option value="' + x.slug + '"' + (hs === x.slug ? ' selected' : '') + '>' + esc(x.name) + '</option>'; }).join('') + '</select></label></div>' +
       '<label><span class="lb" style="margin-top:8px">INSTAGRAM <small>only your crews see it</small></span><input class="inp" id="prInsta" autocapitalize="off" autocomplete="off" maxlength="40" value="' + esc(f.insta != null ? f.insta : p.insta ? '@' + p.insta : '') + '" placeholder="@yourname"></label>';
     var who = '<div class="cwho" role="radiogroup" aria-label="Who sees your card">' +
       '<button class="opt" role="radio" data-act="cardwho" data-v="1" aria-pressed="' + (f.who === true) + '" aria-checked="' + (f.who === true) + '"><b>RIDERS DECIDING TO JOIN</b><small>Before they join your crew they see your cartoon, years, home spot, your line and how much you ride. Never your name: that\'s for your crew.</small></button>' +
-      '<button class="opt" role="radio" data-act="cardwho" data-v="0" aria-pressed="' + (f.who === false) + '" aria-checked="' + (f.who === false) + '"><b>ONLY MY CREWS</b><small>Outside your crews, riders see your initials and level. Inside, your whole card.</small></button></div>' +
+      '<button class="opt" role="radio" data-act="cardwho" data-v="0" aria-pressed="' + (f.who === false) + '" aria-checked="' + (f.who === false) + '"><b>ONLY MY CREWS</b><small>Outside your crews, riders see your first letter and level. Inside, your whole card.</small></button></div>' +
       '<p class="hint">Change it any time in Me.</p>';
     var prev = Object.assign({}, p, { tagline: f.line != null ? f.line : p.tagline });
     var body = '<div class="hero"><div class="k">YOUR RIDER CARD · ABOUT A MINUTE</div><h2>Ride with people you\'ve seen</h2><div class="when2" style="font-weight:400">Before anyone rides with you, they see your card, and you see theirs. Make yours: a cartoon of you, a line, and you choose who sees it.</div></div>' +

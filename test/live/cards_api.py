@@ -41,6 +41,7 @@ plate = {n: int(sql(f"select plate from signups where email = '{n}@example.com'"
 key = lambda k: {v: n for n, v in plate.items()}.get(k.get('plate')) or ('di' if k.get('open') is False else '?')
 by = {key(k): k for k in A}
 check(st == 200 and len(A) == 3 and all('level' in k and 'initials' in k for k in A), 'anyone looking at the crew: everyone\'s card, initials and level')
+check(all(len(k['initials']) == 1 for k in A), 'one letter, not two: a short name like Bo isn\'t given away (0022)')
 check(by['ana'].get('name') == 'Rider #1' and 'name' not in by['bo'], 'outside the crew: no names (the captain\'s was already public)')
 check(by['ana']['stats']['sessions'] == 4 and by['ana']['stats']['drives'] == 3 and by['ana']['stats']['started'] == 3 and by['ana']['stats']['spots'] == 3,
       'the numbers count sessions that happened: 4 rides, 3 drives, 3 crews started, 3 spots')
