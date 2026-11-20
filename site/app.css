@@ -887,3 +887,23 @@ table.fx tr.rate td { color: var(--ink); }
 .f + .cardnudge, .ok-box + .cardnudge { margin: 12px 16px 0; }
 .rc-av.none { background: repeating-linear-gradient(45deg, #2a3038 0 8px, #22272e 8px 16px); }
 .rc-av.none .ini { color: #8a8578; text-shadow: none; font-size: 46px; }
+
+/* 2.24 · tap targets: 44 px tall in the top bar and the sport row; taller board cells */
+.tbcity, .tbme, .tbme.plate { height: 44px; line-height: 44px; }
+.stile.mini, .ctxfrom { height: 44px; }
+.bd-c { height: 48px; }
+
+/* 2.24 · you're in a crew: the hero says so */
+.hero.mine .lede0 b { color: var(--lime); font-weight: 700; }
+.hero.mine .herowind { display: none; }
+#dockGo[data-act="crew"] { background: var(--yellow); }
+
+/* 2.24 · the welcome after joining, in the crew page */
+.box.welcome { background: var(--lime); }
+.box.welcome .tag { background: var(--yellow); color: var(--ink); }
+
+/* 2.24 · no wind streaks over the hero; WhatsApp buttons in the brand colours, not WhatsApp green */
+.herofx { display: none; }
+.big.wa { background: var(--ink); color: var(--lime); box-shadow: 5px 5px 0 var(--pink); }
+.big.wa:hover, .big.wa:focus-visible { background: #222; color: var(--lime); }
+

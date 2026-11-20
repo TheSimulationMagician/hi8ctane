@@ -234,13 +234,13 @@
       '<details class="mo" id="moWhere"><summary><b>WHERE NEXT</b><span>Your town, other regions, trips</span></summary><div id="towns"></div><div id="where"></div></details>' +
       '<details class="mo" id="moPass"><summary><b>THE HI8 PASS</b><span>' + 'Members pay 10% instead of 15% on every ride' + '</span></summary><div id="passSlot"></div></details>' +
       '<details class="mo" id="moSoon"><summary><b>MORE SPORTS SOON</b><span>Get an email when yours opens</span></summary><div class="sps soonr" id="soonSports"></div></details>' +
-      '<a class="mo" href="B27-Schools.dc.html"><b>FOR SCHOOLS + RENTAL SHOPS</b><span>We send you riders who already have a crew →</span></a>' +
+      '<a class="mo" href="schools/"><b>FOR SCHOOLS + RENTAL SHOPS</b><span>We send you riders who already have a crew →</span></a>' +
       '</section>' +
       '<section class="blk mapsec" id="mapsec"><div class="sec2"><b>THE LIVE MAP</b><span>WIND · CREWS · WHO\'S THERE</span></div><div class="mapbox" id="mapslot"></div>' +
       '<div class="mapend"><span>SEE YOU OUT THERE.</span><i class="looking" id="looking2" hidden></i><button class="sygo" data-act="top">FIND MY NEXT SESSION ↑</button></div></section>' +
       '</div>' +
       '<div class="credits">Forecast: Open-Meteo (CC BY 4.0): a local model for the first days (KNMI HARMONIE in the Netherlands, Météo-France AROME in Spain), then ECMWF, ICON and GFS, compared hour by hour for the "models agree" line. Waves and water temperature: Open-Meteo Marine. Coastlines: Natural Earth. A model forecast, not a beach sensor: every session is your own call. 18+.<br>' +
-      '<a href="terms/">Terms</a> · <a href="privacy/">Privacy</a> · <a href="B27-Schools.dc.html">Schools + rental shops</a> · <a href="B27-City.dc.html">Other cities</a> · hi8ctane.com</div>' +
+      '<a href="terms/">Terms</a> · <a href="privacy/">Privacy</a> · <a href="schools/">Schools + rental shops</a> · <a href="B27-City.dc.html">Other cities</a> · <a href="world/">The world</a> · hi8ctane.com</div>' +
       '</main>' +
       '<div class="dock one"><button class="big join" data-act="goingbest" id="dockGo">I\'M GOING</button></div>' +
       '<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="shTitle"></div><div class="toast" id="toast" role="status" aria-live="polite"></div>';
@@ -302,8 +302,10 @@
     if (el) el.innerHTML = has ? '<b>' + f.w + '</b> KT ' + esc(FX.compass(f.dir)) + '<i style="transform:rotate(' + ((f.dir + 180) % 360) + 'deg)">↑</i><span>' + esc(o.spot.name.toUpperCase()) + ' · ' + esc(dayRel(o.date)) + ' ' + pad(o.from) + '–' + pad(o.to) + '</span>' : '';
     heroFx();
   }
+  // the wind streaks over the hero (2.14) are off: they crossed the text (2.24). true brings them back
+  var HERO_LINES = false;
   function heroFx() {
-    var cv = $('#heroFx'), box = $('#hero'); if (!cv || !box || !cv.getContext) return;
+    var cv = $('#heroFx'), box = $('#hero'); if (!HERO_LINES || !cv || !box || !cv.getContext) return;
     var dpr = Math.min(2, window.devicePixelRatio || 1), w = box.clientWidth, h = box.clientHeight;
     if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr); HW.parts = []; }
     var n = Math.round(Math.min(90, w * h / 2600));
@@ -334,10 +336,45 @@
   window.addEventListener('resize', function () { if ($('#heroFx')) heroFx(); });
 
   // the one button at the bottom: I'M GOING on the next good session
+  // your next crew (today, or tomorrow) so the home screen says you're going (2.24)
+  function myNext() {
+    var t = S.today, tm = FX.addDays(t, 1), nowT = pad(S.nowH) + ':' + pad(S.nowM);
+    return ((HI8.mine && HI8.mine.crews) || []).filter(function (c) {
+      if (c.status === 'off' || c.past) return false;
+      if (c.day === t) return c.live || (c.end ? hm(c.end) : fromMin(minutes(c.start) + 180)) > nowT;
+      return c.day === tm;
+    }).sort(function (a, b) { return a.day + hm(a.start) < b.day + hm(b.start) ? -1 : 1; })[0] || null;
+  }
+  // how you get there, in a line: "Frankie drives from Haarlem at 09:45"
+  function mineLine(c) {
+    var hub = hubOf(c), meet = c.meet_time ? hm(c.meet_time) : null, sp = HI8.spot(c.spot) || {}, name = sp.name || c.spot_name || '';
+    if (hub && meet) return (c.host_is_me ? 'You leave' : esc(c.host) + '\'s crew leaves') + ' from <b>' + esc(title(hub.name)) + '</b> at <b>' + esc(meet) + '</b>';
+    return 'Meet at <b>' + esc(name) + '</b> at <b>' + esc(hm(c.start)) + '</b>';
+  }
+  var HERO0 = null;
+  function drawHeroMine(c) {
+    var hero = $('#hero'); if (!hero) return;
+    var h1 = hero.querySelector('.hl'), lede = hero.querySelector('.lede0'), kick = $('#heroKick');
+    if (!HERO0 && h1) HERO0 = { h1: h1.innerHTML, lede: lede.innerHTML };
+    hero.classList.toggle('mine', !!c);
+    if (!c) { if (HERO0 && hero.dataset.mine) { h1.innerHTML = HERO0.h1; lede.innerHTML = HERO0.lede; delete hero.dataset.mine; } return; }
+    var sp = HI8.spot(c.spot) || {}, name = (sp.name || c.spot_name || '').toUpperCase(), sport = SPORT[c.sport] ? SPORT[c.sport].name.toUpperCase() : '';
+    hero.dataset.mine = c.code;
+    if (kick) kick.textContent = 'YOUR CREW · ' + sport + ' · ' + c.going + ' GOING';
+    h1.innerHTML = 'YOU\'RE GOING.<br><span>' + esc(dayRel(c.day)) + ' · ' + esc(name) + '</span>';
+    lede.innerHTML = mineLine(c) + '. Session ' + esc(hm(c.start)) + (c.end ? '–' + esc(hm(c.end)) : '') + '. ' + (c.going > 1 ? c.going + ' riders in.' : 'You\'re the only one in so far: share it.');
+  }
   function drawDock(L) {
     var b = $('#dockGo'); if (!b) return;
-    var o = (L || sessions())[0];
-    heroWind(o);
+    var o = (L || sessions())[0], mc = myNext();
+    heroWind(o); drawHeroMine(mc);
+    if (mc) {
+      var hub = hubOf(mc), sp = HI8.spot(mc.spot) || {};
+      b.setAttribute('data-act', 'crew'); b.setAttribute('data-code', mc.code);
+      b.innerHTML = 'OPEN MY CREW<small>' + esc(dayRel(mc.day)) + ' · ' + (hub && mc.meet_time ? 'PICK-UP ' + esc(hm(mc.meet_time)) + ' ' + esc(hub.name.toUpperCase()) : esc((sp.name || mc.spot_name || '').toUpperCase()) + ' ' + esc(hm(mc.start))) + '</small>';
+      return;
+    }
+    b.setAttribute('data-act', 'goingbest'); b.removeAttribute('data-code');
     b.innerHTML = (o && !o.crews.length ? 'START A CREW' : 'I\'M GOING') + '<small>' + (o ? 'NEXT: ' + esc(dayRel(o.date)) + ' ' + pad(o.from) + '–' + pad(o.to) + ' · ' + esc(o.spot.name.toUpperCase()) : 'PICK A DAY AND A SPOT') + '</small>';
   }
 
@@ -546,7 +583,7 @@
     var hm0 = home(); $('#ctxFrom').innerHTML = hm0 ? 'FROM <b>' + esc(hm0.name) + '</b> ▾' : '<b>WHERE FROM?</b> ▸';
     $('#ctxFrom').setAttribute('aria-label', hm0 ? 'Starting from ' + hm0.name + ': change' : 'Set where you start from');
     var anyCrew = upcoming(null, 14).length > 0;
-    $('#heroKick').textContent = (anyCrew ? 'LIVE CREWS · ' : 'BE THE FIRST CREW · ') + live.map(function (k) { return (SPORT[k] || { name: k }).name.toUpperCase(); }).join(' · ') + ' · ' + regionName().toUpperCase();
+    if (!myNext()) $('#heroKick').textContent = (anyCrew ? 'LIVE CREWS · ' : 'BE THE FIRST CREW · ') + live.map(function (k) { return (SPORT[k] || { name: k }).name.toUpperCase(); }).join(' · ') + ' · ' + regionName().toUpperCase();
     var all = upcoming(null, 7), riders = all.reduce(function (n, x) { return n + (x.going || 0); }, 0);
     $('#heroStat').innerHTML = all.length >= 5 ? '<b>' + all.length + '</b> CREW' + (all.length > 1 ? 'S' : '') + ' THIS WEEK · <b>' + riders + '</b> RIDER' + (riders === 1 ? '' : 'S') + ' GOING' : 'FREE · NO APP · FOUNDING PLATES OPEN';
   }
@@ -929,6 +966,10 @@
     if (opening && !focus) { var x = sheet.querySelector('.x'); if (x) x.focus({ preventScroll: true }); }
     Object.keys(vals).forEach(function (id) { var i = document.getElementById(id); if (i && !i.hasAttribute('data-fixed') && i.value === '' && vals[id]) i.value = vals[id]; });
     var b = sheet.querySelector('.sh-body'); if (b) b.scrollTop = top;
+    // a new error is scrolled into view, so it's never hidden behind the button at the bottom (2.24)
+    var er = sheet.querySelector('.err[role=alert]'), et = er ? er.textContent : '';
+    if (er && et !== S.errSeen && er.scrollIntoView) er.scrollIntoView({ block: 'center' });
+    S.errSeen = et;
     if (focus && document.getElementById(focus) && /INPUT|TEXTAREA/.test(document.getElementById(focus).tagName)) document.getElementById(focus).focus();
   }
   function shell(title, body, foot, back) {
@@ -1014,7 +1055,7 @@
     var pHow = '<div class="f"><span class="lb">' + (f.quick ? 'HOW ARE YOU GETTING THERE?' : 'HOW YOU GET THERE') + '</span><div class="row">' +
       (f.quick ? [['drive', "I'LL DRIVE", 'and fill my car'], ['seat', 'I NEED A SEAT', 'a driver picks me up'], ['own', 'MEET THERE', 'my own way']] : [['drive', "I'M DRIVING", 'others can ride with you'], ['own', 'OWN WAY', 'meet at the spot'], ['seat', 'I NEED A SEAT', 'a driver picks you up']]).map(function (o) {
         return '<button class="opt" data-act="sfget" data-v="' + o[0] + '" aria-pressed="' + (f.getting === o[0]) + '">' + o[1] + '<small>' + o[2] + '</small></button>';
-      }).join('') + '</div>' +
+      }).join('') + '</div>' + (f.err && f.errAt === 'how' ? '<div class="err" role="alert">' + f.err + '</div>' : '') +
       (f.getting === 'drive' ? '<div class="row" style="margin-top:10px;align-items:center"><span class="lb" style="margin:0 6px 0 0">FREE SEATS</span><span class="step"><button data-act="sfseats" data-d="-1" aria-label="Fewer seats">−</button><b>' + f.seats + '</b><button data-act="sfseats" data-d="1" aria-label="More seats">+</button></span></div>' +
         (function () { var hb = hubBy(f.hub), sp = HI8.spot(f.spot), cost = tripCost(hb, sp); if (!cost) return ''; var m = seatMath(cost, f.seats + 1);
           return '<p class="hint money">Fill it and ' + f.seats + ' rider' + (f.seats > 1 ? 's' : '') + ' pay you back <b>' + money(m.share * f.seats) + '</b> of the ' + money(cost) + ' fuel: ' + money(m.share) + ' each. Your drive costs you ' + money(m.share) + ' instead of ' + money(cost) + '.</p>'; })() : '') +
@@ -1036,7 +1077,7 @@
     var pClash = cl ? '<div class="warn" id="clash"><b>A crew is already going:</b> ' + esc(cl.host) + '\'s crew, ' + esc(cl.spot_name) + ' ' + esc(dayRel(cl.day)) + ' ' + esc(hm(cl.start)) + (cl.end ? '–' + esc(hm(cl.end)) : '') + ' · ' + cl.going + ' going. Ride with them: one crew is safer than two.' +
       '<div class="row"><button class="opt pick" data-act="going" data-code="' + esc(cl.code) + '">JOIN IT</button><button class="opt" data-act="sfclashok">START ANOTHER</button></div></div>' : '';
     var pTail = (f.dup ? '<div class="warn" id="dup"><b>Already up:</b> ' + esc(String(f.dup.hint || '').replace(/^There's already a crew for that: /, '')) + '<div class="row"><button class="opt" data-act="crew" data-code="' + esc(f.dup.code) + '">JOIN IT</button><button class="opt" data-act="sfforce">POST MINE ANYWAY</button></div></div>' : '') +
-      (f.err ? '<div class="err" role="alert">' + f.err + '</div>' : '') +
+      (f.err && f.errAt !== 'how' ? '<div class="err" role="alert">' + f.err + '</div>' : '') +
       '<p class="note">By posting you agree to the <a href="terms/">terms</a>: every session is each rider\'s own call. The spot\'s rules apply.</p>';
     var body;
     if (f.quick) {
@@ -1232,7 +1273,7 @@
       '<label class="sr" for="jfName">Rider name</label><input class="inp" id="jfName" autocomplete="nickname" maxlength="40" placeholder="Rider name (what the crew sees)"></div>';
     return '<div class="box" id="joinForm"><h3>' + (c.me ? 'CHANGE HOW YOU\'RE IN' : 'JOIN THIS CREW') + '</h3>' + how + lvl + you +
       (f.err ? '<div class="err" role="alert" style="margin:10px 0 0">' + f.err + '</div>' : '') +
-      '<button class="big join" data-act="jfgo" style="width:100%;margin-top:12px"' + (f.busy ? ' disabled' : '') + '>' + (f.busy ? '<span class="spin"></span>' : c.me ? 'SAVE' : "I'M GOING") + '</button>' +
+      (c.me ? '<button class="big join" data-act="jfgo" style="width:100%;margin-top:12px"' + (f.busy ? ' disabled' : '') + '>' + (f.busy ? '<span class="spin"></span>' : 'SAVE') + '</button>' : '') +
       (me || c.me ? '' : '<p class="hint">Your founding plate comes with it. By joining you agree to the <a href="terms/">terms</a>.</p>') + '</div>';
   }
   // I'M GOING for a rider who has joined before: straight in, the way they came last time (CHANGE in the toast)
@@ -1273,27 +1314,33 @@
     var status = c.status === 'off' ? '<span class="tag off">CALLED OFF</span>' : c.past ? '<span class="tag off">DONE</span>' : c.live ? '<span class="tag live">LIVE NOW</span>' : '';
     var maps = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent((c.maps || spot.maps || c.spot_name) + '');
     var hub = c.meet_hub ? HI8.hubsOf(c.city).filter(function (h) { return h.slug === c.meet_hub; })[0] : null;
-    var body = '<div class="hero art a-' + c.sport + '"><div class="k">' + tile(c.sport, 20) + esc(SPORT[c.sport].name.toUpperCase() + ' CREW') + ' ' + status + (c.min && !c.min_met && c.status === 'on' ? ' <span class="needs">GOES AHEAD WITH ' + c.min + ': NEEDS ' + (c.min - c.going) + ' MORE</span>' : '') + '</div><h2>' + esc(c.spot_name) + '</h2>' +
+    var joining = !member && S.jf && !S.jf.quick && c.status === 'on' && !c.past, dayOf = member && isToday && c.status === 'on' && !c.past && !sessionEnded(c);
+    var head = '<div class="hero art a-' + c.sport + '"><div class="k">' + tile(c.sport, 20) + esc(SPORT[c.sport].name.toUpperCase() + ' CREW') + ' ' + status + (c.min && !c.min_met && c.status === 'on' ? ' <span class="needs">GOES AHEAD WITH ' + c.min + ': NEEDS ' + (c.min - c.going) + ' MORE</span>' : '') + '</div><h2>' + esc(c.spot_name) + '</h2>' +
       '<div class="when2">' + esc(dayRel(c.day)) + ' · ' + esc(hm(c.start)) + (c.end ? '–' + esc(hm(c.end)) : '') + '</div>' +
-      '<div class="when2" style="color:var(--mint);font-weight:400;margin-top:4px">' + esc(CREW_LEVELS[c.levels] || '') + ' · captain ' + esc(c.host) + (c.host_plate ? ' #' + pad3(c.host_plate) : '') + '</div></div>' +
+      '<div class="when2" style="color:var(--mint);font-weight:400;margin-top:4px">' + esc(CREW_LEVELS[c.levels] || '') + ' · captain ' + esc(c.host) + (c.host_plate ? ' #' + pad3(c.host_plate) : '') + '</div></div>';
+    // just joined: the welcome sits in the page (2.24), not in a box floating over everything
+    var welcome = member && C.welcome ? '<div class="box welcome"><h3>YOU\'RE IN' + (C.welcome.plate ? ' <span class="tag">FOUNDING PLATE #' + pad3(C.welcome.plate) + '</span>' : '') + '</h3><p class="hint" style="margin:0">Your crew sees you under WHO\'S GOING. Add your mobile at the meeting point, so the driver can reach you.</p>' +
+      (C.welcome.offer ? '<button class="opt" data-act="alert" data-sport="' + c.sport + '" data-on="true" style="margin-top:10px">EMAIL ME NEW ' + esc(SPORT[c.sport].name.toUpperCase()) + ' CREWS</button>' : '') + '</div>' : '';
+    // joining: just the form and the hours (2.24); the rest of the page comes after
+    var top = joining ? joinForm(c) + crewStrip(c, f) :
       (c.status === 'off' ? '<div class="err">Called off: ' + esc(c.off_reason || 'the captain called it off') + '</div>' : '') +
-      cardsStrip(c) +
-      (!member && S.jf && !S.jf.quick && c.status === 'on' && !c.past ? joinForm(c) : '') + fxDrop(c, f) + rateBox(c) +
+      cardsStrip(c) + fxDrop(c, f) + rateBox(c) +
       crewStrip(c, f) + carBox(c, spot, hub) +
       (c.note ? '<div class="box"><h3>FROM THE CAPTAIN</h3><div style="font-size:13px">' + esc(c.note) + '</div></div>' : '') +
       '<div class="box"><h3>WHO\'S GOING <span class="tag' + (c.going >= c.max ? ' off' : '') + '">' + c.going + '/' + c.max + '</span></h3>' +
       (member ? membersHtml(c) : '<div style="display:flex;align-items:center;gap:10px">' + faces(c) + '<span style="font-size:12.5px;color:var(--mute)">' +
         (c.seats_free ? c.seats_free + ' seat' + (c.seats_free > 1 ? 's' : '') + ' free' + (hub ? ' from ' + esc(hub.name) : '') + (c.meet_time ? ' at ' + esc(hm(c.meet_time)) : '') : c.drivers ? 'cars are full' : 'no car yet') +
         (c.need_seat ? ' · ' + c.need_seat + ' need' + (c.need_seat > 1 ? '' : 's') + ' a seat' : '') + (c.here ? ' · ' + c.here + ' at the spot' : '') + '</span></div><p class="hint">Names, cars and the chat are for the crew.</p>') + '</div>';
+    var body = head + welcome + top;
     if (member) {
-      body += planHtml(c);
-      body += '<div class="box"><h3>MEETING POINT</h3><div style="font-size:13px">' + (hub ? '<b>' + esc(hub.name) + '</b> · ' + esc(hub.sub || '') + (c.meet_time ? ' at <b>' + esc(hm(c.meet_time)) + '</b>' : '') + '<br>' : '') +
+      var pPlan = planHtml(c), pSpot = '';
+      var pMeet = '<div class="box"><h3>MEETING POINT</h3><div style="font-size:13px">' + (hub ? '<b>' + esc(hub.name) + '</b> · ' + esc(hub.sub || '') + (c.meet_time ? ' at <b>' + esc(hm(c.meet_time)) + '</b>' : '') + '<br>' : '') +
         (c.meet_note ? esc(c.meet_note) + '<br>' : '') + 'Spot: ' + esc(c.spot_name) + '</div><div class="row" style="margin-top:10px">' +
         (hub ? '<a class="opt" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=' + hub.lat + ',' + hub.lon + '">PICK-UP ON MAPS</a>' : '') +
         '<a class="opt" target="_blank" rel="noopener" href="' + esc(maps) + '">DIRECTIONS TO THE SPOT</a><button class="opt" data-act="ics">ADD TO CALENDAR</button></div>' +
         (c.past ? '' : (function () { var mp = personOf(c.me) || {}; return '<div class="two" style="margin-top:10px;align-items:center"><label><span class="sr">Your mobile for the crew</span><input class="inp" id="myPhone" inputmode="tel" autocomplete="tel" placeholder="Your mobile" value="' + esc(mp.phone || '') + '"></label><button class="opt" data-act="phonesave">' + (mp.phone ? 'SAVED ✓ · UPDATE' : 'SHARE WITH THE CREW') + '</button></div><p class="hint">Only the riders in this crew see it: handy at the pick-up.</p>'; })()) + '</div>';
       if (isToday && c.status === 'on' && !sessionEnded(c)) {
-        body += '<div class="box"><h3>AT THE SPOT ' + (c.me.here ? '<span class="tag live">YOU\'RE THERE</span>' : '') + '</h3>' +
+        pSpot = '<div class="box"><h3>AT THE SPOT ' + (c.me.here ? '<span class="tag live">YOU\'RE THERE</span>' : '') + '</h3>' +
           (c.me.here ? '<p class="hint" style="margin:0 0 8px">How is it? Your crew and everyone checking the map see it (without your name).</p><div class="row">' +
             [['on', 'ON'], ['meh', 'MEH'], ['off', 'OFF']].map(function (v) { return '<button class="opt" data-act="report" data-v="' + v[0] + '">' + v[1] + '</button>'; }).join('') + '</div>' +
             (c.sport === 'kite' ? '<div class="row" style="margin-top:8px">' + [7, 9, 10, 12, 14].map(function (k) { return '<button class="opt" data-act="rkite" data-v="' + k + '" aria-pressed="' + (S.crew.rkite === k) + '">' + k + ' M</button>'; }).join('') + '</div>' :
@@ -1301,16 +1348,18 @@
             '<button class="opt" data-act="checkout" style="margin-top:10px">I\'VE LEFT</button>'
             : '<button class="big start" data-act="checkin" style="width:100%">I\'M AT THE SPOT</button><p class="hint">Lets the crew (and the map) know someone\'s there.</p>') + '</div>';
       }
-      body += payHtml(c);
-      body += '<div class="box" id="chatAnchor"><h3>CREW CHAT</h3><div class="chat" id="chatBox">' + chatHtml(C.msgs) + '</div>' +
+      var pPay = payHtml(c);
+      var pChat = '<div class="box" id="chatAnchor"><h3>CREW CHAT</h3><div class="chat" id="chatBox">' + chatHtml(C.msgs) + '</div>' +
         '<form class="send" data-form="chat"><label class="sr" for="chatIn">Message</label><input class="inp" id="chatIn" maxlength="500" autocomplete="off" placeholder="Message the crew"><button type="submit">SEND</button></form></div>';
-      body += S.jf ? joinForm(c) : '<div class="f"><div class="row"><button class="opt" data-act="jfopen">CHANGE LEVEL OR RIDE</button><button class="opt" data-act="leave">' +
+      var pEdit = S.jf ? joinForm(c) : '<div class="f"><div class="row"><button class="opt" data-act="jfopen">CHANGE LEVEL OR RIDE</button><button class="opt" data-act="leave">' +
         (C.confirm === 'leave' ? (c.host_is_me ? 'TAP AGAIN: CALL IT OFF' : 'TAP AGAIN TO LEAVE') : c.host_is_me ? 'CALL IT OFF' : 'LEAVE THE CREW') + '</button></div></div>';
-    } else if (c.status === 'on' && !c.past) {
+      // on the day: check in, the meeting point and the chat first; the forecast and the money after (2.24)
+      body = dayOf ? head + welcome + pSpot + pMeet + pChat + top + pPlan + pPay + pEdit : head + welcome + top + pPlan + pMeet + pSpot + pPay + pChat + pEdit;
+    } else if (c.status === 'on' && !c.past && !joining) {
       body += '<div class="box"><h3>THE SPOT</h3><div style="font-size:12.5px">' + esc(spot.note || '') + '</div><div class="row" style="margin-top:10px"><a class="opt" target="_blank" rel="noopener" href="' + esc(maps) + '">DIRECTIONS</a><button class="opt" data-act="spot" data-spot="' + esc(c.spot) + '">FULL FORECAST</button></div></div>';
     }
     if (member) body += '<div class="box keepbox"><h3>RIDE WITH THEM AGAIN</h3><p class="hint">Keep this crew: the people in it stay together. When one of you goes, the rest hear about it first.</p><button class="big start" data-act="keep" data-code="' + esc(c.code) + '">KEEP THIS CREW</button></div>';
-    if (c.reports && c.reports.length) {
+    if (!joining && c.reports && c.reports.length) {
       body += '<div class="box"><h3>REPORTS FROM THE SPOT</h3><div class="reports">' + c.reports.slice(0, 5).map(function (r) {
         return '<div class="rep"><span class="tag ' + (r.verdict === 'on' ? 'epic' : r.verdict === 'meh' ? 'ok' : 'no') + '">' + r.verdict.toUpperCase() + '</span><span>' + (r.name ? esc(r.name) + ' · ' : '') + (r.kite ? r.kite + ' m' : '') + (r.ground ? esc(r.ground) : '') + (r.note ? ' · ' + esc(r.note) : '') + '</span><small>' + esc(ago(r.at)) + '</small></div>';
       }).join('') + '</div></div>';
@@ -1966,7 +2015,7 @@
       ['regular', 'INDEPENDENT', k === 'kite' ? 'I launch, ride upwind and get back in on my own' : 'I ride on my own'], ['ripper', 'RIPPER', 'strong, any conditions']];
     return shell('YOUR LEVEL · ' + esc(SPORT[k].name.toUpperCase()), '<div class="sec"><p class="lede">Every EPIC, GOOD, OK and NO GO on the page is for your level. Gusty, onshore or uncertain sessions are capped harder for learners. Stays on this phone.</p>' +
       '<div class="row" style="margin:12px 0">' + opts.map(function (o) { return '<button class="opt wide" data-act="lvset" data-v="' + o[0] + '" aria-pressed="' + (cur === o[0]) + '"><span>' + o[1] + '<small>' + esc(o[2]) + '</small></span></button>'; }).join('') + '</div>' +
-      (cur === 'rookie' ? '<p class="hint">Learners ride in crews run by an approved captain. Ask a school in the meantime: <a href="B27-Schools.dc.html">schools near you</a>.</p>' : '') + '</div>' + (k === 'kite' ? kgBox() : ''),
+      (cur === 'rookie' ? '<p class="hint">Learners ride in crews run by an approved captain. Ask a school in the meantime: <a href="schools/">schools near you</a>.</p>' : '') + '</div>' + (k === 'kite' ? kgBox() : ''),
       '<button class="big join" data-act="close">DONE</button>', true);
   }
   // ---- THE HI8 PASS: shown where it pays; while it isn't on sale, "count me in"
@@ -2140,14 +2189,15 @@
         toast("You're in: " + how + '. <button class="opt" data-act="jfopen" style="margin-left:8px">CHANGE</button>', 8000);
       } else if (!was) {
         var al = (HI8.mine && HI8.mine.alerts) || [];
-        toast("You're in" + (d.plate ? ': founding plate #' + pad3(d.plate) : '') + '.' + (al.some(function (a) { return a.sport === c.sport; }) ? '' : ' <button class="opt" data-act="alert" data-sport="' + c.sport + '" data-on="true" style="margin-left:8px">EMAIL ME NEW ' + esc(SPORT[c.sport].name.toUpperCase()) + ' CREWS</button>'), 7000);
+        C.welcome = { plate: d.plate || null, offer: !al.some(function (a) { return a.sport === c.sport; }) }; renderSheet();
+        toast("You're in" + (d.plate ? ': founding plate #' + pad3(d.plate) : '') + '.', 2500);
       } else toast('Saved.');
     }, function (e) { f.busy = false; f.quick = false; f.err = errText(e); renderSheet(); });
   }
   function startPost() {
     var f = S.sf; if (f.busy) return;
     var note = ($('#sfNote') || {}).value || '', email = ($('#sfEmail') || {}).value, name = ($('#sfName') || {}).value;
-    f.note = note; f.err = null;
+    f.note = note; f.err = null; f.errAt = null;
     refreshToday();
     // a window that already started today: the crew starts in a few minutes, not in the past
     var nowMin = S.nowH * 60 + S.nowM, start = pad(f.from) + ':00';
@@ -2159,7 +2209,7 @@
     var args = { p_sport: f.sport, p_spot: f.spot, p_day: f.date, p_start: start, p_end: f.to ? pad(Math.min(f.to, 23)) + ':' + (f.to >= 24 ? '59' : '00') : null,
       p_levels: f.levels, p_max: f.max, p_meet_hub: f.getting === 'own' ? null : f.hub, p_meet_time: f.getting === 'own' ? null : f.meet, p_meet_note: null, p_note: note || null,
       p_getting: f.getting, p_seats: f.getting === 'drive' ? f.seats : 0, p_force: !!f.force };
-    if (!f.getting) { f.err = 'Pick how you\'re getting there: drive, a seat, or meet there.'; renderSheet(); return; }
+    if (!f.getting) { f.err = 'Pick how you\'re getting there: drive, a seat, or meet there.'; f.errAt = 'how'; renderSheet(); return; }
     HI8.store.set('getting', f.getting);
     if (!signedIn()) {
       if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email.trim())) { f.err = "Add your email: that's how the crew reaches you through the app."; renderSheet(); return; }
