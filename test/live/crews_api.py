@@ -62,7 +62,7 @@ check(c['seats_free'] == 2 and c['drivers'] == 1, 'the captain drives with 2 sea
 print('public view')
 lst = must('hi8_crews', {'p_city': 'amsterdam'})
 card = [x for x in lst if x['code'] == code][0]
-check(card['going'] == 1 and card['spot_name'] == 'Wijk aan Zee' and card['initials'] == ['MA'] and 'meet_note' not in card, 'listed for everyone: counts and initials, no meeting note')
+check(card['going'] == 1 and card['spot_name'] == 'Wijk aan Zee' and card['initials'] == ['M'] and 'meet_note' not in card, 'listed for everyone: counts and a first letter (0022), no meeting note')
 check('@' not in json.dumps(lst), 'no emails in the public list')
 pub = must('hi8_crew', {'p_code': code})
 check('members' not in pub and 'meet_note' not in pub, 'crew page without a key: no names, no meeting note')

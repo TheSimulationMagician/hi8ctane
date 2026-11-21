@@ -39,7 +39,7 @@ await new Promise((r) => srv.listen(8443, r));
 const EP = 'https://localhost:8443/push/';
 
 sql("delete from public.app_secrets where name = 'vapid_private'; delete from public.app_settings where key = 'vapid_public'");
-sql("truncate public.signups, public.rider_keys, public.rate_hits, public.crews, public.crew_members, public.outbox, public.crew_alerts, public.spot_watch, public.wind_alerts, public.push_subs, public.push_queue, public.alert_sent, public.spot_reports cascade");
+sql("truncate public.signups, public.rider_keys, public.rate_hits, public.crews, public.crew_members, public.outbox, public.crew_alerts, public.spot_watch, public.wind_alerts, public.push_subs, public.push_queue, public.alert_sent, public.spot_reports, public.ride_asks cascade");
 const K = {};
 for (const n of ['ana', 'bo', 'cy', 'di']) K[n] = (await must('hi8_join', { p_email: n + '@example.com', p_city: 'amsterdam' })).key;
 
@@ -107,6 +107,10 @@ const run = (hour, extra = {}) => new Promise((res) => { // async: the fake push
   let o = '', e = ''; ch.stdout.on('data', (d) => (o += d)); ch.stderr.on('data', (d) => (e += d));
   ch.on('close', (code) => { if (code !== 0) { console.error(o, e); process.exit(1); } res(o); });
 });
+// 2.29: someone looking for a crew in three days, and a crew that fits
+sql(`insert into public.crews (city, sport, spot, day, start_time, end_time, levels, max_riders, meet_hub, meet_time, host_email, code) values ('amsterdam','kite','ijmuiden', hi8_today('amsterdam') + 3, '13:00','17:00','all',6,'cs','11:45','bo@example.com','ASK001')`);
+sql(`insert into public.crew_members (crew_id, email, level, getting, seats) select id, 'bo@example.com', 'regular', 'drive', 3 from public.crews where code = 'ASK001'`);
+sql(`insert into public.ride_asks (email, city, sport, day, need_seat, hub, level) values ('zed@example.com', 'amsterdam', 'kite', hi8_today('amsterdam') + 3, true, 'cs', 'regular')`);
 got.length = 0;
 sql('truncate public.fx_cache'); await fetch(BASE + '/__fx', { method: 'DELETE' });
 let out = await run(8);
@@ -128,6 +132,7 @@ check(wind && /kt SW, gusts \d+/.test(wind.body) && wind.url.startsWith('https:/
 check((await Promise.all(mine.map(async (g) => g.h['content-encoding'] === 'aes128gcm' && (await verifyVapid(g.h.authorization, V.publicKey)).aud === 'https://localhost:8443'))).every(Boolean), 'every push is encrypted and signed with our VAPID key');
 check(msgs.some((m) => /^It's on/.test(m.title)), 'and "it\'s on" from before went out too');
 check(sql(`select count(*) from public.push_queue where sent_at is null`) === '0', 'the queue is empty');
+check(/riders told about a crew that fits: 1/.test(out) && sql(`select count(*) from public.outbox where kind = 'ask' and to_email = 'zed@example.com'`) === '1', '"I\'m looking": the worker tells a rider about the crew that fits');
 check(sql(`select count(*) from public.crew_messages m join public.crews c on c.id = m.crew_id where c.code = '${tmr}' and m.body like 'Forecast dropped:%'`) === '1', 'tomorrow is 7 kt: the crew gets "forecast dropped" with the next window');
 check(sql(`select body from public.crew_messages m join public.crews c on c.id = m.crew_id where c.code = '${tmr}' and m.body like 'Forecast dropped:%'`).includes('Next good window'), '...which names the next good window');
 got.length = 0;

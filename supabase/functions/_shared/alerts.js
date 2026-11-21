@@ -23,7 +23,7 @@ export async function runAlerts(opts) {
   const log = opts.log || (() => {});
   const env = { TEST_HOUR: opts.testHour };
   let VAPID_PUB = opts.vapid && opts.vapid.publicKey || '', VAPID_PRIV = opts.vapid && opts.vapid.privateKey || '';
-  const report = { cached: [], alerts: 0, alertsNew: 0, drops: 0, rates: 0, push: { waiting: 0, done: 0, delivered: 0, gone: 0, failed: 0 } };
+  const report = { cached: [], alerts: 0, alertsNew: 0, drops: 0, rates: 0, asks: 0, push: { waiting: 0, done: 0, delivered: 0, gone: 0, failed: 0 } };
   const SPORT = { kite: ['Kite', '🪁'], wing: ['Wing', '🪽'], windsurf: ['Windsurf', '🏄'], surf: ['Surf', '🏄'], sup: ['SUP', '🛶'], mtb: ['MTB', '🚵'], mx: ['MX', '🏍️'] };
   const WINDY = { kite: 1, wing: 1, windsurf: 1 };
   const pad = (n) => (n < 10 ? '0' : '') + n;
@@ -131,6 +131,10 @@ export async function runAlerts(opts) {
   }
   report.drops = drops; report.rates = rates;
   log('forecast drops told:', drops, '· how-was-it asked:', rates);
+
+  // 3b. "I'm looking": tell riders about a crew that fits (once per day they asked for)
+  report.asks = DRY ? 0 : Number(await rpc('hi8_ask_match', {}).catch((e) => { log('matching failed:', e.message || e); return 0; })) || 0;
+  if (report.asks) log('riders told about a crew that fits:', report.asks);
 
   // 4. push. The key pair lives in the database: made here on the first run (the site reads the public half).
   if (!VAPID_PRIV || !VAPID_PUB) {
