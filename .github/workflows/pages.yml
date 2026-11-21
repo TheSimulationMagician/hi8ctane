@@ -11,6 +11,7 @@ on:
     paths:
       - "site/**"
       - ".github/workflows/pages.yml"
+      - "scripts/build.sh"
   workflow_dispatch:
 
 # Read the repo, publish to Pages, and prove to Pages that this run is allowed to deploy.
@@ -41,6 +42,10 @@ jobs:
           v="${GITHUB_SHA::7}"
           find site -name '*.html' -print0 | xargs -0 sed -i -E "s#((src|href)=\"[^\":?]+\.(js|css))\"#\1?v=$v\"#g"
           grep -c "?v=$v" site/index.html
+
+      # 2.27: the live site gets shrunk copies of the code (the repo keeps the readable files): about 18% less to download.
+      - name: Shrink the code
+        run: sh scripts/build.sh site
 
       - name: Upload the live site
         uses: actions/upload-pages-artifact@v4

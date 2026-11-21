@@ -24,6 +24,10 @@
   var KEYQ = MKEY ? '&apikey=' + encodeURIComponent(MKEY) : '';
   var TTL = 30 * 60e3;
   var V = 5; // cache version
+  // 2.27: the shared forecast, published every 30 minutes by the alert worker into Storage (fx/<city>.json and
+  // fx/grid-<city>.json). The page reads that one file first, and only asks Open-Meteo itself when it's missing or old.
+  var SHARED = CFG.fxShared === false ? null : String(CFG.fxShared || (CFG.supabaseUrl ? String(CFG.supabaseUrl).replace(/\/+$/, '') + '/storage/v1/object/public/fx/' : '')) || null;
+  var SHARED_MAX = 45 * 60e3;
   var DAYS = 7; // the spots: a week ahead (the sharp model covers the first two days, best_match the rest)
 
   // the sharpest model per city, with best_match filling anything it doesn't give
@@ -104,6 +108,16 @@
     }, function (e) { clearTimeout(t); throw e; });
   };
   FX.setFetch = function (f) { fetchJSON = f; };
+  FX.V = V;
+  // the shared copy, if it's there, the right version and fresh: else null (never an error: the page then fetches itself)
+  function shared(name, ok) {
+    if (!SHARED || typeof fetch === 'undefined') return Promise.resolve(null);
+    var ctl = typeof AbortController !== 'undefined' ? new AbortController() : null, t = ctl ? setTimeout(function () { ctl.abort(); }, 4000) : 0;
+    return fetch(SHARED + name, ctl ? { signal: ctl.signal } : {}).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+      clearTimeout(t); return j && j.v === V && Date.now() - j.at < SHARED_MAX && (!ok || ok(j)) ? j : null;
+    }, function () { clearTimeout(t); return null; });
+  }
+  FX.shared = shared;
   function store(k, v) { try { if (v === undefined) return JSON.parse(root.localStorage.getItem('hi8.' + k)); root.localStorage.setItem('hi8.' + k, JSON.stringify(v)); } catch (e) { return null; } }
 
   FX.urls = function (city, spots) {
@@ -177,10 +191,14 @@
     var key = 'fx28.' + city, c = store(key);
     var fresh = c && c.v === V && Date.now() - c.at < TTL && spots.every(function (s) { return c.spots[s.slug]; });
     if (fresh && !force) { FX.data[city] = c; FX.error = null; return Promise.resolve(c); }
-    return FX.fetchCity(city, spots).then(function (sp) {
-      var out = { v: V, at: Date.now(), city: city, spots: sp };
-      store(key, out); FX.data[city] = out; FX.error = null; return out;
-    }, function (e) {
+    var has = function (j) { return j.spots && spots.every(function (s) { return j.spots[s.slug]; }); };
+    return (force ? Promise.resolve(null) : shared(city + '.json', has)).then(function (j) {
+      if (j) { j.shared = true; store(key, j); FX.data[city] = j; FX.error = null; return j; }
+      return FX.fetchCity(city, spots).then(function (sp) {
+        var out = { v: V, at: Date.now(), city: city, spots: sp };
+        store(key, out); FX.data[city] = out; FX.error = null; return out;
+      });
+    }).then(null, function (e) {
       FX.error = (e && e.message) || 'forecast_unavailable';
       if (c && c.v === V) { FX.data[city] = c; c.stale = true; return c; } // an older forecast beats none; screens say how old
       throw e;
@@ -199,6 +217,10 @@
     var key = 'fxgrid.' + city, c = store(key), G = GRID[city];
     if (!G) return Promise.resolve(null);
     if (c && c.v === V && Date.now() - c.at < TTL && !force) { FX.gridData[city] = c; return Promise.resolve(c); }
+    if (!force) return shared('grid-' + city + '.json').then(function (j) {
+      if (j) { store(key, j); FX.gridData[city] = j; return j; }
+      return FX.grid(city, true);
+    });
     var pts = FX.gridPoints(city), m = CITY_MODEL[city];
     var u = METEO + '/v1/forecast?latitude=' + pts.map(function (p) { return p[0]; }).join(',') + '&longitude=' + pts.map(function (p) { return p[1]; }).join(',') +
       '&hourly=wind_speed_10m,wind_direction_10m,precipitation&wind_speed_unit=kn&timezone=auto&forecast_days=3' + (m ? '&models=' + m + ',best_match' : '') + KEYQ;

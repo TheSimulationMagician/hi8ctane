@@ -1,5 +1,5 @@
 /*
- * Hi8ctane live map (2.8). Drawn by us on a canvas: no map service, no keys, works offline once loaded.
+ * Hi8ctane live map (2.8, smooth since 2.25). Drawn by us on a canvas: no map service, no keys, works offline once loaded.
  *
  *   var m = HI8Map(el, { geo: HI8_GEO.barcelona, onSpot: fn(slug) });
  *   m.setGrid(FX.gridData.barcelona); m.setHour(i); m.setLayer('wind' | 'rain');
@@ -33,25 +33,39 @@
   }
   window.HI8_WIND_COLOR = function (kt) { var c = ramp(STOPS, kt); return 'rgb(' + c.map(Math.round).join(',') + ')'; };
 
+
   window.HI8Map = function (host, opts) {
     opts = opts || {};
     var dpr = Math.min(2, window.devicePixelRatio || 1);
     var cv = document.createElement('canvas'), ctx = cv.getContext('2d');
     var trail = document.createElement('canvas'), tctx = trail.getContext('2d');
     var field = document.createElement('canvas'), fctx = field.getContext('2d');
+    // 2.25: the land, the towns and the colour field are drawn once into "base" and only redrawn when the view, the
+    // hour or the layer changes. While a finger moves the map, base is just shifted and scaled: smooth on any phone.
+    // three layers, stacked: the base (land, towns, colour field), the wind flow, and the markers on top (and the
+    // finger events). While the map moves, the base is only moved by the browser (a CSS transform): nothing redraws.
+    var base = document.createElement('canvas'), bctx = base.getContext('2d');
+    base.className = 'map-layer map-base'; trail.className = 'map-layer map-flow';
     cv.className = 'map-canvas'; cv.setAttribute('role', 'img'); cv.setAttribute('aria-label', opts.label || 'Live wind map with spots and crews');
-    host.appendChild(cv);
+    host.appendChild(base); host.appendChild(trail); host.appendChild(cv);
+    var topDirty = true;
+    var hint = document.createElement('div'); hint.className = 'map-hint'; hint.setAttribute('aria-hidden', 'true'); hint.textContent = 'TWO FINGERS TO MOVE THE MAP'; host.appendChild(hint);
     var W = 0, H = 0, z = 7.6, cx = 0, cy = 0, geo = opts.geo, grid = null, hour = 0, layer = 'wind', spots = [], hits = [], keepOut = [], drives = [];
     var parts = [], raf = 0, visible = true, still = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) || !!opts.still;
-    var fieldDirty = true, t0 = Date.now();
+    var t0 = Date.now(), bv = null, baseDirty = true, moving = false, vec = null, vw = 0, vh = 0, anim = null, lay = null, layKey = '';
+    // cooperative gestures (phones, where the map sits in the page): one finger scrolls the page, two move the map
+    var coop = !!opts.coop;
+    var VS = 6; // the colour field and the wind vectors: one cell per 6 px
 
     function size() {
       var r = host.getBoundingClientRect();
       W = Math.max(50, Math.round(r.width)); H = Math.max(50, Math.round(r.height));
-      [cv, trail].forEach(function (c) { c.width = W * dpr; c.height = H * dpr; });
-      cv.style.width = W + 'px'; cv.style.height = H + 'px'; clamp();
-      fieldDirty = true; seed();
+      [cv, base].forEach(function (c) { c.width = W * dpr; c.height = H * dpr; c.style.width = W + 'px'; c.style.height = H + 'px'; });
+      trail.width = W; trail.height = H; trail.style.width = W + 'px'; trail.style.height = H + 'px'; // the flow is soft anyway: 1 pixel per pixel is plenty
+      clamp(); topDirty = true;
+      baseDirty = true; seed();
     }
+    function setCoop(b) { coop = !!b; cv.style.touchAction = coop ? 'pan-y' : 'none'; }
     // Never look past the region we have outlines for: the land would just end. Zoom and pan stop at its box.
     function clamp() {
       var B = geo && geo.bbox; if (!B) return;
@@ -80,73 +94,83 @@
       return { u: u, v: v, w: Math.sqrt(u * u + v * v), rain: rain };
     }
 
-    // ---------------------------------------------------------------- drawing
-    function path(ring) {
-      ctx.beginPath();
-      ring.forEach(function (p, i) { var q = px(p[1], p[0]); if (i) ctx.lineTo(q[0], q[1]); else ctx.moveTo(q[0], q[1]); });
+    // ---------------------------------------------------------------- the base: field, land, towns (drawn once per view)
+    function path(c, ring) {
+      c.beginPath();
+      ring.forEach(function (p, i) { var q = px(p[1], p[0]); if (i) c.lineTo(q[0], q[1]); else c.moveTo(q[0], q[1]); });
     }
     function drawField() {
-      // the colour field, computed at 1/6 resolution and smoothed when scaled up
-      var s = 6, fw = Math.ceil(W / s), fh = Math.ceil(H / s);
-      field.width = fw; field.height = fh;
-      if (!grid) { fieldDirty = false; return; }
+      // the colour field at 1/6 resolution (smoothed when scaled up), and the wind vectors the particles follow
+      var fw = Math.ceil(W / VS), fh = Math.ceil(H / VS);
+      field.width = fw; field.height = fh; vw = fw; vh = fh;
+      vec = grid ? new Float32Array(fw * fh * 2) : null;
+      if (!grid) return;
       var img = fctx.createImageData(fw, fh), D = img.data;
       for (var y = 0; y < fh; y++) for (var x = 0; x < fw; x++) {
-        var g = ll(x * s + s / 2, y * s + s / 2), wv = windAt(g[0], g[1], hour), k = (y * fw + x) * 4;
+        var g = ll(x * VS + VS / 2, y * VS + VS / 2), wv = windAt(g[0], g[1], hour), k = (y * fw + x) * 4;
         if (!wv) continue;
+        vec[(y * fw + x) * 2] = wv.u; vec[(y * fw + x) * 2 + 1] = wv.v;
         if (layer === 'rain') {
-          var c = ramp(RAIN, wv.rain), base = ramp(STOPS, 4);
-          var a = c[3] || 0;
-          D[k] = (base[0] * (1 - a) + c[0] * a) * DIM; D[k + 1] = (base[1] * (1 - a) + c[1] * a) * DIM; D[k + 2] = (base[2] * (1 - a) + c[2] * a) * DIM; D[k + 3] = 255;
+          var c = ramp(RAIN, wv.rain), bs = ramp(STOPS, 4), a = c[3] || 0;
+          D[k] = (bs[0] * (1 - a) + c[0] * a) * DIM; D[k + 1] = (bs[1] * (1 - a) + c[1] * a) * DIM; D[k + 2] = (bs[2] * (1 - a) + c[2] * a) * DIM; D[k + 3] = 255;
         } else {
           var cc = ramp(STOPS, wv.w); D[k] = cc[0] * DIM; D[k + 1] = cc[1] * DIM; D[k + 2] = cc[2] * DIM; D[k + 3] = 255;
         }
       }
       fctx.putImageData(img, 0, 0);
-      fieldDirty = false;
     }
-    function drawBase(lay) {
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      ctx.fillStyle = '#16263d'; ctx.fillRect(0, 0, W, H);
-      if (fieldDirty) drawField();
-      if (grid) {
-        ctx.imageSmoothingEnabled = true; ctx.globalAlpha = 0.92;
-        ctx.drawImage(field, 0, 0, field.width * 6, field.height * 6);
-        ctx.globalAlpha = 1;
+    function renderBase() {
+      var c = bctx;
+      c.setTransform(dpr, 0, 0, dpr, 0, 0);
+      c.fillStyle = '#16263d'; c.fillRect(0, 0, W, H);
+      drawField();
+      if (grid) { c.imageSmoothingEnabled = true; c.globalAlpha = 0.92; c.drawImage(field, 0, 0, field.width * VS, field.height * VS); c.globalAlpha = 1; }
+      if (geo) {
+        // land: a dark veil over the field, so the coast reads; lakes back to water
+        c.fillStyle = grid ? 'rgba(10,14,20,0.42)' : '#2a3442';
+        geo.land.forEach(function (r) { path(c, r); c.closePath(); c.fill(); });
+        c.fillStyle = grid ? 'rgba(22,38,61,0.35)' : '#16263d';
+        (geo.lakes || []).forEach(function (r) { path(c, r); c.closePath(); c.fill(); });
+        c.lineJoin = 'round';
+        c.strokeStyle = 'rgba(8,10,14,0.85)'; c.lineWidth = 1.6;
+        geo.land.forEach(function (r) { path(c, r); c.closePath(); c.stroke(); });
+        c.strokeStyle = 'rgba(243,239,227,0.35)'; c.lineWidth = 0.6;
+        geo.land.forEach(function (r) { path(c, r); c.closePath(); c.stroke(); });
+        c.strokeStyle = 'rgba(160,200,255,0.35)'; c.lineWidth = 1;
+        (geo.rivers || []).forEach(function (r) { path(c, r); c.stroke(); });
+        c.setLineDash([4, 3]); c.strokeStyle = 'rgba(243,239,227,0.45)'; c.lineWidth = 1;
+        (geo.borders || []).forEach(function (r) { path(c, r); c.stroke(); });
+        c.setLineDash([]);
+        // towns: the bigger ones first, more as you zoom in; never on top of a spot or another town
+        var minRank = z < 6.8 ? 1 : z < 7.5 ? 2 : z < 8.2 ? 3 : 4, taken = [];
+        var spotBoxes = layout().map(function (o) { return [Math.min(o.x - 16, o.box[0]) - 4, o.y - 16, Math.max(o.x + 16, o.box[2]) + 4, o.y + 16]; });
+        c.font = '600 10px "Space Mono", ui-monospace, monospace'; c.textBaseline = 'middle';
+        (geo.towns || []).slice().sort(function (a, b) { return a[3] - b[3]; }).forEach(function (t) {
+          if (t[3] > minRank) return;
+          var q = px(t[1], t[2]);
+          if (q[0] < -40 || q[0] > W + 40 || q[1] < -20 || q[1] > H + 20) return;
+          var label = t[0].toUpperCase(), bw = c.measureText(label).width, box = [q[0] - 3, q[1] - 7, q[0] + 7 + bw, q[1] + 7];
+          if (box[0] < 0 || box[2] > W) return;
+          if (taken.concat(keepOut, spotBoxes).some(function (o) { return box[0] < o[2] && box[2] > o[0] && box[1] < o[3] && box[3] > o[1]; })) return;
+          taken.push(box);
+          c.fillStyle = 'rgba(243,239,227,0.9)'; c.beginPath(); c.arc(q[0], q[1], t[3] === 1 ? 2.6 : 1.8, 0, 7); c.fill();
+          c.lineWidth = 3; c.strokeStyle = 'rgba(10,14,20,0.75)'; c.strokeText(label, q[0] + 5, q[1]);
+          c.fillStyle = 'rgba(243,239,227,0.82)'; c.fillText(label, q[0] + 5, q[1]);
+        });
       }
-      if (!geo) return;
-      // land: a dark veil over the field, so the coast reads; lakes back to water
-      ctx.fillStyle = grid ? 'rgba(10,14,20,0.42)' : '#2a3442';
-      geo.land.forEach(function (r) { path(r); ctx.closePath(); ctx.fill(); });
-      ctx.fillStyle = grid ? 'rgba(22,38,61,0.35)' : '#16263d';
-      (geo.lakes || []).forEach(function (r) { path(r); ctx.closePath(); ctx.fill(); });
-      ctx.lineJoin = 'round';
-      ctx.strokeStyle = 'rgba(8,10,14,0.85)'; ctx.lineWidth = 1.6;
-      geo.land.forEach(function (r) { path(r); ctx.closePath(); ctx.stroke(); });
-      ctx.strokeStyle = 'rgba(243,239,227,0.35)'; ctx.lineWidth = 0.6;
-      geo.land.forEach(function (r) { path(r); ctx.closePath(); ctx.stroke(); });
-      ctx.strokeStyle = 'rgba(160,200,255,0.35)'; ctx.lineWidth = 1;
-      (geo.rivers || []).forEach(function (r) { path(r); ctx.stroke(); });
-      ctx.setLineDash([4, 3]); ctx.strokeStyle = 'rgba(243,239,227,0.45)'; ctx.lineWidth = 1;
-      (geo.borders || []).forEach(function (r) { path(r); ctx.stroke(); });
-      ctx.setLineDash([]);
-      // towns: the bigger ones first, more as you zoom in; never on top of a spot or another town
-      var minRank = z < 6.8 ? 1 : z < 7.5 ? 2 : z < 8.2 ? 3 : 4, taken = [];
-      var spotBoxes = (lay || []).map(function (o) { return [Math.min(o.x - 16, o.box[0]) - 4, o.y - 16, Math.max(o.x + 16, o.box[2]) + 4, o.y + 16]; });
-      ctx.font = '600 10px "Space Mono", ui-monospace, monospace'; ctx.textBaseline = 'middle';
-      (geo.towns || []).slice().sort(function (a, b) { return a[3] - b[3]; }).forEach(function (t) {
-        if (t[3] > minRank) return;
-        var q = px(t[1], t[2]);
-        if (q[0] < -40 || q[0] > W + 40 || q[1] < -20 || q[1] > H + 20) return;
-        var label = t[0].toUpperCase(), bw = ctx.measureText(label).width, box = [q[0] - 3, q[1] - 7, q[0] + 7 + bw, q[1] + 7];
-        if (box[0] < 0 || box[2] > W) return;
-        if (taken.concat(keepOut, spotBoxes).some(function (o) { return box[0] < o[2] && box[2] > o[0] && box[1] < o[3] && box[3] > o[1]; })) return;
-        taken.push(box);
-        ctx.fillStyle = 'rgba(243,239,227,0.9)'; ctx.beginPath(); ctx.arc(q[0], q[1], t[3] === 1 ? 2.6 : 1.8, 0, 7); ctx.fill();
-        ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(10,14,20,0.75)'; ctx.strokeText(label, q[0] + 5, q[1]);
-        ctx.fillStyle = 'rgba(243,239,227,0.82)'; ctx.fillText(label, q[0] + 5, q[1]);
-      });
+      bv = { z: z, cx: cx, cy: cy }; baseDirty = false; base.style.transform = '';
     }
+    // the base as it was drawn, moved by the browser to where the view is now (a shift and a scale, no redraw)
+    function placeBase() {
+      var k = Math.pow(2, z - bv.z), ox = W / 2 - cx + k * (bv.cx - W / 2), oy = H / 2 - cy + k * (bv.cy - H / 2);
+      base.style.transform = Math.abs(k - 1) < 1e-6 && Math.abs(ox) < 0.01 && Math.abs(oy) < 0.01 ? '' : 'matrix(' + k + ',0,0,' + k + ',' + ox + ',' + oy + ')';
+    }
+    function layout() {
+      var key = z.toFixed(4) + ',' + cx.toFixed(1) + ',' + cy.toFixed(1) + ',' + W + ',' + H + ',' + spots.length;
+      if (lay && layKey === key) return lay;
+      layKey = key; lay = layoutSpots(); return lay;
+    }
+
     // the 2.7 verdict colours: EPIC pink, GOOD lime, OK yellow, NO GO sand
     var TONE = { epic: '#FF2D78', good: '#C8FF3D', ok: '#FFE14D', no: '#E7E2D4', none: '#C9C4B6', dark: '#5C6672' };
     var INK = { epic: '#FFFFFF' };
@@ -250,96 +274,134 @@
       });
     }
 
-    // ---------------------------------------------------------------- particles
+    // ---------------------------------------------------------------- particles (they follow the vectors of the field)
     function seed() {
-      var n = still ? 0 : Math.round(Math.min(420, W * H / 1900));
+      var n = still ? 0 : Math.round(Math.min(320, W * H / 2200));
       parts = [];
       for (var i = 0; i < n; i++) parts.push({ x: Math.random() * W, y: Math.random() * H, a: Math.floor(Math.random() * 160) });
       tctx.setTransform(1, 0, 0, 1, 0, 0); tctx.clearRect(0, 0, trail.width, trail.height);
     }
     function stepParticles() {
-      tctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      tctx.setTransform(1, 0, 0, 1, 0, 0);
       tctx.globalCompositeOperation = 'destination-in'; tctx.fillStyle = 'rgba(0,0,0,0.955)'; tctx.fillRect(0, 0, W, H);
       tctx.globalCompositeOperation = 'source-over';
-      if (!grid) return;
-      // speed on screen: grows with zoom, so the flow looks the same at every scale
-      var k = 0.022 * Math.pow(2, z - 7.6);
+      if (!vec) return;
+      var k = 0.022 * Math.pow(2, z - 7.6) * 1.3; // speed on screen grows with zoom: the flow looks the same at every scale
       tctx.lineWidth = 1.2; tctx.strokeStyle = layer === 'rain' ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.45)';
       tctx.beginPath();
       for (var i = 0; i < parts.length; i++) {
-        var p = parts[i], g = ll(p.x, p.y), wv = windAt(g[0], g[1], hour);
-        if (!wv || p.a++ > 170) { p.x = Math.random() * W; p.y = Math.random() * H; p.a = 0; continue; }
-        var nx = p.x + wv.u * k * 1.3, ny = p.y - wv.v * k * 1.3; // slow, long trails: a flow, not rain
+        var p = parts[i], ix = (p.x / VS) | 0, iy = (p.y / VS) | 0, j = (iy * vw + ix) * 2;
+        if (ix < 0 || iy < 0 || ix >= vw || iy >= vh || p.a++ > 170 || (vec[j] === 0 && vec[j + 1] === 0)) { p.x = Math.random() * W; p.y = Math.random() * H; p.a = 0; continue; }
+        var nx = p.x + vec[j] * k, ny = p.y - vec[j + 1] * k;
         tctx.moveTo(p.x, p.y); tctx.lineTo(nx, ny);
         p.x = nx; p.y = ny;
-        if (nx < 0 || nx > W || ny < 0 || ny > H) { p.x = Math.random() * W; p.y = Math.random() * H; p.a = 0; }
       }
       tctx.stroke();
     }
     function frame() {
       raf = 0;
       if (!visible) return;
-      var now = Date.now();
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      var lay = layoutSpots();
-      drawBase(lay);
-      if (!still) { stepParticles(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.drawImage(trail, 0, 0); ctx.setTransform(dpr, 0, 0, dpr, 0, 0); }
-      drawDrives(now);
-      drawSpots(now, lay);
-      if (!still || drives.length || spots.some(function (s) { return s.live || s.here; })) raf = requestAnimationFrame(frame);
+      var now = Date.now(), wasLay = layKey;
+      if (anim) stepAnim(now);
+      var busy = moving || !!anim;
+      if ((baseDirty && !busy) || !bv) { renderBase(); seed(); topDirty = true; }
+      placeBase();
+      trail.style.opacity = busy || baseDirty ? '0' : '1';
+      if (!still && !busy && !baseDirty) stepParticles();
+      var live = drives.length || spots.some(function (s) { return s.live || s.here; });
+      if (busy || topDirty || live || layout() && layKey !== wasLay) {
+        ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        drawDrives(now); drawSpots(now, layout()); topDirty = false;
+      }
+      if (anim || (moving && baseDirty) || !still || live) raf = requestAnimationFrame(frame);
     }
     function kick() { if (!raf) raf = requestAnimationFrame(frame); }
 
     // ---------------------------------------------------------------- moving around
-    var pointers = {}, drag = null, moved = false;
+    var pointers = {}, drag = null, moved = false, lastTap = null, vel = null, hintT = 0;
     function zoomAt(nz, sx, sy) {
       nz = Math.max(6.4, Math.min(11.5, nz));
       var g = ll(sx, sy);
       z = nz;
       var q = px(g[0], g[1]); cx += q[0] - sx; cy += q[1] - sy; clamp();
-      fieldDirty = true; seed(); kick();
+      baseDirty = true; kick();
     }
-    cv.style.touchAction = 'none';
+    // smooth: zoom to nz around a point, or glide after a fling, in a few frames; base is redrawn once at the end
+    function animateZoom(nz, sx, sy) { anim = { kind: 'zoom', from: z, to: Math.max(6.4, Math.min(11.5, nz)), sx: sx, sy: sy, t: Date.now(), d: 240 }; kick(); }
+    function stepAnim(now) {
+      var a = anim, t = Math.min(1, (now - a.t) / a.d), e = 1 - Math.pow(1 - t, 3);
+      if (a.pan) { cx = a.pan[0][0] + (a.pan[1][0] - a.pan[0][0]) * e; cy = a.pan[0][1] + (a.pan[1][1] - a.pan[0][1]) * e; clamp(); baseDirty = true; }
+      else if (a.kind === 'zoom') zoomAt(a.from + (a.to - a.from) * e, a.sx, a.sy);
+      else { var f = Math.pow(0.9, (now - a.last) / 16); a.vx *= f; a.vy *= f; a.last = now; cx -= a.vx * 16; cy -= a.vy * 16; clamp(); baseDirty = true; if (Math.hypot(a.vx, a.vy) < 0.02) t = 1; }
+      if (t >= 1) { anim = null; baseDirty = true; }
+    }
+    function showHint() { hint.classList.add('on'); clearTimeout(hintT); hintT = setTimeout(function () { hint.classList.remove('on'); }, 1400); }
+    function pos(e) { var r = cv.getBoundingClientRect(); return { x: e.clientX - r.left, y: e.clientY - r.top }; }
     cv.addEventListener('pointerdown', function (e) {
-      cv.setPointerCapture(e.pointerId);
-      pointers[e.pointerId] = { x: e.offsetX, y: e.offsetY };
-      moved = false;
+      var p = pos(e);
+      pointers[e.pointerId] = p;
+      anim = null; moved = false; vel = null;
       var ids = Object.keys(pointers);
-      drag = ids.length === 1 ? { x: e.offsetX, y: e.offsetY, cx: cx, cy: cy } : null;
+      if (ids.length === 1) drag = { x: p.x, y: p.y, cx: cx, cy: cy, t: Date.now(), touch: e.pointerType === 'touch' };
       if (ids.length === 2) {
         var a = pointers[ids[0]], b = pointers[ids[1]];
-        drag = { pinch: Math.hypot(a.x - b.x, a.y - b.y), z: z, mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2 };
-      }
+        drag = { pinch: Math.hypot(a.x - b.x, a.y - b.y), z: z, mx: (a.x + b.x) / 2, my: (a.y + b.y) / 2, cx: cx, cy: cy };
+        try { cv.setPointerCapture(e.pointerId); } catch (x) {}
+      } else if (!(coop && e.pointerType === 'touch')) { try { cv.setPointerCapture(e.pointerId); } catch (x) {} }
     });
     cv.addEventListener('pointermove', function (e) {
-      if (!pointers[e.pointerId]) return;
-      pointers[e.pointerId] = { x: e.offsetX, y: e.offsetY };
+      if (!pointers[e.pointerId]) {
+        if (e.pointerType === 'mouse') { var q0 = pos(e); cv.style.cursor = hitAt(q0.x, q0.y) ? 'pointer' : 'grab'; }
+        return;
+      }
+      var p = pos(e); pointers[e.pointerId] = p;
       var ids = Object.keys(pointers);
       if (drag && drag.pinch && ids.length === 2) {
-        var a = pointers[ids[0]], b = pointers[ids[1]], d = Math.hypot(a.x - b.x, a.y - b.y);
-        zoomAt(drag.z + Math.log2(d / drag.pinch), drag.mx, drag.my); moved = true;
+        e.preventDefault();
+        var a = pointers[ids[0]], b = pointers[ids[1]], d = Math.hypot(a.x - b.x, a.y - b.y), mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+        // two fingers: pan with their middle, zoom with their spread
+        cx = drag.cx - (mx - drag.mx); cy = drag.cy - (my - drag.my); clamp();
+        zoomAt(drag.z + Math.log2(d / drag.pinch), mx, my);
+        drag.cx = cx; drag.cy = cy; drag.mx = mx; drag.my = my; drag.z = z; drag.pinch = d;
+        moved = true; moving = true;
       } else if (drag && !drag.pinch) {
-        var dx = e.offsetX - drag.x, dy = e.offsetY - drag.y;
-        if (Math.hypot(dx, dy) > (e.pointerType === 'mouse' ? 4 : 12)) moved = true; // a finger wobbles on a tap: only a real drag pans
-        if (moved) { cx = drag.cx - dx; cy = drag.cy - dy; clamp(); fieldDirty = true; kick(); }
+        var dx = p.x - drag.x, dy = p.y - drag.y;
+        if (Math.hypot(dx, dy) > (e.pointerType === 'mouse' ? 4 : 12)) moved = true; // a finger wobbles on a tap: only a real drag counts
+        if (!moved) return;
+        if (coop && drag.touch) { if (Math.abs(dx) > Math.abs(dy)) showHint(); return; } // one finger on a phone: the page scrolls
+        var now = Date.now(), ncx = drag.cx - dx, ncy = drag.cy - dy;
+        if (drag.lt) vel = { vx: (cx - ncx) / Math.max(1, now - drag.lt) * -1, vy: (cy - ncy) / Math.max(1, now - drag.lt) * -1 };
+        drag.lt = now; cx = ncx; cy = ncy; clamp(); baseDirty = true; moving = true; kick();
       }
     });
     function up(e) {
-      var wasDrag = moved;
+      var wasDrag = moved, p = pos(e);
       delete pointers[e.pointerId];
-      if (!Object.keys(pointers).length) { if (wasDrag) seed(); drag = null; }
-      if (!wasDrag && e.type === 'pointerup') {
-        var hit = hits.filter(function (h) { return (Math.hypot(h.x - e.offsetX, h.y - e.offsetY) < h.r) || (e.offsetX > h.lx && e.offsetX < h.lx + h.w && Math.abs(e.offsetY - h.y) < 12); })[0];
-        if (hit && opts.onSpot) opts.onSpot(hit.slug);
+      if (Object.keys(pointers).length) { var id = Object.keys(pointers)[0]; drag = { x: pointers[id].x, y: pointers[id].y, cx: cx, cy: cy, touch: e.pointerType === 'touch', after: true }; return; }
+      var was = drag; drag = null; moving = false;
+      if (wasDrag) {
+        // a fling with the mouse (or two fingers) glides a little further
+        if (vel && !coop && Math.hypot(vel.vx, vel.vy) > 0.15) anim = { kind: 'glide', vx: -vel.vx, vy: -vel.vy, last: Date.now(), t: Date.now(), d: 1e9 };
+        baseDirty = true; kick(); return;
       }
+      if (e.type !== 'pointerup' || (was && was.after)) return;
+      var hit = hitAt(p.x, p.y), now = Date.now();
+      if (hit) { lastTap = null; if (opts.onSpot) opts.onSpot(hit.slug); return; }
+      // double tap on the sea or the land: zoom in there
+      if (lastTap && now - lastTap.t < 320 && Math.hypot(lastTap.x - p.x, lastTap.y - p.y) < 30) { lastTap = null; animateZoom(z + 1, p.x, p.y); return; }
+      lastTap = { t: now, x: p.x, y: p.y };
+      if (opts.onEmpty) opts.onEmpty();
     }
-    cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', up);
-    cv.addEventListener('wheel', function (e) { e.preventDefault(); zoomAt(z - e.deltaY * 0.0022, e.offsetX, e.offsetY); }, { passive: false });
-    cv.addEventListener('pointermove', function (e) {
-      if (Object.keys(pointers).length) return;
-      var on = hits.some(function (h) { return Math.hypot(h.x - e.offsetX, h.y - e.offsetY) < h.r || (e.offsetX > h.lx && e.offsetX < h.lx + h.w && Math.abs(e.offsetY - h.y) < 12); });
-      cv.style.cursor = on ? 'pointer' : 'grab';
-    });
+    function hitAt(x, y) {
+      return hits.filter(function (h) { return Math.hypot(h.x - x, h.y - y) < h.r || (x > h.lx && x < h.lx + h.w && Math.abs(y - h.y) < 13); })[0] || null;
+    }
+    cv.addEventListener('pointerup', up); cv.addEventListener('pointercancel', function (e) { moved = true; up(e); });
+    cv.addEventListener('wheel', function (e) {
+      if (coop && !e.ctrlKey) return; // in the page: the wheel scrolls the page (a trackpad pinch still zooms)
+      e.preventDefault(); var p = pos(e); zoomAt(z - e.deltaY * (e.ctrlKey ? 0.01 : 0.0022), p.x, p.y); moving = true;
+      clearTimeout(cv._wt); cv._wt = setTimeout(function () { moving = false; baseDirty = true; kick(); }, 140);
+    }, { passive: false });
+    cv.addEventListener('dblclick', function (e) { e.preventDefault(); var p = pos(e); animateZoom(z + 1, p.x, p.y); });
     var ro = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(function () { var w = W, h = H; size(); if (w && (w !== W || h !== H)) kick(); }) : null;
     if (ro) ro.observe(host);
     var io = typeof IntersectionObserver !== 'undefined' ? new IntersectionObserver(function (es) { visible = es[0].isIntersecting && !document.hidden; if (visible) kick(); }) : null;
@@ -347,16 +409,18 @@
     function vis() { visible = !document.hidden; if (visible) kick(); }
     document.addEventListener('visibilitychange', vis);
 
+    setCoop(coop);
     size();
     var api = {
       canvas: cv,
-      setGrid: function (g) { grid = g || null; fieldDirty = true; kick(); },
-      setHour: function (i) { if (i !== hour) { hour = i; fieldDirty = true; kick(); } },
-      setLayer: function (l) { if (l !== layer) { layer = l; fieldDirty = true; kick(); } },
-      setSpots: function (s) { spots = s || []; kick(); },
-      setDrives: function (d) { drives = d || []; kick(); },
-      setKeepOut: function (r) { keepOut = r || []; kick(); },
+      setGrid: function (g) { grid = g || null; baseDirty = true; kick(); },
+      setHour: function (i) { if (i !== hour) { hour = i; baseDirty = true; kick(); } },
+      setLayer: function (l) { if (l !== layer) { layer = l; baseDirty = true; kick(); } },
+      setSpots: function (s) { spots = s || []; lay = null; baseDirty = true; topDirty = true; kick(); },
+      setDrives: function (d) { drives = d || []; topDirty = true; kick(); },
+      setKeepOut: function (r) { keepOut = r || []; lay = null; baseDirty = true; kick(); },
       setStill: function (b) { still = !!b; seed(); kick(); },
+      setCoop: setCoop,
       // pad: pixels to keep free on each side ({ t, r, b, l }), for the buttons and the time bar
       fit: function (pts, pad) {
         size();
@@ -364,24 +428,29 @@
         if (!pts.length) return;
         var la = pts.map(function (p) { return p[0]; }), lo = pts.map(function (p) { return p[1]; });
         var s = Math.min(Math.max.apply(null, la), 85), n = Math.max(Math.min.apply(null, la), -85), w0 = Math.min.apply(null, lo), e0 = Math.max.apply(null, lo);
-        // the label sits right of each marker: leave it room
         var lab = W < 600 ? 70 : 110, aw = W - pad.l - pad.r - lab, ah = H - pad.t - pad.b;
         for (var zz = 11; zz >= 5; zz -= 0.05) {
           var w = lonX(e0, zz) - lonX(w0, zz), h = latY(n, zz) - latY(s, zz);
           if (w <= aw && h <= ah) { z = zz; break; }
         }
         z = Math.min(z, 10.5);
-        // centre the box inside the free area
         var bx = (lonX(w0, z) + lonX(e0, z)) / 2, by = (latY(s, z) + latY(n, z)) / 2;
         cx = bx + (pad.r + lab - pad.l) / 2; cy = by + (pad.b - pad.t) / 2; clamp();
-        fieldDirty = true; seed(); kick();
+        lay = null; baseDirty = true; seed(); kick();
       },
-      zoom: function (d) { zoomAt(z + d, W / 2, H / 2); },
+      // glide the view so this spot sits at (sx, sy) on the map (used when a spot is picked)
+      center: function (lat, lon, sx, sy) {
+        var q = px(lat, lon), tx = sx == null ? W / 2 : sx, ty = sy == null ? H / 2 : sy, ox = q[0] - tx, oy = q[1] - ty;
+        if (Math.hypot(ox, oy) < 4) return;
+        anim = { kind: 'zoom', from: z, to: z, sx: W / 2, sy: H / 2, t: Date.now(), d: 320, pan: [[cx, cy], [cx + ox, cy + oy]] };
+        kick();
+      },
+      zoom: function (d) { animateZoom(z + d, W / 2, H / 2); },
       at: function (lat, lon) { return px(lat, lon); },
       windAt: function (lat, lon) { return windAt(lat, lon, hour); },
-      redraw: function () { fieldDirty = true; kick(); },
+      redraw: function () { baseDirty = true; kick(); },
       frame: function () { frame(); },
-      destroy: function () { if (raf) cancelAnimationFrame(raf); if (ro) ro.disconnect(); if (io) io.disconnect(); document.removeEventListener('visibilitychange', vis); cv.remove(); }
+      destroy: function () { if (raf) cancelAnimationFrame(raf); if (ro) ro.disconnect(); if (io) io.disconnect(); document.removeEventListener('visibilitychange', vis); cv.remove(); base.remove(); trail.remove(); hint.remove(); }
     };
     return api;
   };

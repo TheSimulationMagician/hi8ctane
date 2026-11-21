@@ -65,8 +65,13 @@ with sync_playwright() as p:
     K.goto(BASE + '/?c=TOON01'); K.wait_for_selector('#sheet.on'); K.wait_for_timeout(1800)
     check(K.locator('#sheet .who .av.img img').count() == 1, "Kai, in the crew, sees Lu's cartoon in WHO'S GOING")
     O = b.new_context(viewport={'width': 390, 'height': 844}).new_page()
-    O.goto(BASE + '/?c=TOON01'); O.wait_for_selector('#sheet.on'); O.wait_for_timeout(1500)
-    check(O.locator('img[src*="/avatars/"]').count() == 0, 'someone outside the crew sees no cartoons')
+    O.goto(BASE + '/?c=TOON01'); O.wait_for_selector('#sheet.on'); O.wait_for_timeout(1800)
+    # 2.24: the rider cards carry the cartoon (not the name) for riders deciding to join; WHO'S GOING stays the crew's
+    check(O.locator('#sheet .rc img[src*="/avatars/"]').count() == 0, 'before she chooses who sees her card, outsiders do not see her cartoon')
+    sql("update public.signups set card_public = true where email = 'lu@example.com'")   # she picks: riders deciding to join
+    O.goto(BASE + '/?c=TOON01'); O.wait_for_selector('#sheet.on'); O.wait_for_timeout(1800)
+    check(O.locator('#sheet .rc img[src*="/avatars/"]').count() == 1 and O.locator('#sheet .who').count() == 0 and 'Lu' not in O.locator('#sheet .rcbox').inner_text(),
+          'someone outside the crew sees her cartoon on her rider card, not her name')
     O.goto(BASE + '/'); O.wait_for_timeout(1800)
     check(O.locator('img[src*="/avatars/"]').count() == 0, 'and the public crew cards keep initials')
 
