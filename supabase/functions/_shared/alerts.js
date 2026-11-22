@@ -23,7 +23,7 @@ export async function runAlerts(opts) {
   const log = opts.log || (() => {});
   const env = { TEST_HOUR: opts.testHour };
   let VAPID_PUB = opts.vapid && opts.vapid.publicKey || '', VAPID_PRIV = opts.vapid && opts.vapid.privateKey || '';
-  const report = { cached: [], alerts: 0, alertsNew: 0, drops: 0, rates: 0, asks: 0, push: { waiting: 0, done: 0, delivered: 0, gone: 0, failed: 0 } };
+  const report = { cached: [], alerts: 0, alertsNew: 0, drops: 0, rates: 0, asks: 0, rechecks: 0, backOn: 0, captainsGone: 0, push: { waiting: 0, done: 0, delivered: 0, gone: 0, failed: 0 } };
   const SPORT = { kite: ['Kite', '🪁'], wing: ['Wing', '🪽'], windsurf: ['Windsurf', '🏄'], surf: ['Surf', '🏄'], sup: ['SUP', '🛶'], mtb: ['MTB', '🚵'], mx: ['MX', '🏍️'] };
   const WINDY = { kite: 1, wing: 1, windsurf: 1 };
   const pad = (n) => (n < 10 ? '0' : '') + n;
@@ -111,8 +111,16 @@ export async function runAlerts(opts) {
     const nowH = env.TEST_HOUR ? Number(env.TEST_HOUR) : hourOf(C.now), today = C.today, startH = Number(c.start.slice(0, 2)), endH = c.end ? Number(c.end.slice(0, 2)) : startH + 3;
     const meta = spot[c.spot], sp = fx(c.spot);
     const upcoming = (c.day === today && startH > nowH + 0.5) || c.day === FX.addDays(today, 1);
+    const s = upcoming && sp && meta ? FX.span(sp, c.day, startH, Math.max(startH + 1, endH), c.sport, meta, { kg: 75 }) : null;
+    // 2.30: recheck each coming crew's own window every 3 hours (or straight away when it flips), stamped on the crew
+    if (s) {
+      const okNow = s.score >= 4, age = c.checked_at ? Date.now() - Date.parse(c.checked_at) : Infinity;
+      if (age > 3 * 3600e3 - 60e3 || c.checked_ok !== okNow) {
+        const note = (WINDY[c.sport] ? s.w + ' kt ' + FX.compass(s.dir) : (s.ground || 'ok') + ', ' + s.temp + '°C') + ' at ' + c.start + ', ' + s.label;
+        if (!DRY) report.rechecks += 1, report.backOn += Number(await rpc('hi8_recheck', { p_code: c.code, p_ok: okNow, p_kt: WINDY[c.sport] ? Math.round(s.w) : null, p_note: note })) || 0;
+      }
+    }
     if (upcoming && !c.fx_flag && c.min_met !== false && sp && meta) {
-      const s = FX.span(sp, c.day, startH, Math.max(startH + 1, endH), c.sport, meta, { kg: 75 });
       if (s && s.score < 4) {
         const line = (WINDY[c.sport] ? s.w + ' kt ' + FX.compass(s.dir) : (s.ground || 'bad') + ', ' + s.temp + '°C') + ' at ' + c.start + ' ' + dayWord(c.day, today) + ', ' + s.label;
         let next = null;
@@ -130,6 +138,10 @@ export async function runAlerts(opts) {
     if (ended && nowH < 21 && !c.rated && c.status === 'on') { if (!DRY) rates += await rpc('hi8_rate_prompt', { p_code: c.code }); }
   }
   report.drops = drops; report.rates = rates;
+  if (report.rechecks) log('crews rechecked:', report.rechecks, report.backOn ? '· told back on: ' + report.backOn : '');
+  // a captain who stepped down and nobody said yes by the deadline: called off (everyone is told by the crew trigger)
+  report.captainsGone = DRY ? 0 : Number(await rpc('hi8_captain_expire', {}).catch((e) => { log('captain expiry failed:', e.message || e); return 0; })) || 0;
+  if (report.captainsGone) log('called off, nobody took over as captain:', report.captainsGone);
   log('forecast drops told:', drops, '· how-was-it asked:', rates);
 
   // 3b. "I'm looking": tell riders about a crew that fits (once per day they asked for)
