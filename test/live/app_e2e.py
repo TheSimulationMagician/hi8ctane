@@ -299,7 +299,7 @@ with sync_playwright() as p:
     check(Q.locator('#sessions [data-act=going]').count() >= 1, "a session with a crew offers I'M GOING")
     Q.locator('#sessions [data-act=going]').first.click(); Q.wait_for_selector('#joinForm', timeout=8000); Q.wait_for_timeout(300)
     jt = txt(Q, '#joinForm')
-    check(jt.index('HOW ARE YOU GETTING THERE?') < jt.index('YOUR LEVEL') < jt.index('RIDER NAME') if 'RIDER NAME' in jt else jt.index('HOW ARE YOU GETTING THERE?') < jt.index('YOUR LEVEL'), 'the crew opens with the join form: how you get there first, then your level, then you')
+    check((jt.index('YOU') < jt.index('HOW ARE YOU GETTING THERE?') if 'RIDER NAME' in jt else True) and jt.index('HOW ARE YOU GETTING THERE?') < jt.index('YOUR LEVEL'), 'the crew opens with the join form: you first (when not signed in), then how you get there, then your level (UX review H03)')
     check(Q.locator('.sh-foot .big.join').inner_text() == "I'M GOING" and Q.locator('#joinForm [data-act=jfgo]').count() == 0, "and the button says I'M GOING (one, at the bottom)")
     Q.locator('[data-act=close]').click(); Q.wait_for_timeout(300)
     check(Q.locator('#sessions [data-act=startwin]').count() >= 1, 'a good session with nobody yet offers START IT')

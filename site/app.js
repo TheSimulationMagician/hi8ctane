@@ -1668,7 +1668,7 @@
       '<div class="when2">' + esc(dayRel(c.day)) + ' · ' + esc(hm(c.start)) + (c.end ? '–' + esc(hm(c.end)) : '') + '</div>' +
       '<div class="when2" style="color:var(--mint);font-weight:400;margin-top:4px">' + esc(CREW_LEVELS[c.levels] || '') + (c.captain_until ? ' · captain needed' : ' · captain ' + esc(c.host) + (c.host_plate ? ' #' + pad3(c.host_plate) : '')) + '</div></div>';
     // just joined: the welcome sits in the page (2.24), not in a box floating over everything
-    var welcome = member && C.welcome ? '<div class="box welcome" role="status"><h3>✓ YOU\'RE IN' + (C.welcome.plate ? ' <span class="tag">RIDER #' + pad3(C.welcome.plate) + '</span>' : '') + '</h3><p class="hint" style="margin:0">' +
+    var welcome = member && C.welcome ? '<div class="box welcome" role="status"><h3>✓ YOU\'RE IN' + (C.welcome.plate ? ' <span class="tag">FOUNDING PLATE #' + pad3(C.welcome.plate) + '</span>' : '') + '</h3><p class="hint" style="margin:0">' +
       esc(dayRel(c.day)) + ' · ' + esc(hm(c.meet_time || c.start)) + ' · ' + esc(hub && c.meet_time && c.me.getting !== 'own' ? 'pick-up ' + title(hub.name) : c.spot_name) + '. The crew sees you under WHO\'S GOING.</p></div>' : '';
     var offer = member && C.welcome && C.welcome.offer ? '<div class="box"><h3>MORE CREWS LIKE THIS?</h3><button class="opt" data-act="alert" data-sport="' + c.sport + '" data-on="true">EMAIL ME NEW ' + esc(SPORT[c.sport].name.toUpperCase()) + ' CREWS</button></div>' : '';
     var ended = c.past || c.ended || sessionEnded(c);

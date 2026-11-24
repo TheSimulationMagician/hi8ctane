@@ -73,10 +73,10 @@ language plpgsql security definer set search_path = public as $$
 declare em text := public.hi8_email(p_key); c public.crews;
 begin
   select * into c from public.crews where code = upper(trim(p_code));
-  if not found then raise exception 'no_crew' using errcode = 'P0002'; end if;
+  if not found then raise exception 'no_crew' using errcode = '22023'; end if;   -- 0024 used P0002, which PostgREST answers with a 500
   if c.status <> 'on' then raise exception 'crew_off' using errcode = '22023', hint = 'This session was called off.'; end if;
   if public.hi8_crew_ended(c) then raise exception 'crew_done' using errcode = '22023', hint = 'This session has finished.'; end if;
-  if p_v is not null and p_v <> c.plan_v then raise exception 'plan_changed' using errcode = '40001', hint = 'The plan changed again. Check the new time before you say yes.'; end if;
+  if p_v is not null and p_v <> c.plan_v then raise exception 'plan_changed' using errcode = '22023', hint = 'The plan changed again. Check the new time before you say yes.'; end if;
   update public.crew_members set unsure = false where crew_id = c.id and lower(email) = em;
   if not found then raise exception 'not_in_crew' using errcode = '42501'; end if;
   return public.hi8_crew(c.code, p_key);
