@@ -116,7 +116,7 @@ with sync_playwright() as p:
     t = txt(B, '#sheet')
     check('CASTELLDEFELS'.upper() in t and '1/8'.upper() in t and 'Names, cars and the chat are for the crew'.upper() in t, 'the crew: spot, time, who is going, no names for outsiders')
     check(B.locator('.hcell').count() >= 1 or 'forecast reaches 3 days'.upper() in t, 'the hour-by-hour forecast for its window')
-    B.locator('.sh-foot .big.join').click(); B.wait_for_selector('#joinForm')
+    B.locator('.sh-foot [data-act=jfopen]').click(); B.wait_for_selector('#joinForm')
     check(B.locator('[data-act=jflevel]').count() == 2 and 'LEARNING'.upper() not in txt(B, '#joinForm'), 'a crew for riders who ride solo: no learner option')
     B.locator('[data-act=jfget][data-v=seat]').click()
     B.fill('#jfEmail', 'sam@example.com'); B.fill('#jfName', 'Sam')
