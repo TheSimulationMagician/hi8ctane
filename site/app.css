@@ -400,7 +400,10 @@ select.inp { -webkit-appearance: none; appearance: none; font-size: 12px; }
 .send button { flex: none; height: 44px; padding: 0 14px; border: 3px solid var(--ink); background: var(--ink); color: var(--lime); font: 400 11px/38px var(--word); box-shadow: 3px 3px 0 var(--pink); }
 
 /* crew / spot / plan page */
-.sheet .hero { padding: 16px 16px 14px; background: linear-gradient(160deg, #5A94AB 0%, #163A51 70%, #0B2233 100%); }
+.sheet .hero { padding: 16px 16px 14px; }
+/* the plain gradient only where there's no sport art; with art, the sport's dots + gradient show (as on the home page).
+   Before, this gradient overrode the art and background-size: 6px tiled it into a grid of squares. */
+.sheet .hero:not(.art) { background: linear-gradient(160deg, #5A94AB 0%, #163A51 70%, #0B2233 100%); }
 .sheet .hero.art { background-size: 6px 6px, 100% 100%; }
 .sheet .hero .k { font: 700 11px/1 var(--mono); letter-spacing: .6px; color: var(--mint); text-shadow: 1px 1px 0 var(--ink); display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 .sheet .hero.art .k { color: #fff; }
@@ -982,7 +985,7 @@ table.fx tr.rate td { color: var(--ink); }
 /* 2.31 P0-3: readiness, as facts, and the next thing to do */
 .rdy { margin-top: 12px; padding: 12px; border: 3px solid var(--ink); background: #fff; }
 .rdy > b { display: block; font: 400 15px/1.2 var(--word); }
-.rdy-l { margin: 8px 0 0; font: 700 11.5px/1.5 var(--mono); letter-spacing: .3px; }
+.rdy-l { margin: 10px 0 0; font: 400 12px/1.55 var(--mono); }
 .rdy-s { margin: 4px 0 0; font-size: 12px; color: var(--mute); }
 .rdy .row { margin-top: 10px; }
 
@@ -1004,3 +1007,19 @@ table.fx tr.rate td { color: var(--ink); }
 .row.qk { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
 .row.qk .jn { min-height: 44px; padding: 0 12px; font-size: 11.5px; }
 .sh-body { scroll-padding-bottom: 110px; }
+
+/* Visual tuning (UX review): one loud action per block, quiet secondaries, no mid-word breaks, readable notes */
+.navr .jn.wh, .row.qk .jn.wh, .pask .jn.wh, .rdy .jn.wh, .nx .jn.wh { filter: none; }            /* secondaries: outline only, no offset shadow */
+.navr .jn.wh:active, .row.qk .jn.wh:active, .pask .jn.wh:active, .rdy .jn.wh:active, .nx .jn.wh:active { filter: none; transform: translate(1px, 1px); }
+.navr .row { gap: 10px; }
+.row.qk { margin-top: 10px; gap: 10px; }
+.bd-n { overflow-wrap: normal; word-break: normal; }
+.bd-n.long { font-size: 8.6px; letter-spacing: -.1px; }
+@media (min-width: 620px) { .bd-n.long { font-size: 10px; } }
+.rc .hint { color: #C9C2AE; }                                                                     /* was mute grey on black: too faint */
+.scsuit { margin: 6px 10px 0; }
+.row.wins { display: grid; grid-template-columns: 1fr; gap: 8px; }                                 /* the forecast windows as one even column */
+.row.wins .opt { width: 100%; }
+.rdy, .ess { box-shadow: 5px 5px 0 var(--ink); }
+.rdy-l span { display: inline-block; padding: 1px 5px 0; margin-right: 6px; font: 700 10.5px/1.5 var(--mono); letter-spacing: .4px; }
+.pwarn { margin: 8px 0 0; padding: 6px 8px; background: #fff; border: 2px solid var(--ink); font-size: 12px; }

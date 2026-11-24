@@ -7,6 +7,10 @@
 --   2. Every material change to the plan (day, start, pick-up, meeting time, spot) bumps crews.plan_v.
 --      STILL IN only counts for the version the rider saw: if it moved again since, they're asked again.
 --      The day and start before the last move are kept (prev_day, prev_start), so "moved" can say from what.
+--   4. After a move, riders have until crews.reconfirm_by to say STILL IN: 24 hours, but never later than 3 hours
+--      before the (new) meeting time, and never sooner than 2 hours from the move. Who hasn't answered by then
+--      loses their seat; a driver who hasn't answered releases the seats in their car. Everyone affected is told.
+--      The background worker runs it (hi8_release_unsure), so nothing happens without a deadline everyone saw.
 --   3. A rider who says STILL IN on a called-off or finished crew gets a clear refusal, not a silent yes.
 --
 -- Way back (keeps every security fix): drop function public.hi8_still_in(uuid, text, integer); then run the
@@ -15,6 +19,7 @@
 
 alter table public.crews add column if not exists plan_v integer not null default 1;
 alter table public.crews add column if not exists prev_day date, add column if not exists prev_start time;   -- what it was before the last move
+alter table public.crews add column if not exists reconfirm_by timestamptz;                                      -- say STILL IN by then, or the seat goes
 
 -- has this session ended? (the day is over, or today and past its end; no end time = start + 3 hours)
 create or replace function public.hi8_crew_ended(c public.crews) returns boolean
@@ -33,6 +38,8 @@ begin
   if (new.day, new.start_time) is distinct from (old.day, old.start_time) then
     new.checked_at := null; new.checked_ok := null; new.checked_kt := null; new.checked_note := null;   -- the new time hasn't been rechecked
     new.prev_day := old.day; new.prev_start := old.start_time;
+    new.reconfirm_by := greatest(now() + interval '2 hours', least(now() + interval '24 hours',
+      ((new.day + coalesce(new.meet_time, new.start_time)) at time zone (select tz from public.cities where slug = new.city)) - interval '3 hours'));
     update public.crew_members set unsure = true where crew_id = new.id and lower(email) <> lower(new.host_email);
   end if;
   if (new.day, new.start_time, new.meet_hub, new.meet_time, new.spot) is distinct from (old.day, old.start_time, old.meet_hub, old.meet_time, old.spot) then
@@ -49,7 +56,8 @@ language sql stable security definer set search_path = public as $$
     'checked_at', c.checked_at, 'checked_ok', c.checked_ok, 'checked_kt', c.checked_kt, 'checked_note', c.checked_note,
     'captain_until', c.captain_until, 'captain_left', c.captain_left,
     'unsure', (select count(*) from public.crew_members m where m.crew_id = c.id and m.unsure),
-    'plan_v', c.plan_v, 'ended', public.hi8_crew_ended(c), 'prev_day', c.prev_day, 'prev_start', c.prev_start);
+    'plan_v', c.plan_v, 'ended', public.hi8_crew_ended(c), 'prev_day', c.prev_day, 'prev_start', c.prev_start,
+    'reconfirm_by', case when exists (select 1 from public.crew_members m where m.crew_id = c.id and m.unsure) then c.reconfirm_by end);
 $$;
 revoke execute on function public.hi8_crew_card(public.crews) from public, anon, authenticated;
 
@@ -83,6 +91,32 @@ begin
 end $$;
 revoke execute on function public.hi8_still_in(uuid, text, integer) from public;
 grant execute on function public.hi8_still_in(uuid, text, integer) to anon, authenticated;
+
+-- 4. the deadline passed: unsure riders lose their seat, unsure drivers release theirs (service only; the worker calls it)
+create or replace function public.hi8_release_unsure() returns integer
+language plpgsql security definer set search_path = public as $$
+declare c public.crews; m record; n integer := 0; drv text;
+begin
+  for c in select * from public.crews where status = 'on' and reconfirm_by is not null and reconfirm_by < now() and not public.hi8_crew_ended(crews) loop
+    -- riders who didn't answer: out of the car
+    for m in select * from public.crew_members where crew_id = c.id and unsure and car_with is not null loop
+      update public.crew_members set car_with = null where member_id = m.member_id;
+      perform public.hi8_tell(m.email, 'Your seat went back to the crew', 'You didn''t say STILL IN after the session moved, so your seat is free for someone else. Still coming? Open the crew and ask for a lift.', c, 'seatgone:' || m.member_id || ':' || c.plan_v);
+      n := n + 1;
+    end loop;
+    -- drivers who didn't answer: their passengers are told they need another car
+    for m in select x.*, d.email as drv_email from public.crew_members x join public.crew_members d on d.member_id = x.car_with
+             where x.crew_id = c.id and d.unsure and d.getting = 'drive' loop
+      select coalesce(s.first_name, split_part(m.drv_email, '@', 1)) into drv from public.signups s where lower(s.email) = lower(m.drv_email);
+      update public.crew_members set car_with = null where member_id = m.member_id;
+      perform public.hi8_tell(m.email, 'You need another car', coalesce(drv, 'Your driver') || ' didn''t confirm after the session moved, so that car''s seats are released. Open the crew and ask for a lift.', c, 'cargone:' || m.member_id || ':' || c.plan_v);
+      n := n + 1;
+    end loop;
+  end loop;
+  return n;
+end $$;
+revoke execute on function public.hi8_release_unsure() from public, anon, authenticated;
+grant execute on function public.hi8_release_unsure() to service_role;
 
 -- check: should print plan_v | t | t
 select 'plan_v' as col,

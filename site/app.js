@@ -39,6 +39,7 @@
   function pad(n) { return (n < 10 ? '0' : '') + n; }
   function dDate(s) { return new Date(s + 'T12:00:00Z'); }
   function dayLong(s) { var d = dDate(s); return DAYS[d.getUTCDay()] + ' ' + d.getUTCDate() + ' ' + MONTHS[d.getUTCMonth()]; }
+  function dayInLine(s) { var r = dayRel(s); return /^(TODAY|TOMORROW)$/.test(r) ? r.toLowerCase() : r.toLowerCase().replace(/\b[a-z]/g, function (x) { return x.toUpperCase(); }); }   // "tomorrow", "Fri 27 Nov"
   function dayRel(s) { var t = S.today; if (s === t) return 'TODAY'; if (s === FX.addDays(t, 1)) return 'TOMORROW'; return dayLong(s); }
   function hm(x) { return x ? String(x).slice(0, 5) : ''; }
   function minutes(t) { var p = String(t).split(':'); return Number(p[0]) * 60 + Number(p[1] || 0); }
@@ -728,6 +729,12 @@
       (u.ll ? '<button class="jn wh" data-act="copy" data-text="' + esc(u.ll) + '" title="' + esc(u.ll) + '">COPY GPS</button>' : '') + '</div></div>';
   }
   // where this rider goes first: the pick-up if they're in a car, else the captain's pin, else the spot
+  // "Fri 14:00" (or "today 14:00") in the crew's own time zone
+  function whenAt(iso, city) {
+    var t = Date.parse(iso), tz = cityObj(city || S.city).tz;
+    var d = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(t));
+    return dayRel(d) + ' ' + clockAt(t, city);
+  }
   function firstStop(c) {
     var hub = hubOf(c), spot = HI8.spot(c.spot) || {}, inCar = c.me && c.me.getting !== 'own';
     if (inCar && hub && hub.lat != null) return { label: 'PICK-UP', to: { lat: hub.lat, lon: hub.lon }, what: 'pickup' };
@@ -777,7 +784,7 @@
     } else if (c.seats_free) parts.push(c.seats_free + ' seat' + (c.seats_free === 1 ? '' : 's') + ' free');
     if (c.captain_until) parts.push('captain needed');
     var soon = c.day <= FX.addDays(S.today, 1);
-    parts.push(!soon ? 'forecast rechecked from ' + dayRel(FX.addDays(c.day, -1)).toLowerCase() : c.checked_at ? 'next recheck ' + clockAt(Date.parse(c.checked_at) + 3 * 3600e3, c.city) : 'recheck due soon');
+    parts.push(!soon ? 'forecast rechecked from ' + dayInLine(FX.addDays(c.day, -1)) : c.checked_at ? 'next recheck ' + clockAt(Date.parse(c.checked_at) + 3 * 3600e3, c.city) : 'recheck due soon');
     var code = esc(c.code), next = null;
     if (me && !me.unsure && !c.captain_ask) {
       var mine = stranded.filter(function (m) { return m.member_id === me.member_id; })[0];
@@ -794,13 +801,14 @@
     var r = readiness(c); if (!r || !r.me) return '';   // guests get the essentials box instead (H01/H02)
     return '<div class="rdy">' + '<b>' + esc(r.you) + '</b>' + (r.you === 'YOU\'RE SET' ? '<p class="rdy-s">Nothing to do for you right now.</p>' : '') +
       (r.next && r.next.s ? '<p class="rdy-s">' + esc(r.next.s) + '</p>' : '') + (r.next ? '<div class="row">' + r.next.b + '</div>' : '') +
-      '<p class="rdy-l"><span>THE CREW</span> ' + esc(r.line.toUpperCase()) + '</p></div>';
+      '<p class="rdy-l"><span>THE CREW</span> ' + esc(r.line.charAt(0).toUpperCase() + r.line.slice(1)) + '</p></div>';
   }
   // what the rider has to answer, if anything
   function planAsk(c) {
     if (!c.me || c.status !== 'on' || c.past) return '';
     var code = esc(c.code);
-    if (c.me.unsure) return '<div class="pask"><b>MOVED TO ' + esc(dayRel(c.day).toUpperCase()) + ' · ' + esc(hm(c.start)) + '. STILL IN?</b><p>' + (c.prev_day ? 'It was ' + esc(dayRel(c.prev_day)) + ' · ' + esc(hm(c.prev_start)) + '. ' : '') + 'Say if you\'re still in, then update your calendar so it shows the new time.</p><div class="row"><button class="jn lm" data-act="stillin" data-code="' + code + '" data-v="' + esc(c.plan_v || '') + '">STILL IN</button><button class="jn wh" data-act="cantmake" data-code="' + code + '">' + (S.cantArm === c.code ? 'TAP AGAIN: I\'M OUT' : 'CAN\'T MAKE IT') + '</button><button class="jn wh" data-act="ics" data-code="' + code + '">UPDATE MY CALENDAR</button></div></div>';
+    if (c.me.unsure) return '<div class="pask"><b>MOVED TO ' + esc(dayRel(c.day).toUpperCase()) + ' · ' + esc(hm(c.start)) + '. STILL IN?</b><p>' + (c.prev_day ? 'It was ' + esc(dayRel(c.prev_day)) + ' · ' + esc(hm(c.prev_start)) + '. ' : '') + 'Say if you\'re still in, then update your calendar so it shows the new time.</p>' +
+      (c.reconfirm_by ? '<p class="pwarn">⚠ Answer by <b>' + esc(whenAt(c.reconfirm_by, c.city)) + '</b>' + (c.me.getting === 'drive' ? ', or the seats in your car are released' : c.me.getting === 'seat' ? ', or your seat goes back to the crew' : '') + '.</p>' : '') + '<div class="row"><button class="jn lm" data-act="stillin" data-code="' + code + '" data-v="' + esc(c.plan_v || '') + '">STILL IN</button><button class="jn wh" data-act="cantmake" data-code="' + code + '">' + (S.cantArm === c.code ? 'TAP AGAIN: I\'M OUT' : 'CAN\'T MAKE IT') + '</button><button class="jn wh" data-act="ics" data-code="' + code + '">UPDATE MY CALENDAR</button></div></div>';
     if (c.captain_ask) return '<div class="pask"><b>' + esc(String(c.captain_left || 'The captain').toUpperCase()) + ' STEPPED DOWN. YOU\'RE NEXT IN LINE TO CAPTAIN.</b><p>Say yes and it stays on. Can\'t? It goes to the next rider.</p><div class="row"><button class="jn lm" data-act="captain" data-v="1" data-code="' + code + '">KEEP IT ON</button><button class="jn wh" data-act="captain" data-v="0" data-code="' + code + '">PASS IT ON</button></div></div>';
     if (c.captain_until) return '<div class="pask"><b>CAPTAIN NEEDED</b><p>' + esc(firstName(c.host)) + ' is asked first; anyone in the crew can take it.</p><div class="row"><button class="jn lm" data-act="captain" data-v="1" data-code="' + code + '">I\'LL CAPTAIN</button></div></div>';
     return '';
@@ -1194,7 +1202,7 @@
       var why0 = rt0 && (rt0.s < 6 || (rt0.caps && rt0.caps.length)) ? FX.reason(rt0) : '';
       var nowCell = '<button class="bd-c now t-' + (rt0 ? (rt0.dark ? 'none' : FX.tone(rt0.s)) : 'none') + '" data-act="spot" data-spot="' + sp.slug + '" aria-label="' + esc(sp.name + ' now: ' + (rt0 ? rt0.label : 'no forecast') + (why0 ? ', ' + why0.toLowerCase() : '')) + '"><span aria-hidden="true">' + (r0 && rt0 ? (kite ? Math.round(r0.w) : Math.round(rt0.s)) : '–') + (why0 ? '<em>' + esc(SHORT[why0] || why0.slice(0, 4)) + '</em>' : '') + '</span></button>';
       var wn = watchN(sp.slug);
-      return '<div class="bd-r"><button class="bd-n" data-act="spot" data-spot="' + sp.slug + '">' + esc(sp.name.toUpperCase()) + (x.min || wn ? '<small>' + (x.min ? x.min + ' MIN' : '') + (wn ? (x.min ? ' · ' : '') + wn + ' WATCH' : '') + '</small>' : '') + '</button>' + nowCell + days.map(function (d, i) {
+      return '<div class="bd-r"><button class="bd-n' + (sp.name.length > 11 ? ' long' : '') + '" data-act="spot" data-spot="' + sp.slug + '">' + esc(sp.name.toUpperCase()) + (x.min || wn ? '<small>' + (x.min ? x.min + ' MIN' : '') + (wn ? (x.min ? ' · ' : '') + wn + ' WATCH' : '') + '</small>' : '') + '</button>' + nowCell + days.map(function (d, i) {
         var w = fs ? FX.windows(fs, d, S.sport, sp, fxo())[0] : null, val = '–', tone = 'none', lab = 'no forecast', why = '', late = false;
         if (i === 0 && w && S.nowH * 60 + S.nowM + (x.min || 0) > w.to * 60 - 90) { w = null; late = true; } // today: too late for it
         if (w) { val = kite ? Math.round(w.w) : Math.round(w.score); tone = FX.tone(w.score); why = w.caps && w.caps.length ? w.caps[0] : ''; lab = w.label + ' ' + pad(w.from) + '–' + pad(w.to) + (why ? ', ' + (CAP_TXT[why] || why).toLowerCase() : ''); }
@@ -1358,7 +1366,7 @@
         '<small>' + (f.sport === 'kite' ? d.w + ' kt ' + FX.compass(d.dir) + ' · ' : esc(d.ground || '') + ' · ') + esc(d.label) + ' at ' + esc(d.spot.name) + '</small></button>';
     });
     chips.push('<button class="opt" data-act="sfcustom" aria-pressed="' + f.custom + '">OTHER TIME<small>any day, any hour</small></button>');
-    var out = '<div class="row">' + chips.join('') + '</div>';
+    var out = '<div class="row wins">' + chips.join('') + '</div>';
     if (f.custom) {
       var ds = []; for (var i = 0; i < 14; i++) ds.push(FX.addDays(S.today, i));
       var hrs = []; for (var h = 6; h <= 21; h++) hrs.push(h);
@@ -1695,10 +1703,11 @@
       var pPlan = planHtml(c), pSpot = '';
       var pMeet = '<div class="box"><h3>MEETING POINT</h3><div style="font-size:13px">' + (hub ? '<b>' + esc(hub.name) + '</b> · ' + esc(hub.sub || '') + (c.meet_time ? ' at <b>' + esc(hm(c.meet_time)) + '</b>' : '') + '<br>' : '') +
         (c.meet_note ? esc(c.meet_note) + '<br>' : '') + 'Spot: ' + esc(c.spot_name) + '</div><div class="row" style="margin-top:10px">' +
-'</div>' + (hub && c.me.getting !== 'own' ? navRow('PICK-UP', { lat: hub.lat, lon: hub.lon }, 'pickup') : '') +
-        (c.meet_lat != null ? navRow('THE PIN', { lat: c.meet_lat, lon: c.meet_lon }, 'pin') : navRow('THE SPOT', { q: c.maps || spot.maps || c.spot_name }, 'spot')) + '<div class="row" style="margin-top:10px">' +
+'</div>' + (function () { var w = c.past || c.ended || sessionEnded(c) || c.status !== 'on' ? '' : firstStop(c).what;   // the header already has the first stop
+          return (hub && c.me.getting !== 'own' && w !== 'pickup' ? navRow('PICK-UP', { lat: hub.lat, lon: hub.lon }, 'pickup') : '') +
+            (c.meet_lat != null ? (w !== 'pin' ? navRow('THE PIN', { lat: c.meet_lat, lon: c.meet_lon }, 'pin') : '') : w !== 'spot' ? navRow('THE SPOT', { q: c.maps || spot.maps || c.spot_name }, 'spot') : ''); })() + '<div class="row" style="margin-top:10px">' +
         (c.host_is_me && !c.past && c.status === 'on' ? '<button class="opt" data-act="pin">' + (S.crew.pinBusy ? 'FINDING YOU…' : c.meet_lat != null ? 'MOVE THE PIN TO WHERE I AM' : 'DROP THE PIN WHERE I AM') + '</button>' : '') +
-        '<button class="opt" data-act="ics">ADD TO CALENDAR</button></div>' +
+        (c.status === 'on' && !c.past ? '' : '<button class="opt" data-act="ics">ADD TO CALENDAR</button>') + '</div>' +
         (c.past ? '' : (function () { var mp = personOf(c.me) || {}; return '<div class="two" style="margin-top:10px;align-items:center"><label><span class="sr">Your mobile for the crew</span><input class="inp" id="myPhone" inputmode="tel" autocomplete="tel" placeholder="Your mobile" value="' + esc(mp.phone || '') + '"></label><button class="opt" data-act="phonesave">' + (mp.phone ? 'SAVED ✓ · UPDATE' : 'SHARE WITH THE CREW') + '</button></div><p class="hint">Only the riders in this crew see it: handy at the pick-up.</p>'; })()) + '</div>';
       if (isToday && c.status === 'on' && !sessionEnded(c)) {
         pSpot = '<div class="box"><h3>AT THE SPOT ' + (c.me.here ? '<span class="tag live">YOU\'RE THERE</span>' : '') + '</h3>' +
@@ -1819,7 +1828,7 @@
       (nx ? 'Next good window here: <b>' + esc(dayRel(nx.date) + ' ' + pad(nx.from) + '–' + pad(nx.to)) + '</b>' + (kite ? ', ' + nx.w + ' kt ' + FX.compass(nx.dir) : '') + ', ' + esc(nx.label) + '.' : 'No good window here in the next days.') +
       (c.host_is_me ? ' You\'re the captain: move it, or call it off.' : (c.me ? ' The captain decides. If you\'re out, leave the crew below: your seat frees up.' : ' The captain decides whether it goes ahead.')) + ' A forecast is never a safety check: every session is your own call.</p>' +
       (c.host_is_me ? '<div class="row">' + (nx ? '<button class="opt" data-act="movecrew" data-date="' + nx.date + '" data-from="' + nx.from + '" data-to="' + nx.to + '">MOVE IT TO ' + esc(dayRel(nx.date)) + ' ' + pad(nx.from) + '–' + pad(nx.to) + '</button>' : '') +
-        '<button class="opt" data-act="leave">' + (S.crew.confirm === 'leave' ? 'TAP AGAIN: CALL IT OFF' : 'CALL IT OFF') + '</button></div>' : '') + '</div>';
+        '<button class="opt" data-act="leave">' + (S.crew.confirm === 'leave' ? 'TAP AGAIN: CALL IT OFF' : 'CALL IT OFF') + '</button></div>' + (nx ? '<p class="hint">If you move it, everyone is asked STILL IN? Who doesn\'t answer within 24 hours (at the latest 3 hours before the meet) loses their seat.</p>' : '') + '' : '') + '</div>';
   }
   function rateBox(c) {
     if (!c.me || c.status !== 'on' || !sessionEnded(c) || c.day < FX.addDays(S.today, -1)) return '';
