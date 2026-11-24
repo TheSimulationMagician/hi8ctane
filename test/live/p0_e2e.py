@@ -2,7 +2,7 @@
 # readiness line and one next action; one-tap directions to the exact pin (Apple Maps on iPhone, copy coordinates);
 # the calendar entry in UTC across daylight saving; RUN IT AGAIN; no overbooking under 12 simultaneous joins; the
 # anonymous counts.
-import json, os, subprocess, threading, urllib.request, urllib.error
+import re, json, os, subprocess, threading, urllib.request, urllib.error
 from playwright.sync_api import sync_playwright
 
 BASE = os.environ.get('HI8_BASE', 'http://localhost:8801')
@@ -81,8 +81,8 @@ with sync_playwright() as p:
     check("NEXT FOR YOU: YOUR LIFT ISN'T SORTED YET" in T(E, '#sheet .rdy'), "Eve sees it from her side: her lift isn't sorted yet, ask the crew")
     G = phone()
     G.goto(BASE + f'/?c={code}'); G.wait_for_selector('#sheet.on'); G.wait_for_timeout(2500)
-    g = T(G, '#sheet .rdy')
-    check('5 GOING OF 6' in g and 'EVE' not in g and 'PIN' not in g, 'someone outside the crew: counts only, no names, nothing about the pin')
+    g = T(G, '#sheet .ess')
+    check('5 GOING OF 6' in g and not re.search(r'\bEVE\b', g) and not re.search(r'\bPIN\b', g) and G.locator('#sheet .rdy').count() == 0, 'someone outside the crew: the essentials, counts only, no names, nothing about the pin (UX review H01/H02)')
 
     print('directions')
     rpc('hi8_set_pin', {'p_key': K['bo'], 'p_code': code, 'p_lat': lat + 0.003, 'p_lon': lon + 0.002})
@@ -116,6 +116,7 @@ with sync_playwright() as p:
 
     print('run it again')
     past = crew(-1, 'bo', 3, '12:00', 7, 'regular')   # "how was it" shows the day after
+    sql(f"delete from crews where code = '{big}'")   # the overbooking crew can sit on the next good window, and then RUN IT AGAIN rightly opens it instead
     sql(f"insert into crew_members (crew_id, email, level, getting, seats) select id, 'cy@example.com', 'regular', 'seat', 0 from crews where code = '{past}'")
     B.goto(BASE + f'/?c={past}'); B.wait_for_selector('#sheet.on'); B.wait_for_timeout(2500)
     ag = B.locator('[data-act=again]')

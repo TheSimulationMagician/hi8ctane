@@ -553,8 +553,9 @@
     if (!f) return { k: 'none', t: 'NO FORECAST YET', s: 'The forecast for this day isn\'t out yet.' };
     if (FX.tone(f.score) !== 'no') return { k: 'go', t: f.label, s: '' };
     var w = (f.why || []).join(' ') + ' ' + (f.caps || []).join(' ').toLowerCase();
-    // only "not enough" is a soft no; anything else that makes it NO GO is a reason not to promote it
-    if (!/too light|light: big kite/.test(w) || /offshore|wrong direction|very strong|thunder|storm|gust|onshore|cold/.test(w)) {
+    // a real hazard always wins; then "not enough wind" is a soft no; any other NO GO (gusty, onshore, cold for this level) isn't promoted
+    var light = /too light|light: big kite/.test(w), hard = /offshore|wrong direction|very strong|thunder|storm|very gusty/.test(w);
+    if (hard || !light) {
       var r = /offshore/.test(w) ? 'it blows offshore' : /wrong direction/.test(w) ? 'the wind comes from the wrong direction for this spot' : /very strong/.test(w) ? 'it\'s too strong' : /thunder|storm/.test(w) ? 'thunderstorms' :
         /gust/.test(w) ? 'it\'s too gusty for this crew\'s level' : /onshore/.test(w) ? 'it blows straight onshore' : /cold/.test(w) ? 'the water is too cold for this level' : /mud/.test(w) ? 'the ground is too muddy' : 'conditions don\'t fit';
       return { k: 'hazard', t: 'NOT RECOMMENDED', s: 'The forecast says ' + r + ' in this window.' };
