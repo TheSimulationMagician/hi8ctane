@@ -8,12 +8,9 @@
 --   * an email we already know gets no key: the site emails a sign-in link (Supabase Auth, as the join page
 --     already does), and the key comes from hi8_claim once the link is opened on the phone;
 --   * signing in with the link (or Google) removes the older keys made by just typing that email.
--- Switch: app_settings 'strict_keys' (true by default). To turn it off at once:
---   update public.app_settings set value = 'false' where key = 'strict_keys';
--- Way back: run the line above, then  drop function public.hi8_join(text, text, text, text);
---   alter function public.hi8_join_v1(text, text, text, text) rename to hi8_join;
---   grant execute on function public.hi8_join(text, text, text, text) to anon, authenticated;
--- (hi8_quick_join and hi8_claim keep working either way: the lines this adds only act on needs_link.)
+-- Switch: app_settings 'strict_keys' (true by default). Do NOT turn it off on a live site: that reopens the hole
+-- (anyone typing a rider's email gets their key). There is no rollback of this file; roll back the site's
+-- screens instead (they work with it on). If sign-in emails fail, fix the email set-up, don't switch this off.
 --
 -- Needs: Supabase > Authentication > URL Configuration lets the link come back to https://hi8ctane.com/** .
 

@@ -207,7 +207,7 @@
           if (out && out.needs_link) {
             store.set('after', { city: args.p_city, next: nextAfterJoin(), at: Date.now() });
             return timeout(sendEmailLink(email), 4000).catch(noop).then(function () {
-              throw Object.assign(new Error('needs_link'), { status: 409, hint: "You've joined before. We emailed you a sign-in link: open it on this phone to carry on." });
+              throw Object.assign(new Error('needs_link'), { status: 409, hint: "Check your inbox: we sent you a sign-in link. Open it on this phone to carry on; you're not in the crew until you do." });
             });
           }
           saveMe(out);
