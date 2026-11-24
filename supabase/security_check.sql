@@ -20,7 +20,9 @@ with expected_public_functions(name) as (values
   -- 0023 (2.29): matching, "I'm looking"
   ('hi8_mates'), ('hi8_ask'), ('hi8_my_asks'), ('hi8_asks'),
   -- 0024 (2.30): the session plan
-  ('hi8_still_in'), ('hi8_set_pin'), ('hi8_step_down'), ('hi8_captain')
+  ('hi8_still_in'), ('hi8_set_pin'), ('hi8_step_down'), ('hi8_captain'),
+  -- 0026 (2.31): anonymous counts
+  ('hi8_track')
 ), problems(problem, object) as (
   -- 1. every table has row level security on
   select 'table without row level security', n.nspname || '.' || c.relname

@@ -648,12 +648,12 @@
     if (!signedIn()) {
       var em = ($('#lkEmail') || {}).value || '';
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em.trim())) { f.err = 'Your email, so we can tell you.'; renderSheet(); return; }
-      p = HI8.rpc('hi8_join', { p_email: em.trim(), p_city: S.city, p_source: 'looking' }).then(function (out) { HI8.saveMe(out); S.me = HI8.me(); drawTop(); return go(); });
+      p = HI8.rpc('hi8_join', { p_email: em.trim(), p_city: S.city, p_source: 'looking' }).then(keyOrLink(em.trim())).then(function () { return go(); });
     } else p = go();
     f.busy = true; f.err = null; renderSheet();
     HI8.store.set('lv.' + f.sport, f.level); if (f.seat) HI8.store.set('getting', 'seat');
     p.then(function (r) {
-      S.myAsks = r || []; var n = f.days.length; S.lk = null; loadAsks(f.sport); loadMates();
+      S.myAsks = r || []; var n = f.days.length; S.lk = null; loadAsks(f.sport); loadMates(); if (n) track('looking');
       closeSheet(); drawSessions();
       toast(n ? "You're on the list for " + f.days.map(function (d) { return title(dayRel(d)); }).join(', ') + '. When a crew fits, you hear it.' : 'Not looking any more.', 4000);
     }, function (e) { f.busy = false; f.err = (e && (e.hint || e.message)) || 'That didn\'t save. Try again.'; renderSheet(); });
@@ -685,6 +685,28 @@
       (g.k === 'doubt' || g.k === 'captain' ? '<b class="warn">' + g.t + '</b>' : '') + '<span>' + esc(note) + '</span></div>';
   }
   function firstName(n) { return String(n || '').split(' ')[0]; }
+  // P0-2 (2.31): one tap to the exact point. Google Maps directions (any phone, any browser), Apple Maps on iPhone and iPad
+  // (unified Maps URL, iOS 18.4+), and the coordinates to copy into Waze or anything else. Coordinates win over names.
+  var IOS = /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  function navUrls(to) {
+    var ll = to.lat != null && to.lon != null ? Number(to.lat).toFixed(5) + ',' + Number(to.lon).toFixed(5) : null, d = ll || String(to.q || '');
+    return { google: 'https://www.google.com/maps/dir/?api=1&destination=' + encodeURIComponent(d), apple: 'https://maps.apple.com/directions?destination=' + encodeURIComponent(d) + '&mode=driving', ll: ll };
+  }
+  function navRow(label, to, what) {
+    if (!to || (to.lat == null && !to.q)) return '';
+    var u = navUrls(to);
+    return '<div class="navr"><span class="pl-k">' + esc(label) + '</span><div class="row">' +
+      '<a class="jn lm navl" data-nav="' + esc(what || 'other') + '" target="_blank" rel="noopener" href="' + esc(u.google) + '">DIRECTIONS</a>' +
+      (IOS ? '<a class="jn wh navl" data-nav="' + esc(what || 'other') + '" target="_blank" rel="noopener" href="' + esc(u.apple) + '">APPLE MAPS</a>' : '') +
+      (u.ll ? '<button class="jn wh" data-act="copy" data-text="' + esc(u.ll) + '" title="' + esc(u.ll) + '">COPY GPS</button>' : '') + '</div></div>';
+  }
+  // where this rider goes first: the pick-up if they're in a car, else the captain's pin, else the spot
+  function firstStop(c) {
+    var hub = hubOf(c), spot = HI8.spot(c.spot) || {}, inCar = c.me && c.me.getting !== 'own';
+    if (inCar && hub && hub.lat != null) return { label: 'PICK-UP', to: { lat: hub.lat, lon: hub.lon }, what: 'pickup' };
+    if (c.meet_lat != null) return { label: 'THE PIN', to: { lat: c.meet_lat, lon: c.meet_lon }, what: 'pin' };
+    return { label: 'THE SPOT', to: { q: c.maps || spot.maps || c.spot_name || spot.name }, what: 'spot' };
+  }
   // the three lines that answer "what happens next": where we meet, how I get there, who's coming
   function planLines(c) {
     var me = c.me, M = c.members || [], hub = hubOf(c), drivers = M.filter(function (m) { return m.getting === 'drive'; }), spot = HI8.spot(c.spot) || {};
@@ -693,7 +715,7 @@
     var L = [];
     L.push({ k: 'MEET', t: hub && c.meet_time ? title(hub.name) + ' · ' + hm(c.meet_time) : 'At ' + (c.spot_name || spot.name) + ' · ' + hm(c.start),
       s: (hub && c.meet_time ? 'Then ' + (c.spot_name || spot.name) + ' · ' : '') + (c.meet_lat != null ? 'exact pin from the captain' : c.meet_note || 'the captain can drop an exact pin'),
-      a: pin ? 'https://www.google.com/maps/search/?api=1&query=' + pin : null });
+      a: null });
     if (me) {
       if (me.getting === 'drive') {
         var mine = M.filter(function (m) { return m.getting === 'seat' && (m.car_with === me.member_id || (!m.car_with && drivers.length === 1)); }), free = Math.max(0, (me.seats || 0) - mine.length);
@@ -707,13 +729,49 @@
     return '<div class="pl">' + L.map(function (x) {
       return '<div class="pl-r' + (x.warn ? ' warn' : '') + '"><span class="pl-k">' + x.k + '</span><span class="pl-v"><b>' + esc(x.t) + '</b><small>' + esc(x.s) + '</small></span>' +
         (x.a ? '<a class="pl-a" target="_blank" rel="noopener" href="' + esc(x.a) + '">MAP</a>' : '') + '</div>';
-    }).join('') + '</div>';
+    }).join('') + (function () { var f1 = firstStop(c); return navRow(f1.label, f1.to, f1.what); })() + '</div>';
+  }
+  // P0-3 (2.31): what's missing, as plain facts, and the one thing to do next. Never a score, never "safe".
+  function readiness(c) {
+    if (!c || c.status !== 'on' || c.past) return null;
+    var M = c.members || [], me = c.me, parts = [], min = c.min || 2, sure = c.going - (c.unsure || 0);
+    parts.push(c.going + ' going' + (c.max ? ' of ' + c.max : ''));
+    if (sure < min) parts.push('needs ' + (min - sure) + ' more');
+    if (c.unsure) parts.push(c.unsure + ' unsure');
+    var stranded = [];
+    if (me) {
+      var drivers = M.filter(function (m) { return m.getting === 'drive'; }), cap = drivers.reduce(function (n, m) { return n + (m.seats || 0); }, 0);
+      var riders = M.filter(function (m) { return m.getting === 'seat'; });
+      // riders nobody has room for: the ones without a car, newest last
+      stranded = riders.length > cap ? riders.filter(function (m) { return !m.car_with; }).slice(-(riders.length - cap)) : [];
+      if (stranded.length) parts.push(stranded.length + ' need' + (stranded.length === 1 ? 's' : '') + ' a lift');
+      else if (riders.length) parts.push('lifts sorted');
+      parts.push(c.meet_lat != null ? 'pin set' : 'no exact pin yet');
+    } else if (c.seats_free) parts.push(c.seats_free + ' seat' + (c.seats_free === 1 ? '' : 's') + ' free');
+    if (c.captain_until) parts.push('captain needed');
+    var soon = c.day <= FX.addDays(S.today, 1);
+    parts.push(!soon ? 'forecast rechecked from ' + dayRel(FX.addDays(c.day, -1)).toLowerCase() : c.checked_at ? 'next recheck ' + clockAt(Date.parse(c.checked_at) + 3 * 3600e3, c.city) : 'recheck due soon');
+    var code = esc(c.code), next = null;
+    if (me && !me.unsure && !c.captain_ask) {
+      var mine = stranded.filter(function (m) { return m.member_id === me.member_id; })[0];
+      if (mine) next = { t: 'NO CAR FOR YOU YET', b: '<button class="jn lm" data-act="askdriver" data-code="' + code + '" data-who="me">ASK THE CREW FOR A LIFT</button>' };
+      else if (c.host_is_me && stranded.length) next = { t: 'FIND ' + firstName(stranded[0].name).toUpperCase() + ' A SEAT', b: '<button class="jn lm" data-act="askdriver" data-code="' + code + '" data-who="' + esc(firstName(stranded[0].name)) + '">ASK THE CREW FOR A DRIVER</button>' };
+      else if (c.host_is_me && c.meet_lat == null && soon) next = { t: 'DROP THE EXACT PIN', b: S.crew && S.crew.code === c.code ? '<button class="jn lm" data-act="pin">DROP THE PIN WHERE I AM</button>' : '<a class="jn lm" href="?c=' + code + '">OPEN THE CREW</a>', s: 'Do it at the beach entrance or the car park: your crew gets it in one tap.' };
+      else if (c.host_is_me && sure < min) next = { t: 'FIND ' + (min - sure) + ' MORE', b: '<a class="jn lm" target="_blank" rel="noopener" href="https://wa.me/?text=' + encodeURIComponent(shareText(c)) + '" data-act="shared">SHARE TO WHATSAPP</a>' };
+    }
+    return { line: parts.join(' · '), next: next, me: !!me };
+  }
+  function readyBox(c) {
+    var r = readiness(c); if (!r) return '';
+    return '<div class="rdy">' + (r.next ? '<b>NEXT FOR YOU: ' + esc(r.next.t) + '</b>' : r.me ? '<b>NOTHING MISSING FOR YOU</b>' : '') +
+      '<p class="rdy-l">' + esc(r.line.toUpperCase()) + '</p>' + (r.next && r.next.s ? '<p class="rdy-s">' + esc(r.next.s) + '</p>' : '') +
+      (r.next ? '<div class="row">' + r.next.b + '</div>' : '') + '</div>';
   }
   // what the rider has to answer, if anything
   function planAsk(c) {
     if (!c.me || c.status !== 'on' || c.past) return '';
     var code = esc(c.code);
-    if (c.me.unsure) return '<div class="pask"><b>MOVED TO ' + esc(dayRel(c.day).toUpperCase()) + ' · ' + esc(hm(c.start)) + '. STILL IN?</b><div class="row"><button class="jn lm" data-act="stillin" data-code="' + code + '">STILL IN</button><a class="jn wh" href="?c=' + code + '">CAN\'T MAKE IT</a></div></div>';
+    if (c.me.unsure) return '<div class="pask"><b>MOVED TO ' + esc(dayRel(c.day).toUpperCase()) + ' · ' + esc(hm(c.start)) + '. STILL IN?</b><p>Then update your calendar, so it shows the new time.</p><div class="row"><button class="jn lm" data-act="stillin" data-code="' + code + '">STILL IN</button><button class="jn wh" data-act="ics" data-code="' + code + '">UPDATE MY CALENDAR</button><a class="jn wh" href="?c=' + code + '">CAN\'T MAKE IT</a></div></div>';
     if (c.captain_ask) return '<div class="pask"><b>' + esc(String(c.captain_left || 'The captain').toUpperCase()) + ' STEPPED DOWN. YOU\'RE NEXT IN LINE TO CAPTAIN.</b><p>Say yes and it stays on. Can\'t? It goes to the next rider.</p><div class="row"><button class="jn lm" data-act="captain" data-v="1" data-code="' + code + '">KEEP IT ON</button><button class="jn wh" data-act="captain" data-v="0" data-code="' + code + '">PASS IT ON</button></div></div>';
     if (c.captain_until) return '<div class="pask"><b>CAPTAIN NEEDED</b><p>' + esc(firstName(c.host)) + ' is asked first; anyone in the crew can take it.</p><div class="row"><button class="jn lm" data-act="captain" data-v="1" data-code="' + code + '">I\'LL CAPTAIN</button></div></div>';
     return '';
@@ -744,14 +802,35 @@
       var o = upcoming(c.sport, 7).filter(function (x) { return x.day === c.day && x.code !== c.code && x.status === 'on'; }).sort(byFit).slice(0, 2);
       alt = '<div class="nx-alt"><b>' + (o.length ? 'OTHER CREWS THAT DAY' : 'NO OTHER CREW THAT DAY YET') + '</b>' + o.map(function (x) {
         return '<a href="?c=' + esc(x.code) + '"><span>' + esc((HI8.spot(x.spot) || {}).name || x.spot_name) + ' · ' + esc(hm(x.start)) + '</span>' + whyFit(x, 'why') + '</a>'; }).join('') +
-        (o.length ? '' : '<button class="jn lm" data-act="looking">I\'M LOOKING</button>') + '</div>';
+        (o.length ? '' : '<button class="jn lm" data-act="looking">I\'M LOOKING</button>') + '<button class="jn wh" data-act="ics" data-code="' + esc(c.code) + '">UPDATE MY CALENDAR</button></div>';
     }
     return '<div class="nx s-' + g.k + '"><div class="nx-top"><span>YOUR NEXT SESSION</span><span class="nx-tag">' + esc(g.t) + '</span></div>' +
       '<div class="nx-b"><div class="nx-spot">' + esc(String(c.spot_name || spot.name || c.spot).toUpperCase()) + '</div>' +
       '<div class="nx-when">' + esc(dayRel(c.day).toUpperCase()) + ' · ' + esc(hm(c.start)) + (c.end ? '–' + esc(hm(c.end)) : '') + ' · ' + esc(SPORT[c.sport].name.toUpperCase()) + '</div>' +
-      stageBar(c) + (g.k === 'off' ? alt : stats + planAsk(c) + (c.members ? planLines(c) : '')) +
+      (g.k === 'off' ? stageBar(c) + alt : planAsk(c) + (c.members ? readyBox(c) : '') + stageBar(c) + stats + (c.members ? planLines(c) : '')) +
       '<a class="big join nx-go" href="?c=' + esc(c.code) + '">' + (g.k === 'off' ? 'SEE WHAT HAPPENED' : 'SESSION PLAN') + ' ↗</a></div></div>';
   }
+  // P0-6 (2.31): anonymous first-party counts (a random id made in this browser; no key, email or IP), to measure
+  // what makes real sessions happen. Never blocks anything; app_settings 'metrics' false stops it.
+  function anonId() {
+    var a = HI8.store.get('anon', null);
+    if (!/^[a-z0-9]{8,32}$/.test(a || '')) { a = ''; for (var i = 0; i < 16; i++) a += 'abcdefghijklmnopqrstuvwxyz0123456789'.charAt(Math.floor(Math.random() * 36)); HI8.store.set('anon', a); }
+    return a;
+  }
+  function track(name, code, extra) {
+    if (!HI8.live || (S.settings && S.settings.metrics === false)) return;
+    try { HI8.rpc('hi8_track', { p_name: name, p_anon: anonId(), p_crew: code || null, p_src: src().source || null, p_extra: extra || null }).catch(noop); } catch (e) { /* never in the way */ }
+  }
+  document.addEventListener('click', function (e) {
+    var t = e.target && e.target.closest ? e.target.closest('.navl') : null;
+    if (t) track('nav', (S.crew && S.crew.code) || (S.next && S.next.code) || null, t.getAttribute('data-nav'));
+  }, true);
+  // 2.31: a known email gets an emailed sign-in link, not a key
+  function linkSent(email) {
+    HI8.sendLink(email).catch(function () { toast("We couldn't send the sign-in link. Try again in a minute.", 5000); });   // hi8_join answered needs_link (no error), so send it here
+    return { message: 'needs_link', hint: "You've joined before. We emailed " + email + " a sign-in link: open it on this phone and you're back here, signed in." };
+  }
+  function keyOrLink(email) { return function (out) { if (out && out.needs_link) throw linkSent(email); HI8.saveMe(out); S.me = HI8.me(); drawTop(); return out; }; }
   function crewCard(c) {
     var f = crewFx(c), hub = hubOf(c), spot = HI8.spot(c.spot), free = c.max - c.going, inIt = mineCodes().indexOf(c.code) >= 0;
     var min = hub && spot ? HI8.driveMin(hub, spot) : null, lv = LVL[c.levels] || LVL.regular;
@@ -1133,7 +1212,7 @@
     if (c && h && h !== 'chat' && h !== 'rate') { // a sheet over a crew link: leave the crew page for it
       history.replaceState(null, '', location.pathname + location.hash); S.crew = null; stopChat(); c = null;
     }
-    if (c) { if (!S.crew || S.crew.code !== c.toUpperCase()) { openCrew(c, h === 'chat'); if (h === 'rate') S.crew.rateGo = true; } return; }
+    if (c) { if (!S.crew || S.crew.code !== c.toUpperCase()) { if (!S.linkTracked) { S.linkTracked = 1; track('link_open', c.toUpperCase()); } openCrew(c, h === 'chat'); if (h === 'rate') S.crew.rateGo = true; } return; }
     var sq = new URLSearchParams(location.search).get('s');
     if (sq && !h) { openSquad(sq); return; }
     if (h === 'join') { S.view = 'join'; }
@@ -1218,7 +1297,7 @@
       var rank = FX.rankSpots(S.city, spots, sport, f.date, f.from, f.to, fxo(sport));
       f.spot = rank[0] ? rank[0].spot.slug : (spots[0] || {}).slug;
     }
-    S.sf = f; autoMeet();
+    S.sf = f; autoMeet(); track('start_open');
   }
   function autoMeet() {
     var f = S.sf, spot = HI8.spot(f.spot); if (!spot) return;
@@ -1526,7 +1605,7 @@
     if (!C.data) return shell('CREW', C.err ? '<div class="err" role="alert">' + esc(C.err) + '</div><div class="f"><button class="big join" data-act="join" style="width:100%">SEE THE CREWS COMING UP</button></div>' : '<div class="sec"><div class="skel"></div><div class="skel" style="margin-top:10px;height:200px"></div></div>', '', true);
     var c = C.data, f = crewFx(c), spot = HI8.spot(c.spot) || {}, isToday = c.day === S.today, member = !!c.me;
     var status = c.status === 'off' ? '<span class="tag off">CALLED OFF</span>' : c.past ? '<span class="tag off">DONE</span>' : c.live ? '<span class="tag live">LIVE NOW</span>' : '';
-    var maps = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent((c.maps || spot.maps || c.spot_name) + '');
+    var maps = navUrls({ q: (c.maps || spot.maps || c.spot_name) + '' }).google;
     var hub = c.meet_hub ? HI8.hubsOf(c.city).filter(function (h) { return h.slug === c.meet_hub; })[0] : null;
     var joining = !member && S.jf && !S.jf.quick && c.status === 'on' && !c.past, dayOf = member && isToday && c.status === 'on' && !c.past && !sessionEnded(c);
     var head = '<div class="hero art a-' + c.sport + '"><div class="k">' + tile(c.sport, 20) + esc(SPORT[c.sport].name.toUpperCase() + ' CREW') + ' ' + status + (c.min && !c.min_met && c.status === 'on' ? ' <span class="needs">GOES AHEAD WITH ' + c.min + ': NEEDS ' + (c.min - c.going) + ' MORE</span>' : '') + '</div><h2>' + esc(c.spot_name) + '</h2>' +
@@ -1545,17 +1624,17 @@
       (member ? membersHtml(c) : '<div style="display:flex;align-items:center;gap:10px">' + faces(c) + '<span style="font-size:12.5px;color:var(--mute)">' +
         (c.seats_free ? c.seats_free + ' seat' + (c.seats_free > 1 ? 's' : '') + ' free' + (hub ? ' from ' + esc(hub.name) : '') + (c.meet_time ? ' at ' + esc(hm(c.meet_time)) : '') : c.drivers ? 'cars are full' : 'no car yet') +
         (c.need_seat ? ' · ' + c.need_seat + ' need' + (c.need_seat > 1 ? '' : 's') + ' a seat' : '') + (c.here ? ' · ' + c.here + ' at the spot' : '') + '</span></div><p class="hint">Names, cars and the chat are for the crew.</p>') + '</div>';
-    var stg = '<div class="sec stgw">' + stageBar(c) + planAsk(c) + '</div>';
+    var stg = '<div class="sec stgw">' + planAsk(c) + readyBox(c) + stageBar(c) + '</div>';
     head += stg;
     var body = head + welcome + top;
     if (member) {
       var pPlan = planHtml(c), pSpot = '';
       var pMeet = '<div class="box"><h3>MEETING POINT</h3><div style="font-size:13px">' + (hub ? '<b>' + esc(hub.name) + '</b> · ' + esc(hub.sub || '') + (c.meet_time ? ' at <b>' + esc(hm(c.meet_time)) + '</b>' : '') + '<br>' : '') +
         (c.meet_note ? esc(c.meet_note) + '<br>' : '') + 'Spot: ' + esc(c.spot_name) + '</div><div class="row" style="margin-top:10px">' +
-        (hub ? '<a class="opt" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=' + hub.lat + ',' + hub.lon + '">PICK-UP ON MAPS</a>' : '') +
-        (c.meet_lat != null ? '<a class="opt" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=' + c.meet_lat + ',' + c.meet_lon + '">THE CAPTAIN\'S PIN</a>' : '') +
+'</div>' + (hub && c.me.getting !== 'own' ? navRow('PICK-UP', { lat: hub.lat, lon: hub.lon }, 'pickup') : '') +
+        (c.meet_lat != null ? navRow('THE PIN', { lat: c.meet_lat, lon: c.meet_lon }, 'pin') : navRow('THE SPOT', { q: c.maps || spot.maps || c.spot_name }, 'spot')) + '<div class="row" style="margin-top:10px">' +
         (c.host_is_me && !c.past && c.status === 'on' ? '<button class="opt" data-act="pin">' + (S.crew.pinBusy ? 'FINDING YOU…' : c.meet_lat != null ? 'MOVE THE PIN TO WHERE I AM' : 'DROP THE PIN WHERE I AM') + '</button>' : '') +
-        '<a class="opt" target="_blank" rel="noopener" href="' + esc(maps) + '">DIRECTIONS TO THE SPOT</a><button class="opt" data-act="ics">ADD TO CALENDAR</button></div>' +
+        '<button class="opt" data-act="ics">ADD TO CALENDAR</button></div>' +
         (c.past ? '' : (function () { var mp = personOf(c.me) || {}; return '<div class="two" style="margin-top:10px;align-items:center"><label><span class="sr">Your mobile for the crew</span><input class="inp" id="myPhone" inputmode="tel" autocomplete="tel" placeholder="Your mobile" value="' + esc(mp.phone || '') + '"></label><button class="opt" data-act="phonesave">' + (mp.phone ? 'SAVED ✓ · UPDATE' : 'SHARE WITH THE CREW') + '</button></div><p class="hint">Only the riders in this crew see it: handy at the pick-up.</p>'; })()) + '</div>';
       if (isToday && c.status === 'on' && !sessionEnded(c)) {
         pSpot = '<div class="box"><h3>AT THE SPOT ' + (c.me.here ? '<span class="tag live">YOU\'RE THERE</span>' : '') + '</h3>' +
@@ -1674,7 +1753,7 @@
     var kite = c.sport === 'kite', me = (c.members || []).filter(function (m) { return m.me; })[0], mine = me ? (c.reports || []).filter(function (r) { return r.name === me.name; })[0] : null;
     var nx = nextWindowAt(c.spot, c.sport, null);
     var again = nx ? '<div class="box"><h3>GO AGAIN <span class="tag ' + FX.tone(nx.score) + '">' + esc(nx.label) + '</span></h3><p class="hint" style="margin:0 0 8px">The next good window at ' + esc(c.spot_name) + ': <b>' + esc(dayRel(nx.date) + ' ' + pad(nx.from) + '–' + pad(nx.to)) + '</b>' + (kite ? ', ' + nx.w + ' kt ' + FX.compass(nx.dir) : '') + '.</p>' +
-      '<button class="big start" data-act="startwin" data-spot="' + esc(c.spot) + '" data-date="' + nx.date + '" data-from="' + nx.from + '" data-to="' + nx.to + '" style="width:100%">START IT · SAME SPOT</button></div>' : '';
+      '<button class="big start" data-act="again" data-code="' + esc(c.code) + '" data-date="' + nx.date + '" data-from="' + nx.from + '" data-to="' + nx.to + '" style="width:100%">RUN IT AGAIN · SAME CREW SET-UP</button></div>' : '';
     var size = kite ? '<div class="row" style="margin-top:8px">' + [7, 9, 10, 12, 14].map(function (k) { return '<button class="opt sm" data-act="rkite" data-v="' + k + '" aria-pressed="' + (S.crew.rkite === k) + '">' + k + ' M</button>'; }).join('') + '</div>' : '';
     var btns = '<div class="row">' + [['on', 'ON', 'it worked'], ['meh', 'MEH', 'so-so'], ['off', 'OFF', 'it didn\'t']].map(function (v) { return '<button class="opt" data-act="report" data-v="' + v[0] + '" aria-pressed="' + !!(mine && mine.verdict === v[0]) + '">' + v[1] + '<small>' + v[2] + '</small></button>'; }).join('') + '</div>';
     if (mine) return '<div class="box" id="rateBox"><h3>HOW WAS IT? <span class="tag good">STAMPED ✓</span></h3><div class="rated">You said ' + esc(mine.verdict.toUpperCase()) + (mine.kite ? ' on a ' + mine.kite + ' m' : '') + '. It\'s on your rider card' + (S.card ? ': ' + S.card.sessions + ' session' + (S.card.sessions === 1 ? '' : 's') + ' so far' : '') + '.</div><p class="hint">Changed your mind? Tap another one.</p>' + btns + '</div>' + again;
@@ -1748,7 +1827,7 @@
       (reps.length ? '<div class="box"><h3>REPORTS · LAST HOURS</h3><div class="reports">' + reps.map(function (r) { return '<div class="rep"><span class="tag ' + (r.verdict === 'on' ? 'epic' : r.verdict === 'meh' ? 'ok' : 'no') + '">' + r.verdict.toUpperCase() + '</span><span>' + (r.kite ? 'on a ' + r.kite + ' m' : '') + (r.ground ? esc(r.ground) : '') + '</span><small>' + esc(ago(r.at)) + '</small></div>'; }).join('') + '</div></div>' : '') +
       (S.plans || []).filter(function (p) { return p.spot === spot.slug; }).map(function (p) { return '<div class="f"><button class="opt wide" data-act="plan" data-plan="' + esc(p.slug) + '"><span>PLAN: ' + esc(p.title.toUpperCase()) + '<small>' + esc(p.blurb.split('. ')[0]) + '.</small></span><span class="tag good">' + (p.interested ? p.interested + ' IN' : 'SEE IT') + '</span></button></div>'; }).join('') +
       (crews.length ? '' : '<div class="sec"><h2>CREWS HERE <small>NONE YET</small></h2><p class="lede">Nobody has posted a crew here yet. Start one and everyone near you sees it.</p></div>') +
-      '<div class="f"><a class="big ghost" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(spot.maps || spot.name) + '">DIRECTIONS</a></div>';
+      '<div class="f"><a class="big ghost" target="_blank" rel="noopener" href="' + esc(navUrls({ q: spot.maps || spot.name }).google) + '">DIRECTIONS</a></div>';
     var c0 = crews[0];
     return shell(esc(spot.name.toUpperCase()), body, c0 ? '<button class="big join" data-act="going" data-code="' + esc(c0.code) + '">JOIN ' + esc(String(c0.host).toUpperCase()) + '\'S CREW<small>' + esc(dayRel(c0.day) + ' ' + hm(c0.start)) + ' · ' + c0.going + ' going</small></button><button class="big ghost" data-act="startspot" data-spot="' + esc(spot.slug) + '" data-sport="' + esc(sport) + '" style="flex:0 0 34%">START ONE</button>'
       : '<button class="big start" data-act="startspot" data-spot="' + esc(spot.slug) + '" data-sport="' + esc(sport) + '">START A CREW HERE</button>', true);
@@ -1776,7 +1855,7 @@
       (me ? '' : '<div class="f"><span class="lb">YOU <small>your founding plate comes with it</small></span><label class="sr" for="plEmail">Email</label><input class="inp" id="plEmail" type="email" inputmode="email" autocomplete="email" placeholder="Email (only the app sees it)"></div>') +
       (f.err ? '<div class="err" role="alert">' + f.err + '</div>' : '') +
       '<div class="f"><div class="row">' + (liveSport ? '<button class="opt" data-act="startspot" data-spot="' + esc(p.spot) + '" data-sport="' + esc(p.kind) + '">START A CREW FOR IT</button>' : '') +
-      (p.maps ? '<a class="opt" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(p.maps) + '">DIRECTIONS</a>' : '') +
+      (p.maps ? '<a class="opt" target="_blank" rel="noopener" href="' + esc(navUrls({ q: p.maps }).google) + '">DIRECTIONS</a>' : '') +
       (p.url ? '<a class="opt" target="_blank" rel="noopener" href="' + esc(p.url) + '">THE PLACE</a>' : '') +
       '<button class="opt" data-act="plshare">ASK YOUR FRIENDS</button>' + (mine ? '<button class="opt" data-act="plleave">NOT ANYMORE</button>' : '') + '</div></div>' +
       '<p class="note">We pass your day and group to the place and the others going. Prices are the place\'s own: you pay them there.</p>';
@@ -2316,7 +2395,7 @@
     else {
       var em = (($('#sqEmail') || {}).value || '').trim();
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) { Q.err2 = "That email doesn't look right."; renderSheet(); return; }
-      p = HI8.rpc('hi8_join', { p_email: em, p_city: Q.data.city, p_source: 'squad-link', p_ref: Q.code }).then(function (out) { HI8.saveMe(out); S.me = HI8.me(); return HI8.withKey('hi8_squad_join', { p_code: Q.code }, { noQueue: true }); });
+      p = HI8.rpc('hi8_join', { p_email: em, p_city: Q.data.city, p_source: 'squad-link', p_ref: Q.code }).then(keyOrLink(em)).then(function (out) { return HI8.withKey('hi8_squad_join', { p_code: Q.code }, { noQueue: true }); });
     }
     Q.busy = true; Q.err2 = null; renderSheet();
     p.then(function (d) { Q.busy = false; Q.data = d; drawTop(); renderSheet(); loadSocial(); toast("You're in the crew. When one of them goes, you hear first."); },
@@ -2373,14 +2452,39 @@
     else fallback();
     function fallback() { var ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta); ta.select(); try { document.execCommand('copy'); done(); } catch (e) { toast('Copy failed: select the text instead.'); } ta.remove(); }
   }
-  function ics(c) {
-    var d = c.day.replace(/-/g, ''), st = hm(c.start).replace(':', '') + '00', en = (c.end ? hm(c.end) : fromMin(minutes(c.start) + 180)).replace(':', '') + '00';
-    var hub = c.meet_hub ? (HI8.hubsOf(c.city).filter(function (h) { return h.slug === c.meet_hub; })[0] || {}).name : null;
-    var txt = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Hi8ctane//Crews//EN', 'BEGIN:VEVENT', 'UID:' + c.code + '@hi8ctane.com', 'DTSTAMP:' + new Date().toISOString().replace(/[-:]/g, '').slice(0, 15) + 'Z',
-      'DTSTART:' + d + 'T' + st, 'DTEND:' + d + 'T' + en, 'SUMMARY:' + SPORT[c.sport].name + ' crew · ' + c.spot_name,
-      'LOCATION:' + c.spot_name, 'DESCRIPTION:' + (hub ? 'Pick-up ' + hub + (c.meet_time ? ' ' + hm(c.meet_time) : '') + '. ' : '') + crewUrl(c.code), 'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
-    var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([txt], { type: 'text/calendar' })); a.download = 'hi8ctane-' + c.code + '.ics'; document.body.appendChild(a); a.click(); a.remove();
+  // P0-4 (2.31): the calendar entry. Times in UTC from the city's time zone (right on any phone, across daylight
+  // saving); the pick-up or pin for the crew, the spot for others; the same UID with a newer SEQUENCE, so opening it
+  // again after a move updates the entry, and CANCELLED when it's called off.
+  function zoned(ms, tz) {
+    var p = {}; new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+      .formatToParts(new Date(ms)).forEach(function (x) { p[x.type] = x.value; });
+    return Date.UTC(+p.year, +p.month - 1, +p.day, +p.hour % 24, +p.minute);
   }
+  function utcOf(day, t, tz) {
+    var d = day.split('-').map(Number), q = hm(t).split(':').map(Number), want = Date.UTC(d[0], d[1] - 1, d[2], q[0], q[1]), ms = want;
+    for (var i = 0; i < 3; i++) ms -= zoned(ms, tz) - want;
+    return ms;
+  }
+  function icsTime(ms) { return new Date(ms).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, ''); }
+  function icsText(t) { return String(t || '').replace(/\\/g, '\\\\').replace(/;/g, '\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n'); }
+  function icsFile(c) {
+    var tz = cityObj(c.city).tz || 'Europe/Amsterdam', st = utcOf(c.day, c.start, tz), en = c.end ? utcOf(c.day, c.end, tz) : st + 3 * 3600e3;
+    var hub = hubOf(c), spot = HI8.spot(c.spot) || {}, g = stage(c), member = !!c.me;
+    var pin = member && c.meet_lat != null ? [c.meet_lat, c.meet_lon] : spot.lat != null ? [spot.lat, spot.lon] : null;
+    var where = (member && hub && c.me.getting !== 'own' ? 'Pick-up ' + title(hub.name) + (c.meet_time ? ' ' + hm(c.meet_time) : '') + ', then ' : '') + (c.spot_name || spot.name) + (pin ? ' (' + pin[0].toFixed(5) + ', ' + pin[1].toFixed(5) + ')' : '');
+    var desc = (g.k === 'off' ? 'Called off' + (c.off_reason ? ': ' + c.off_reason : '') + '. ' : '') + where + '. The forecast is a model: the captain calls it on the day. ' + crewUrl(c.code);
+    return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Hi8ctane//Crews//EN', 'METHOD:PUBLISH', 'BEGIN:VEVENT', 'UID:' + c.code + '@hi8ctane.com',
+      'SEQUENCE:' + Math.floor(Date.now() / 1000), 'DTSTAMP:' + icsTime(Date.now()), 'DTSTART:' + icsTime(st), 'DTEND:' + icsTime(en),
+      'STATUS:' + (g.k === 'off' ? 'CANCELLED' : g.k === 'prop' ? 'TENTATIVE' : 'CONFIRMED'),
+      'SUMMARY:' + icsText((g.k === 'off' ? 'CALLED OFF · ' : '') + SPORT[c.sport].name + ' crew · ' + (c.spot_name || spot.name)),
+      'LOCATION:' + icsText(where), pin ? 'GEO:' + pin[0].toFixed(5) + ';' + pin[1].toFixed(5) : null, 'URL:' + crewUrl(c.code),
+      'DESCRIPTION:' + icsText(desc), 'END:VEVENT', 'END:VCALENDAR'].filter(Boolean).join('\r\n');
+  }
+  function ics(c) {
+    track('ics', c.code);
+    var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([icsFile(c)], { type: 'text/calendar' })); a.download = 'hi8ctane-' + c.code + '.ics'; document.body.appendChild(a); a.click(); a.remove();
+  }
+  HI8.icsFile = icsFile; // for tests
   function after(p, ok) {
     return p.then(ok, function (e) { toast(errText(e), 4500); throw e; });
   }
@@ -2403,7 +2507,7 @@
     }
     f.busy = true; renderSheet();
     p.then(function (d) {
-      var was = !!c.me; f.busy = false; S.jf = null; C.data = d; S.me = HI8.me(); drawTop();
+      var was = !!c.me; f.busy = false; S.jf = null; C.data = d; S.me = HI8.me(); drawTop(); if (!was) track('join', c.code);
       HI8.loadCrews(true).catch(noop); HI8.loadMine(true).catch(noop); loadLive();
       startChat(); renderSheet(); if (home()) loadPlan(true);
       if (!was && f.quick) {
@@ -2414,7 +2518,10 @@
         C.welcome = { plate: d.plate || null, offer: !al.some(function (a) { return a.sport === c.sport; }) }; renderSheet();
         toast("You're in" + (d.plate ? ': founding plate #' + pad3(d.plate) : '') + '.', 2500);
       } else toast('Saved.');
-    }, function (e) { f.busy = false; f.quick = false; f.err = errText(e); renderSheet(); });
+    }, function (e) {
+      f.busy = false; f.quick = false;
+      f.err = errText(e); renderSheet();
+    });
   }
   function startPost() {
     var f = S.sf; if (f.busy) return;
@@ -2454,7 +2561,7 @@
     if (f.min) p = p.then(function (c) { return HI8.withKey('hi8_crew_min', { p_code: c.code, p_min: f.min }, { noQueue: true }).then(function (c2) { return Object.assign({}, c, c2); }, function () { return c; }); });
     p.then(function (c) {
       HI8.loadPlaces && HI8.loadPlaces(true).then(function () { drawTowns(); }, noop);
-      f.busy = false; f.done = c; f.force = false; drawTop();
+      f.busy = false; f.done = c; f.force = false; drawTop(); track('publish', c.code, f.again ? 'again' : null);
       if (home() && c.code) HI8.withKey('hi8_set_from', { p_code: c.code, p_lat: home().lat, p_lon: home().lon }, { noQueue: true }).catch(noop);
       HI8.loadCrews(true).then(drawAll, noop); HI8.loadMine(true).catch(noop); loadLive();
       renderSheet();
@@ -2475,7 +2582,7 @@
     var t = e.target.closest('[data-act]'); if (!t) return;
     var a = t.getAttribute('data-act'), d = t.dataset;
     if (/^sf/.test(a) && S.sf) S.sf.touched = true;
-    if (t.tagName === 'A' && (a === 'shared' || t.target === '_blank')) { if (a === 'shared') toast('Paste it in your group chats. Every share brings riders.'); return; }
+    if (t.tagName === 'A' && (a === 'shared' || t.target === '_blank')) { if (a === 'shared') track('share', (S.crew && S.crew.code) || (S.sf && S.sf.done && S.sf.done.code) || (S.next && S.next.code) || null); if (a === 'shared') toast('Paste it in your group chats. Every share brings riders.'); return; }
     if (t.tagName === 'A' || t.tagName === 'BUTTON') e.preventDefault();
     switch (a) {
       case 'kg': S.kgBack = S.view ? location.hash : null; go('#kg'); break;
@@ -2494,6 +2601,19 @@
       case 'close': if (S.view === 'kg' && S.kgBack) { var kb = S.kgBack; S.kgBack = null; closeSheet(); go(kb); } else if (S.view === 'from' && S.fromBack) { var back = S.fromBack; S.fromBack = null; closeSheet(); go(back); } else closeSheet(); break;
       case 'join': if (S.view === 'crew') closeSheet(); go('#join'); break;
       case 'start': if (S.view === 'crew') closeSheet(); newStart({}); go('#start'); break;
+      // P0-5 (2.31): run it again: the start form filled from this session, on the next good window there
+      case 'again': {
+        var src0 = S.crew && S.crew.code === d.code ? S.crew.data : null; if (!src0) break;
+        var cl0 = clash(src0.sport, src0.spot, d.date, d.from); if (cl0) { S.autoJoin = cl0.code; openCrew(cl0.code); toast('A crew is already going then: join it.', 3500); break; }
+        if (src0.sport !== S.sport && LIVE_SPORTS.indexOf(src0.sport) >= 0) setSport(src0.sport);
+        newStart({ sport: src0.sport, spot: src0.spot, date: d.date, from: d.from, to: d.to });
+        var f0 = S.sf; f0.levels = src0.levels || f0.levels; f0.max = src0.max || f0.max; if (src0.min) f0.min = src0.min;
+        if (src0.meet_hub && hubBy(src0.meet_hub)) { f0.hub = src0.meet_hub; autoMeet(); }
+        if (src0.me) { f0.getting = src0.me.getting === 'seat' ? 'own' : src0.me.getting; if (src0.me.getting === 'drive' && src0.me.seats) f0.seats = src0.me.seats; }
+        f0.again = src0.code; f0.touched = true;
+        closeSheet(); go('#start'); track('again', src0.code);
+        break;
+      }
       case 'startwin': { var cl = clash(S.sport, d.spot, d.date, d.from); if (cl) { S.autoJoin = cl.code; openCrew(cl.code); toast('A crew is already going then: join it.', 3500); break; }
         newStart({ date: d.date, from: d.from, to: d.to, spot: d.spot, quick: true }); go('#start'); break; }
       case 'going': S.autoJoin = String(d.code).toUpperCase(); openCrew(d.code); break;
@@ -2524,6 +2644,12 @@
       case 'lkhub': S.lk.hub = d.v; renderSheet(); break;
       case 'lklevel': S.lk.level = d.v; renderSheet(); break;
       case 'lksave': lookSave(); break;
+      case 'askdriver': {
+        var cc = S.crew && S.crew.code === d.code ? S.crew.data : S.next && S.next.code === d.code ? S.next.data : null, hb = cc ? hubOf(cc) : null;
+        var msg = (d.who === 'me' ? 'I still need a lift' : d.who + ' still needs a lift') + (hb ? ' from ' + title(hb.name) : '') + (cc && cc.meet_time ? ' at ' + hm(cc.meet_time) : '') + '. Can anyone drive, or has a seat?';
+        HI8.withKey('hi8_send', { p_code: d.code, p_body: msg }, { noQueue: true }).then(function () { toast('Asked in the crew chat.'); if (S.crew && S.crew.code === d.code) pollChat(); }, function (e) { toast(errText(e)); });
+        break;
+      }
       case 'stillin': case 'captain': {
         var fn = d.act === 'stillin' ? 'hi8_still_in' : 'hi8_captain', body = { p_code: d.code };
         if (d.act === 'captain') body.p_yes = d.v === '1';
@@ -2656,7 +2782,7 @@
         after(HI8.withKey('hi8_settle', { p_code: S.crew.code, p_cost: cost, p_link: link || null, p_bizum: bz || null }, { noQueue: true }), function (dd) { S.crew.data = dd; renderSheet(); pollChat(); toast('Saved. Your car can pay you now.'); }).catch(noop); break;
       }
       case 'paid': after(HI8.withKey('hi8_paid', { p_code: S.crew.code, p_paid: d.v === 'true' }, { noQueue: true }), function (dd) { S.crew.data = dd; renderSheet(); }).catch(noop); break;
-      case 'ics': ics(S.crew.data); break;
+      case 'ics': ics(d.code && !(S.crew && S.crew.code === d.code) && S.next && S.next.code === d.code ? S.next.data : S.crew.data); break;
       case 'share': {
         var cc = S.crew.data, txt = shareText(cc);
         if (navigator.share) navigator.share({ title: 'Hi8ctane crew', text: txt }).catch(noop);

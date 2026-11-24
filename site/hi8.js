@@ -65,6 +65,8 @@
           if (!r.ok) {
             var err = new Error((b && b.message) || ('HTTP ' + r.status));
             err.status = r.status; err.hint = b && b.hint; err.code = b && b.code; err.details = b && b.details;
+            // 2.31: an email we already know: send the sign-in link here, once, whichever form it came from
+            if (err.message === 'needs_link' && args && args.p_email && HI8.sendLink) HI8.sendLink(args.p_email).catch(noop);
             throw err;
           }
           return b;
@@ -402,6 +404,16 @@
     if (!src && host && host !== location.hostname) src = host.replace(/^www\./, '');
     if (src || ref) store.set('src', { source: src ? [src, camp].filter(Boolean).join('/').slice(0, 80) : null, ref: ref ? ref.slice(0, 40) : null });
   })();
+
+  // 2.31: a rider we already know signs in with an emailed link (typing an email no longer gives their key).
+  // The link comes back to this site; claim() below swaps it for this browser's key and returns to next.
+  HI8.sendLink = function (email, next) {
+    if (!API || !KEY) return Promise.reject(new Error('not_set_up'));
+    store.set('after', { city: (store.get('pick', null) || {}).city || null, next: next || (location.pathname + location.search), at: Date.now() });
+    return fetch(API + '/auth/v1/otp?redirect_to=' + encodeURIComponent(location.origin + '/'), {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'apikey': KEY }, body: JSON.stringify({ email: String(email).trim(), create_user: true })
+    }).then(function (r) { if (!r.ok) throw new Error('link_failed'); return true; });
+  };
 
   // back from the email link or Google: swap the sign-in for this browser's key
   HI8.claiming = null;

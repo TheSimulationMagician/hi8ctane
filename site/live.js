@@ -203,6 +203,13 @@
         var src = store.get('src', null) || {};
         var args = { p_email: email, p_city: joinCity(), p_source: src.source || null, p_ref: src.ref || null };
         timeout(rpc('hi8_join', args), 8000).then(function (out) {
+          // 2.31: an email we already know gets a sign-in link, not a key: send it and stay here
+          if (out && out.needs_link) {
+            store.set('after', { city: args.p_city, next: nextAfterJoin(), at: Date.now() });
+            return timeout(sendEmailLink(email), 4000).catch(noop).then(function () {
+              throw Object.assign(new Error('needs_link'), { status: 409, hint: "You've joined before. We emailed you a sign-in link: open it on this phone to carry on." });
+            });
+          }
           saveMe(out);
           if (CFG.emailLink) {
             store.set('after', { city: args.p_city, next: nextAfterJoin(), at: Date.now() });
@@ -212,7 +219,7 @@
         }, function (e) {
           // only a bad email or too many tries stop them; anything else (no connection, Supabase down or
           // not set up yet) keeps the sign-up in this browser and sends it again on the next page
-          if (e.status === 400 || e.status === 429) throw e;
+          if (e.status === 400 || e.status === 429 || e.message === 'needs_link') throw e;
           later('hi8_join', args);
           return null;
         }).then(function () {
