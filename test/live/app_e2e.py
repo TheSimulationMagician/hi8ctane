@@ -57,8 +57,9 @@ with sync_playwright() as p:
     check(A.locator('.ransom span').count() == 8 and 'THE FORECAST SAYS GO.' in txt(A, '.hero .hl') and A.locator('#verdict').count() == 0, "the ransom-note logo and the 2.14 hero: the forecast says go")
     A.locator('.mapsec').scroll_into_view_if_needed(); A.wait_for_timeout(1200)
     check(320 <= A.locator('.mapsec .mapwrap').bounding_box()['height'] <= 525, 'on a phone the live map closes the page, tall')
-    px = A.evaluate("""(() => { const c = document.querySelector('.map-canvas'), x = c.getContext('2d').getImageData(0, 0, c.width, c.height).data, seen = new Set();
-                        for (let i = 0; i < x.length; i += 4 * 997) seen.add(x[i] >> 4 << 8 | x[i + 1] >> 4 << 4 | x[i + 2] >> 4); return seen.size; })()""")
+    # 2.25: the map is three stacked canvases (base, wind flow, markers): count the colours of all of them
+    px = A.evaluate("""(() => { const seen = new Set(); document.querySelectorAll('#map canvas').forEach(c => { const x = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+                        for (let i = 0; i < x.length; i += 4 * 997) if (x[i + 3]) seen.add(x[i] >> 4 << 8 | x[i + 1] >> 4 << 4 | x[i + 2] >> 4); }); return seen.size; })()""")
     check(px > 25, f'the map is drawn: wind colours, coast, spots ({px} colours)')
     check('THE WEEK AHEAD' in txt(A, '#week') and A.locator('#week .wc').count() == 21 and 'AROME' in txt(A, '#week'), 'the week ahead: kite, MTB and MX x 7 days, and where it comes from')
     check('THE BEST WINDOW' in txt(A, '#best') and ('MODELS' in txt(A, '#best') or 'NO GOOD' in txt(A, '#best')), 'the best window, with the numbers and the models')
@@ -324,7 +325,7 @@ with sync_playwright() as p:
 
     print('no forecast')
     ctxN, N = fresh()
-    N.route(re.compile(r'.*/v1/(forecast|marine).*'), lambda r: r.abort())
+    N.route(re.compile(r'.*/v1/(forecast|marine).*|.*/storage/v1/object/public/fx/.*'), lambda r: r.abort())   # 2.27: and the shared forecast file
     N.goto(BASE + '/'); N.wait_for_timeout(2500)
     check('No forecast right now'.upper() in txt(N, '#week') and 'ALL SPOTS · THIS WEEK' in txt(N, '#sessions') and not N.errs, 'Open-Meteo down: says so, crews still work, nothing breaks')
     check('CHECKING' not in txt(N, '#heroWind') and 'wait' not in (N.locator('#heroWind').get_attribute('class') or ''), 'and the hero stops saying it is checking the forecast (2.17)')

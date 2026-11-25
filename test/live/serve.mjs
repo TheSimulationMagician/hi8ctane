@@ -76,7 +76,7 @@ function fakeMeteo(url) {
   return all.length === 1 ? all[0] : all;
 }
 
-const avatars = new Map(), cartoonLog = [];
+const avatars = new Map(), cartoonLog = [], fxFiles = new Map();
 // a service-role JWT for the local PostgREST (its test secret), for the cartoon function
 const SERVICE_JWT = (() => { const b = (o) => Buffer.from(JSON.stringify(o)).toString('base64url'); const h = b({ alg: 'HS256', typ: 'JWT' }), p = b({ role: 'service_role', exp: 4102444800 });
   return `${h}.${p}.` + createHmac('sha256', 'test-secret-test-secret-test-secret-0123').update(`${h}.${p}`).digest('base64url'); })();
@@ -120,10 +120,23 @@ createServer(async (req, res) => {
     if (!b) { res.writeHead(404); return res.end(); }
     res.writeHead(200, { 'content-type': 'image/png' }); return res.end(b);
   }
+  // 2.27: the shared forecast in Storage (bucket fx), kept in memory: the worker writes it, pages read it
+  if (url.pathname.startsWith('/storage/v1/object/fx/') && req.method === 'POST') {
+    const auth = req.headers.authorization || '';
+    if (!auth.startsWith('Bearer ') || auth.split('.').length !== 3) { res.writeHead(403); return res.end('{"message":"not_allowed"}'); }
+    let body = ''; for await (const c of req) body += c;
+    fxFiles.set(decodeURIComponent(url.pathname.split('/fx/')[1]), body); res.writeHead(200, { 'content-type': 'application/json' }); return res.end('{}');
+  }
+  if (url.pathname.startsWith('/storage/v1/object/public/fx/')) {
+    const b = fxFiles.get(decodeURIComponent(url.pathname.split('/fx/')[1]));
+    if (!b) { res.writeHead(400, { 'content-type': 'application/json', 'access-control-allow-origin': '*' }); return res.end('{"statusCode":"404","error":"not_found"}'); }
+    res.writeHead(200, { 'content-type': 'application/json', 'access-control-allow-origin': '*', 'cache-control': 'max-age=300' }); return res.end(b);
+  }
+  if (url.pathname === '/__fx') { if (req.method === 'DELETE') fxFiles.clear(); res.writeHead(200, { 'content-type': 'application/json' }); return res.end(JSON.stringify([...fxFiles.keys()])); }
   if (url.pathname === '/__cartoon') { res.writeHead(200, { 'content-type': 'application/json' }); return res.end(JSON.stringify({ calls: cartoonLog, files: [...avatars.keys()] })); }
   if (url.pathname === '/__meteo') { res.writeHead(200, { 'content-type': 'application/json' }); return res.end(JSON.stringify(meteoLog)); }
   if (url.pathname.startsWith('/rest/v1/')) {
-    if (req.headers.apikey !== 'sb_publishable_test') { res.writeHead(401); return res.end('{"message":"no apikey"}'); }
+    if (req.headers.apikey !== 'sb_publishable_test' && req.headers.apikey !== SERVICE_JWT) { res.writeHead(401); return res.end('{"message":"no apikey"}'); } // the service key: Edge Functions
     const headers = { 'content-type': req.headers['content-type'] || 'application/json', accept: 'application/json', 'x-forwarded-for': req.headers['x-test-ip'] || '10.0.0.1' };
     if (req.headers.authorization) headers.authorization = req.headers.authorization;
     const up = request({ host: '127.0.0.1', port: Number(pgrst), method: req.method, path: url.pathname.replace('/rest/v1', '') + url.search, headers }, (r) => {

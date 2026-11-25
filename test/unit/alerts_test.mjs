@@ -7,7 +7,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { execFileSync, spawnSync, spawn } from 'node:child_process';
-import { vapidKeys, decrypt, verifyVapid, b64u, encrypt } from '../../scripts/webpush.mjs';
+import { vapidKeys, decrypt, verifyVapid, b64u, encrypt, phoneKeys } from '../../supabase/functions/_shared/webpush.js';
 
 const BASE = process.env.HI8_BASE || 'http://localhost:8801';
 let ok = 0;
@@ -21,9 +21,9 @@ const must = async (fn, body) => { const [s, r] = await rpc(fn, body); if (s !==
 const err = async (fn, body) => { const [s, r] = await rpc(fn, body); return s === 200 ? null : (r || {}).message; };
 
 console.log('the push crypto');
-const V = vapidKeys(), ua = crypto.createECDH('prime256v1'); ua.generateKeys();
-const subKeys = { p256dh: b64u(ua.getPublicKey()), auth: b64u(crypto.randomBytes(16)) };
-check(decrypt(encrypt('{"title":"hi"}', subKeys.p256dh, subKeys.auth), ua, subKeys.auth) === '{"title":"hi"}', 'aes128gcm: what we encrypt, the phone decrypts');
+const V = await vapidKeys(), ua = await phoneKeys();
+const subKeys = { p256dh: b64u(ua.publicRaw), auth: b64u(crypto.randomBytes(16)) };
+check(await decrypt(await encrypt('{"title":"hi"}', subKeys.p256dh, subKeys.auth), ua, subKeys.auth) === '{"title":"hi"}', 'aes128gcm (WebCrypto, as in the Edge Function): what we encrypt, the phone decrypts');
 
 // the fake push service (https, a throwaway certificate)
 const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'hi8push-'));
@@ -39,7 +39,7 @@ await new Promise((r) => srv.listen(8443, r));
 const EP = 'https://localhost:8443/push/';
 
 sql("delete from public.app_secrets where name = 'vapid_private'; delete from public.app_settings where key = 'vapid_public'");
-sql("truncate public.signups, public.rider_keys, public.rate_hits, public.crews, public.crew_members, public.outbox, public.crew_alerts, public.spot_watch, public.wind_alerts, public.push_subs, public.push_queue, public.alert_sent, public.spot_reports cascade");
+sql("truncate public.signups, public.rider_keys, public.rate_hits, public.crews, public.crew_members, public.outbox, public.crew_alerts, public.spot_watch, public.wind_alerts, public.push_subs, public.push_queue, public.alert_sent, public.spot_reports, public.ride_asks cascade");
 const K = {};
 for (const n of ['ana', 'bo', 'cy', 'di']) K[n] = (await must('hi8_join', { p_email: n + '@example.com', p_city: 'amsterdam' })).key;
 
@@ -103,12 +103,22 @@ const JWT = (() => { const b = (o) => Buffer.from(JSON.stringify(o)).toString('b
   return h + '.' + p2 + '.' + crypto.createHmac('sha256', 'test-secret-test-secret-test-secret-0123').update(h + '.' + p2).digest('base64url'); })();
 const run = (hour, extra = {}) => new Promise((res) => { // async: the fake push service in this process has to answer meanwhile
   const ch = spawn('node', ['scripts/alerts.mjs'], { env: { ...process.env, REST_URL: 'http://localhost:3300', SUPABASE_SECRET_KEY: JWT, FORECAST_API: BASE, MARINE_API: BASE,
-    VAPID_PUBLIC_KEY: V.publicKey, VAPID_PRIVATE_KEY: V.privateKey, NODE_TLS_REJECT_UNAUTHORIZED: '0', TEST_HOUR: String(hour), SITE_URL: 'https://hi8ctane.com', ...extra } });
+    STORAGE_URL: BASE + '/storage/v1', VAPID_PUBLIC_KEY: V.publicKey, VAPID_PRIVATE_KEY: V.privateKey, NODE_TLS_REJECT_UNAUTHORIZED: '0', TEST_HOUR: String(hour), SITE_URL: 'https://hi8ctane.com', ...extra } });
   let o = '', e = ''; ch.stdout.on('data', (d) => (o += d)); ch.stderr.on('data', (d) => (e += d));
   ch.on('close', (code) => { if (code !== 0) { console.error(o, e); process.exit(1); } res(o); });
 });
+// 2.29: someone looking for a crew in three days, and a crew that fits
+sql(`insert into public.crews (city, sport, spot, day, start_time, end_time, levels, max_riders, meet_hub, meet_time, host_email, code) values ('amsterdam','kite','ijmuiden', hi8_today('amsterdam') + 3, '13:00','17:00','all',6,'cs','11:45','bo@example.com','ASK001')`);
+sql(`insert into public.crew_members (crew_id, email, level, getting, seats) select id, 'bo@example.com', 'regular', 'drive', 3 from public.crews where code = 'ASK001'`);
+sql(`insert into public.ride_asks (email, city, sport, day, need_seat, hub, level) values ('zed@example.com', 'amsterdam', 'kite', hi8_today('amsterdam') + 3, true, 'cs', 'regular')`);
 got.length = 0;
+sql('truncate public.fx_cache'); await fetch(BASE + '/__fx', { method: 'DELETE' });
 let out = await run(8);
+const files = await (await fetch(BASE + '/__fx')).json();
+const shared = await (await fetch(BASE + '/storage/v1/object/public/fx/amsterdam.json')).json();
+check(files.includes('amsterdam.json') && files.includes('grid-amsterdam.json') && Object.keys(shared.spots).length === Number(sql("select count(*) from spots where city = 'amsterdam' and active")),
+  'the shared forecast: every Amsterdam spot and the map grid, published once (' + files.length + ' files)');
+check(sql("select spots || '|' || grid from public.fx_cache where city = 'amsterdam'") === Object.keys(shared.spots).length + '|true', '...and noted, so the next runs skip it for 25 minutes');
 const today = sql("select (now() at time zone 'Europe/Amsterdam')::date::text");
 check(/wind alerts: 2 matched, 1 new|wind alerts: \d+ matched/.test(out), 'it ran: ' + out.split('\n')[0]);
 check(sql(`select count(*) from public.alert_sent where key = 'wind:ana@example.com:kite:${today}'`) === '1', 'today 19 kt SW at Wijk aan Zee (15-30 kt asked): ana gets an alert');
@@ -116,22 +126,24 @@ check(sql(`select count(*) from public.alert_sent where email = 'bo@example.com'
 const mail = sql(`select subject || '|' || body || '|' || coalesce(unsub, '') from public.outbox where kind = 'wind' and to_email = 'ana@example.com'`);
 check(/^Kite is on today \d\d–\d\d · /.test(mail) && mail.includes('kt SW') && mail.includes('Stop these alert emails: https://hi8ctane.com/?stop=') && /\|https:\/\/hi8ctane\.com\/\?stop=[0-9a-f-]{36}$/.test(mail), 'the email: what, when, the wind, a stop link and a List-Unsubscribe address');
 const mine = got.filter((g) => g.url === '/push/ana');
-const msgs = mine.map((g) => JSON.parse(decrypt(g.body, ua, subKeys.auth)));
+const msgs = await Promise.all(mine.map(async (g) => JSON.parse(await decrypt(g.body, ua, subKeys.auth))));
 const wind = msgs.find((m) => /^🪁 On · /.test(m.title));
 check(wind && /kt SW, gusts \d+/.test(wind.body) && wind.url.startsWith('https://hi8ctane.com/#spot/'), 'the phone gets it: "' + (wind && wind.title) + '" · ' + (wind && wind.body));
-check(mine.every((g) => g.h['content-encoding'] === 'aes128gcm' && verifyVapid(g.h.authorization, V.publicKey).aud === 'https://localhost:8443'), 'every push is encrypted and signed with our VAPID key');
+check((await Promise.all(mine.map(async (g) => g.h['content-encoding'] === 'aes128gcm' && (await verifyVapid(g.h.authorization, V.publicKey)).aud === 'https://localhost:8443'))).every(Boolean), 'every push is encrypted and signed with our VAPID key');
 check(msgs.some((m) => /^It's on/.test(m.title)), 'and "it\'s on" from before went out too');
 check(sql(`select count(*) from public.push_queue where sent_at is null`) === '0', 'the queue is empty');
+check(/riders told about a crew that fits: 1/.test(out) && sql(`select count(*) from public.outbox where kind = 'ask' and to_email = 'zed@example.com'`) === '1', '"I\'m looking": the worker tells a rider about the crew that fits');
 check(sql(`select count(*) from public.crew_messages m join public.crews c on c.id = m.crew_id where c.code = '${tmr}' and m.body like 'Forecast dropped:%'`) === '1', 'tomorrow is 7 kt: the crew gets "forecast dropped" with the next window');
 check(sql(`select body from public.crew_messages m join public.crews c on c.id = m.crew_id where c.code = '${tmr}' and m.body like 'Forecast dropped:%'`).includes('Next good window'), '...which names the next good window');
 got.length = 0;
 out = await run(8);
+check(!/shared forecast published/.test(out), 'run again within 25 minutes: the shared forecast isn\'t fetched again');
 check(got.length === 0 && sql(`select count(*) from public.outbox where kind = 'wind'`) === '1', 'run again: nothing twice');
 await must('hi8_no_show', { p_key: K.ana, p_code: past, p_member: bo, p_on: false }); // bo came after all
 crew('wijk-aan-zee', 0, 'bo', ['bo'], '15:00', '18:00');
 check(sql(`select count(*) from public.push_queue where email = 'ana@example.com' and title like 'A crew is going%'`) === '1', 'a crew goes up where ana\'s alert said it\'s on today: her phone hears about it');
 out = await run(10);
-check(sql(`select count(*) from public.alert_sent where kind = 'rate'`) === '2' && got.some((g) => /How was Zandvoort/.test(decrypt(g.body, ua, subKeys.auth))), 'the morning after: "how was it?" to the riders who haven\'t said (ana by phone, bo by email; cy already did)');
+check(sql(`select count(*) from public.alert_sent where kind = 'rate'`) === '2' && (await Promise.all(got.map((g) => decrypt(g.body, ua, subKeys.auth)))).some((t) => /How was Zandvoort/.test(t)), 'the morning after: "how was it?" to the riders who haven\'t said (ana by phone, bo by email; cy already did)');
 check(sql(`select count(*) from public.outbox where kind = 'rate' and to_email = 'bo@example.com'`) === '1' && sql(`select count(*) from public.outbox where kind = 'rate' and to_email = 'ana@example.com'`) === '0', 'phone if you have one, email if not');
 
 console.log('moving a crew, stopping alerts, gone phones');

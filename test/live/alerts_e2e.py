@@ -97,8 +97,9 @@ with sync_playwright() as p:
 
     print('trust')
     R.goto(BASE + '/#me'); R.wait_for_selector('#sheet.on'); R.wait_for_timeout(1500)
-    R.fill('#prYears', '5'); R.fill('#prInsta', '@cy.kites'); R.locator('[data-act=profsave]').click(); R.wait_for_timeout(1200)
-    check(sql("select years_riding || '|' || insta from signups where email = 'cy@example.com'") == '5|cy.kites', 'a rider profile from Me')
+    R.locator('[data-act=mycard]').click(); R.wait_for_timeout(1500)   # 2.26: the profile is the rider card
+    R.fill('#prYears', '5'); R.fill('#prInsta', '@cy.kites'); R.locator('[data-act=cardwho][data-v="0"]').click(); R.locator('[data-act=cardsave]').click(); R.wait_for_timeout(1500)
+    check(sql("select years_riding || '|' || insta from signups where email = 'cy@example.com'") == '5|cy.kites', 'a rider card from Me')
     R.goto(BASE + f'/?c={today_crew}'); R.wait_for_timeout(2500)
     check('5 YRS RIDING' in txt(R, '#sheet') and '@CY.KITES' in txt(R, '#sheet'), 'the crew sees it next to her name')
     check(not (eA + eI + eR), 'no script errors: ' + '; '.join(eA + eI + eR)[:300])
