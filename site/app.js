@@ -381,6 +381,14 @@
       b.innerHTML = 'OPEN MY CREW<small>' + esc(dayRel(mc.day)) + ' · ' + (hub && mc.meet_time ? 'PICK-UP ' + esc(hm(mc.meet_time)) + ' ' + esc(hub.name.toUpperCase()) : esc((sp.name || mc.spot_name || '').toUpperCase()) + ' ' + esc(hm(mc.start))) + '</small>';
       return;
     }
+    ['squad', 'spot', 'date', 'from', 'to'].forEach(function (k) { b.removeAttribute('data-' + k); });
+    var wk = weekendTop();
+    if (wk) {
+      b.setAttribute('data-act', 'propose'); b.removeAttribute('data-code');
+      b.dataset.squad = wk.q.code; b.dataset.spot = wk.b.d.spot.slug; b.dataset.date = wk.b.d.date; b.dataset.from = wk.b.d.from; b.dataset.to = wk.b.d.to;
+      b.innerHTML = 'PROPOSE ' + esc(dayRel(wk.b.d.date)) + '<small>' + esc(wk.q.name.toUpperCase()) + ' · ' + esc(wk.b.d.spot.name.toUpperCase()) + ' ' + pad(wk.b.d.from) + '–' + pad(wk.b.d.to) + '</small>';
+      return;
+    }
     b.setAttribute('data-act', 'goingbest'); b.removeAttribute('data-code');
     b.innerHTML = (o && !o.crews.length ? 'START A CREW' : 'I\'M GOING') + '<small>' + (o ? 'NEXT: ' + esc(dayRel(o.date)) + ' ' + pad(o.from) + '–' + pad(o.to) + ' · ' + esc(o.spot.name.toUpperCase()) : 'PICK A DAY AND A SPOT') + '</small>';
   }
@@ -928,9 +936,22 @@
       '<div class="row"><button class="jn pk" data-act="leave">' + (C.confirm === 'leave' ? 'TAP AGAIN: CALL IT OFF' : 'CALL IT OFF') + '</button><button class="jn wh" data-act="keepon" data-code="' + esc(c.code) + '" data-at="' + esc(c.checked_at || '') + '">KEEP IT ON</button></div>' +
       '<p class="hint" style="margin:6px 0 0">Calling it off tells the crew and shows the next good options right here.</p></div>';
   }
+  // PR #50: closures > the forecast against it > re-confirm > captain handover > your own arrangements > departure.
+  // The pass headline, its stamp, the sticky button and the home card all come from here, so they never disagree.
   function passNow(c) {
     var r = readiness(c) || {}, me = c.me || {}, L = passLegs(c), today = c.day === S.today, now = clockAt(Date.now(), c.city), first = L.from.t || hm(c.start);
-    if (me.unsure || c.captain_ask) return { t: 'ANSWER ABOVE FIRST', s: '' };
+    var u = suit(c), f = crewFx(c), code = esc(c.code), boss = cap(c);
+    var kept = (HI8.store.get('keepOn', []) || []).indexOf(c.code + '@' + c.checked_at) >= 0;
+    var go = function (act, label, extra) { return '<button class="jn lm" data-act="' + act + '" data-code="' + code + '"' + (extra || '') + '>' + label + '</button>'; };
+    if (u.k === 'closed') return { warn: 1, t: 'CLOSED THAT DAY', s: u.s + (boss ? ' Move the crew or call it off.' : ' The captain moves it or calls it off. Plan B is below.'),
+      a: boss ? go('toedit', 'MOVE OR CALL IT OFF ↓') : go('toplanb', 'SEE PLAN B ↓') };
+    if ((u.k === 'hazard' || u.k === 'doubt' || u.k === 'light') && !kept) {
+      var line = f ? (windy(c.sport) ? f.w + ' KT ' + FX.compass(f.dir) : String(f.label || '').toUpperCase()) : '';
+      return { warn: 1, t: u.t + (line && u.k !== 'doubt' ? ': ' + line : ''), s: u.s + (/[.!?]$/.test(u.s) ? ' ' : '. ') + (boss ? 'Your call: move it, call it off or keep it on.' : 'It stays on until the captain calls it. Going anyway is your call.'),
+        a: boss ? (c.checked_ok === false ? go('tocall', 'YOUR CALL ↑') : go('toedit', 'MOVE OR CALL IT OFF ↓')) : go('tofx', 'SEE THE FORECAST ↓') };
+    }
+    if (me.unsure) return { t: 'STILL IN?', s: 'The plan changed. ' + (c.reconfirm_by ? 'Answer by ' + whenAt(c.reconfirm_by, c.city) + ' or your seat goes back to the crew.' : 'Answer above.'), a: go('stillin', 'I\'M STILL IN', ' data-v="' + esc(c.plan_v || '') + '"') };
+    if (c.captain_ask) return { t: 'WILL YOU CAPTAIN?', s: 'The captain handed it over to you. No captain buttons until you say yes.', a: go('captain', 'KEEP IT ON', ' data-v="1"') };
     if (r.next) return { t: r.next.t, s: r.next.s || '', a: r.next.b };
     if (!today) return { t: 'ALL SET FOR ' + dayRel(c.day), s: L.from.t ? 'Be at ' + L.from.n + ' at ' + L.from.t + '.' : 'Be at the spot for ' + hm(c.start) + '.' };
     if (now < first) return { t: 'BE AT ' + (L.from.t ? 'THE PICK-UP' : 'THE SPOT') + ' BY ' + first, s: L.mins && L.from.t ? 'About ' + L.mins + ' min from there to the spot.' : '' };
@@ -951,6 +972,20 @@
     var cur = -1; st.forEach(function (x, i) { if (cur < 0 && !x.d) cur = i; });
     return '<ol class="tl" aria-label="Your day">' + st.map(function (x, i) { return '<li class="' + (x.d ? 'done' : i === cur ? 'now' : '') + '">' + (i === cur ? '<span class="sr">Now: </span>' : '') + esc(x.t) + '</li>'; }).join('') + '</ol>';
   }
+  // the sticky button for a crew I'm in: what passNow says first; on the day, the way there; else invite
+  function memberFoot(c, dayOf) {
+    var wa = '<a class="big wa" href="https://wa.me/?text=' + encodeURIComponent(shareText(c)) + '" target="_blank" rel="noopener">SHARE TO WHATSAPP</a>';
+    if (c.status === 'off') return planB(c).indexOf('pb-o') >= 0 ? '<button class="big join" data-act="toplanb">SEE PLAN B ↓</button>' : '<button class="big start" data-act="keep" data-code="' + esc(c.code) + '">KEEP THIS CREW</button>';
+    var n = passNow(c);
+    if (n.a) return n.a.replace(/class="jn lm"/, 'class="big join"');
+    var now = clockAt(Date.now(), c.city), L = passLegs(c);
+    if (dayOf && now < hm(c.start)) {
+      var f1 = firstStop(c), u = navUrls(f1.to), car = (c.me || {}).getting === 'drive' ? myCar(c) : null, route = car && car.maps && car.stops && car.stops.length;
+      return '<a class="big join navl" data-nav="' + esc(route ? 'route' : f1.what) + '" target="_blank" rel="noopener" href="' + esc(route ? car.maps : u.google) + '">GOOGLE MAPS · ' + (route ? 'YOUR ROUTE' : f1.what === 'pickup' ? 'PICK-UP' : f1.what === 'pin' ? 'THE PIN' : 'THE SPOT') + '<small>' + esc(L.from.t ? 'BE THERE BY ' + L.from.t : 'RIDING FROM ' + hm(c.start)) + '</small></a>';
+    }
+    if (dayOf && !(c.me || {}).here) return '<button class="big start" data-act="checkin">I\'M AT THE SPOT</button>';
+    return wa;
+  }
   function lateRow(c) {
     var me = c.me, now = clockAt(Date.now(), c.city);
     if (!me || c.status !== 'on' || c.day !== S.today || c.ended || sessionEnded(c) || now > hm(c.start)) return '';
@@ -959,7 +994,7 @@
   function passHtml(c, o) {
     o = o || {};
     var g = stage(c), L = passLegs(c), n = passNow(c), f1 = firstStop(c), u = navUrls(f1.to), me = c.me || {}, r = readiness(c) || {};
-    var set = !n.a && L.seatOk && !me.unsure && !c.captain_ask, lift = passLift(c);
+    var set = !n.a && !n.warn && L.seatOk && !me.unsure && !c.captain_ask, lift = passLift(c);
     var where = f1.what === 'pickup' ? 'PICK-UP' : f1.what === 'pin' ? 'THE PIN' : 'THE SPOT';
     var car = me.getting === 'drive' ? myCar(c) : null, route = car && car.maps && car.stops && car.stops.length;
     var gmap = '<a class="jn ' + (n.a ? 'wh' : 'lm lg') + ' navl" data-nav="' + esc(route ? 'route' : f1.what) + '" target="_blank" rel="noopener" href="' + esc(route ? car.maps : u.google) + '">GOOGLE MAPS' + (n.a ? '' : ' · ' + (route ? 'YOUR ROUTE' : where)) + '</a>';
@@ -976,12 +1011,12 @@
       '<dl class="pass-grid"><div><dt>DATE</dt><dd>' + esc(dayRel(c.day)) + '</dd></div><div><dt>' + (L.from.t ? 'BOARD' : 'START') + '</dt><dd>' + esc(L.from.t || hm(c.start)) + '</dd></div>' +
         '<div' + (L.seatOk ? '' : ' class="bad"') + '><dt>SEAT</dt><dd>' + esc(L.seat) + '</dd></div><div><dt>CREW</dt><dd>' + c.going + '/' + c.max + '</dd></div><div><dt>REF</dt><dd>' + esc(c.code) + '</dd></div></dl>' +
       '<div class="pass-perf" aria-hidden="true"></div>' +
-      '<div class="pass-now" role="status">' + (o.joined ? '<span class="pass-stamp in" aria-hidden="true">YOU\'RE IN</span>' : set ? '<span class="pass-stamp ok" aria-hidden="true">ALL SET</span>' : '') +
+      '<div class="pass-now' + (n.warn ? ' warn' : '') + '" role="status">' + (o.joined ? '<span class="pass-stamp in" aria-hidden="true">YOU\'RE IN</span>' : set ? '<span class="pass-stamp ok" aria-hidden="true">ALL SET</span>' : '') +
         '<small>NOW</small><b>' + esc(n.t) + '</b>' + (n.s ? '<p>' + esc(n.s) + '</p>' : '') +
         (o.compact && c.checked_at ? '<p class="pass-chk">Rechecked ' + esc(clockAt(c.checked_at, c.city)) + (c.checked_note ? ': ' + esc(c.checked_note) : '') + '</p>' : '') +
         (o.plate ? '<p class="pass-chk">Founding plate #' + pad3(o.plate) + ' is yours.</p>' : '') + '</div>' +
       (lift && !me.unsure && !c.captain_ask ? '<div class="pass-lift"><b>' + esc(lift.t) + '</b><span>' + esc(lift.s) + '</span>' + (o.compact ? '' : passRoute(c)) + passMoney(c) + '</div>' : '') +
-      '<div class="pass-act">' + (n.a || gmap) + '</div><div class="pass-tools">' + tools + '</div>' + lateRow(c) +
+      (o.compact ? '<div class="pass-act">' + (n.a || gmap) + '</div>' : '') + '<div class="pass-tools">' + (o.compact ? tools : gmap.replace('class="jn lm lg navl"', 'class="jn wh navl"') + tools.replace(gmap, '')) + '</div>' + lateRow(c) +
       (o.compact ? '' : passPack(c)) +
       (!o.compact && r.todo && r.todo.length ? '<div class="pass-todo"><b>STILL TO SORT OUT</b><ul>' + r.todo.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul></div>' : '') +
       (o.compact ? '' : passSteps(c) + (r.facts ? '<p class="pass-crew"><span>THE CREW</span> ' + esc(r.facts.charAt(0).toUpperCase() + r.facts.slice(1)) + '</p>' : '')) +
@@ -1036,6 +1071,11 @@
       R.map(function (r) { return '<tr><th scope="row">' + esc(r.me ? 'You' : firstName(r.name)) + '</th>' + cand.map(function (x) { var y = (r.up || []).indexOf(x) >= 0; return '<td' + (x === b.d.date ? ' class="pick"' : '') + '>' + (y ? '<i class="y" aria-label="up for it">✓</i>' : '<i class="n" aria-label="not said">·</i>') + '</td>'; }).join('') + '</tr>'; }).join('') +
       '<tr class="wk-gf"><th scope="row">' + (windy(q.sport) ? 'Wind kt' : 'Trails') + '</th>' + cand.map(function (x) { var d = b.days[x].d; return '<td' + (x === b.d.date ? ' class="pick"' : '') + '><span class="t-' + FX.tone(d.score) + '">' + (windy(q.sport) ? d.w : esc(String(d.label).split(' ')[0])) + '</span></td>'; }).join('') + '</tr></tbody></table>';
   }
+  function weekendTop() {   // the first crew you kept with a good day ahead, as the weekend card shows it
+    var Q = S.weekend || [];
+    for (var i = 0; i < Q.length; i++) { var b = weekendPick(Q[i]); if (b && !Q[i].next) return { q: Q[i], b: b }; }
+    return null;
+  }
   function weekendHtml() {
     var Q = (S.weekend || []).filter(function (q) { return !q.next; });
     for (var i = 0; i < Q.length; i++) {
@@ -1058,7 +1098,7 @@
   }
   function loadWeekend() {
     if (!signedIn() || S.weekendP || (S.weekendAt && Date.now() - S.weekendAt < 600000)) return;
-    S.weekendP = HI8.withKey('hi8_weekend', {}, { noQueue: true }).then(function (w) { S.weekend = w || []; S.weekendAt = Date.now(); S.weekendP = null; drawNext(); }, function () { S.weekendP = null; S.weekendAt = Date.now(); });
+    S.weekendP = HI8.withKey('hi8_weekend', {}, { noQueue: true }).then(function (w) { S.weekend = w || []; S.weekendAt = Date.now(); S.weekendP = null; drawNext(); drawDock(); }, function () { S.weekendP = null; S.weekendAt = Date.now(); });
   }
   function nextHtml(c) {
     var g = stage(c), f = crewFx(c), spot = HI8.spot(c.spot) || {};
@@ -1971,7 +2011,7 @@
       var pPay = '<div id="payAnchor"></div>' + payHtml(c);
       var pChat = '<div class="box" id="chatAnchor"><h3>CREW CHAT</h3><div class="chat" id="chatBox">' + chatHtml(C.msgs) + '</div>' +
         '<form class="send" data-form="chat"><label class="sr" for="chatIn">Message</label><input class="inp" id="chatIn" maxlength="500" autocomplete="off" placeholder="Message the crew"><button type="submit">SEND</button></form></div>';
-      var pEdit = S.jf ? joinForm(c) : '<div class="f"><div class="row"><button class="opt" data-act="jfopen">CHANGE LEVEL OR RIDE</button><button class="opt" data-act="leave">' +
+      var pEdit = S.jf ? joinForm(c) : '<div class="f" id="editAnchor"><div class="row"><button class="opt" data-act="jfopen">CHANGE LEVEL OR RIDE</button><button class="opt" data-act="leave">' +
         (C.confirm === 'leave' ? (cap(c) ? 'TAP AGAIN: CALL IT OFF' : 'TAP AGAIN TO LEAVE') : cap(c) ? 'CALL IT OFF' : 'LEAVE THE CREW') + '</button>' +
         (cap(c) && c.going > 1 && c.status === 'on' && !c.past && !c.captain_until ? '<button class="opt" data-act="stepdown">' + (C.confirm === 'stepdown' ? 'TAP AGAIN: HAND IT OVER' : 'I CAN\'T MAKE IT: HAND IT OVER') + '</button>' : '') + '</div>' +
         (cap(c) && c.going > 1 && c.status === 'on' && !c.past ? '<p class="hint">Can\'t make it? Hand it over: the next driver (or most experienced rider) is asked to keep it on, and anyone in the crew can take it.</p>' : '') + '</div>';
@@ -1995,6 +2035,7 @@
       : !member && c.status === 'on' && !c.past && !S.jf && suit(c).k === 'hazard' ? '<button class="big join" data-act="join">OTHER SESSIONS</button><button class="big ghost" data-act="jfopen" style="flex:0 0 40%">JOIN ANYWAY</button>'
       : !member && c.status === 'on' && !c.past ? '<button class="big join" data-act="' + (S.jf ? 'jfgo' : 'jfopen') + '"' + (S.jf && S.jf.busy ? ' disabled' : '') + '>' + (S.jf && S.jf.busy ? '<span class="spin"></span>' : S.jf ? 'CONFIRM JOIN' : 'I\'M GOING') + '</button>' + (S.jf ? '' : '<button class="big ghost" data-act="share" style="flex:0 0 34%">SHARE</button>')
       : member && (c.past || c.ended || sessionEnded(c)) ? '<button class="big start" data-act="keep" data-code="' + esc(c.code) + '">KEEP THIS CREW</button>'
+      : member ? memberFoot(c, dayOf)
       : '<a class="big wa" href="https://wa.me/?text=' + encodeURIComponent(shareText(c)) + '" target="_blank" rel="noopener">SHARE TO WHATSAPP</a>';
     if (C.cardOpen && C.cards) { var ko = C.cards.filter(function (k) { return k.member_id === C.cardOpen; })[0]; if (ko) body += bigCard(ko); }
     return shell(esc(SPORT[c.sport].name.toUpperCase()) + ' CREW', body, foot, true);
@@ -3165,6 +3206,9 @@
       case 'pendedit': if (S.crew) { S.crew.pending = null; HI8.store.del('joinIntent'); openJoin(); } break;
       case 'topay': { var pa = $('#payAnchor'); if (pa) pa.scrollIntoView({ block: 'start', behavior: 'smooth' }); break; }
       case 'keepon': { var ko = HI8.store.get('keepOn', []) || []; ko.push(d.code + '@' + d.at); HI8.store.set('keepOn', ko.slice(-30)); renderSheet(); drawNext(); toast('Kept on. The crew still sees the forecast.'); break; }
+      case 'toplanb': { var pbx = $('#sheet.on .pb') || $('.pb'); if (pbx) pbx.scrollIntoView({ block: 'start', behavior: 'smooth' }); break; }
+      case 'toedit': { var ed = $('#editAnchor'); if (ed) ed.scrollIntoView({ block: 'start', behavior: 'smooth' }); break; }
+      case 'tocall': { var cb = $('#callBox'); if (cb) cb.scrollIntoView({ block: 'start', behavior: 'smooth' }); break; }
       case 'tofx': { var fa = $('#fxAnchor'); if (fa) fa.scrollIntoView({ block: 'start', behavior: 'smooth' }); break; }
       case 'tochat': { var ch = $('#chatAnchor'); if (ch) ch.scrollIntoView({ block: 'start', behavior: 'smooth' }); break; }
       case 'jflevel': S.jf.level = d.v; renderSheet(); break;

@@ -55,7 +55,7 @@ with sync_playwright() as pw:
     t = txt(pg, '#sheet.on .pass')
     check("BO'S CAR" in t and 'YOUR LIFT IS CONFIRMED' in t and 'Bo is driving you, with Cy' in t, 'passenger: seat in Bo\'s car, who drives, who else is in it')
     check('THE SPOT · APPROXIMATE' in t, 'no pin yet: the spot is marked approximate, not a meeting point')
-    check('GOOGLE MAPS · PICK-UP' in t and 'CONDITIONS' in t and 'CHAT' in t and 'CALENDAR' in t, 'one big GOOGLE MAPS to the first stop; calendar, conditions and chat next to it')
+    check('GOOGLE MAPS' in t and 'CONDITIONS' in t and 'CHAT' in t and 'CALENDAR' in t and pg.locator('#sheet.on .pass .pass-act').count() == 0, 'GOOGLE MAPS to the first stop, calendar, conditions and chat on the pass; no second copy of the main button')
     todo = txt(pg, '#sheet.on .pass-todo'); crewl = txt(pg, '#sheet.on .pass-crew')
     check('Eve still needs a lift' in todo and 'pin' in todo.lower(), 'STILL TO SORT OUT: Eve\'s lift, the exact pin')
     check('needs a lift' not in crewl and 'pin' not in crewl, 'THE CREW line keeps only the facts (no repeat of the open items)')

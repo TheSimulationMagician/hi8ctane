@@ -1169,3 +1169,8 @@ div.lg { display: grid; grid-template-columns: 48px minmax(0, 1fr) auto; gap: 8p
 .callbox > b { font: 400 18px/1.1 var(--word); }
 .callbox p { margin: 6px 0 10px; font-size: 13px; line-height: 1.45; }
 .callbox .row { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ---- PR #50: the headline says the most important thing; a warning looks like one ---- */
+.pass-now.warn { margin: 10px 12px 0; padding: 10px 12px 2px; background: var(--pink2); border: 2.5px solid var(--ink); border-left-width: 8px; border-left-color: var(--pink); }
+.pass-now.warn small { color: var(--ink); }
+.pass-tools .navl { order: -1; }
