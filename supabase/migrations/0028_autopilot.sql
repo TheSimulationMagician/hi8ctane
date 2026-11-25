@@ -184,6 +184,16 @@ end $$;
 revoke execute on function public.hi8_weekend(uuid) from public;
 grant execute on function public.hi8_weekend(uuid) to anon, authenticated;
 
+-- 5. three new anonymous counts (0026): Plan B opened, a weekend proposal opened, running late sent ---------------
+do $$
+begin
+  if position('''propose''' in coalesce((select pg_get_constraintdef(oid) from pg_constraint where conname = 'events_name_check'), '')) = 0 then
+    alter table public.events drop constraint if exists events_name_check;
+    alter table public.events add constraint events_name_check
+      check (name in ('start_open', 'publish', 'share', 'link_open', 'join', 'nav', 'ics', 'again', 'looking', 'planb', 'propose', 'late'));
+  end if;
+end $$;
+
 -- check: should print t | t | t | t
 select position('captain_pending' in pg_get_functiondef('public.hi8_move_crew'::regproc)) > 0 as captain_guard,
        position('hi8_spot_open' in pg_get_functiondef('public.hi8_join_crew'::regproc)) > 0 as join_checks_closures,
