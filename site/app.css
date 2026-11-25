@@ -732,7 +732,7 @@ table.fx tr.rate td { color: var(--ink); }
 .cs { display: flex; flex-direction: column; align-items: center; padding: 6px 0; border: 2px solid; font: 700 9px/1.2 var(--mono); letter-spacing: .5px; }
 .cs b { font: 400 26px/1 var(--big); }
 .log { margin-top: 10px; display: flex; flex-direction: column; }
-.lg { display: grid; grid-template-columns: 48px minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 8px 0; border-top: 1px solid #333; }
+div.lg { display: grid; grid-template-columns: 48px minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 8px 0; border-top: 1px solid #333; }
 .lg-d { font: 400 15px/1 var(--big); color: var(--yellow); display: flex; flex-direction: column; }
 .lg-d small, .lg-s small { font: 700 9.5px/1.3 var(--mono); color: #bdb7a8; letter-spacing: .3px; }
 .lg-s { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
@@ -1023,3 +1023,130 @@ table.fx tr.rate td { color: var(--ink); }
 .rdy, .ess { box-shadow: 5px 5px 0 var(--ink); }
 .rdy-l span { display: inline-block; padding: 1px 5px 0; margin-right: 6px; font: 700 10.5px/1.5 var(--mono); letter-spacing: .4px; }
 .pwarn { margin: 8px 0 0; padding: 6px 8px; background: #fff; border: 2px solid var(--ink); font-size: 12px; }
+
+/* ---- Session Pass (preview): the outing as a ticket. The one expressive object on a coordination screen. ---- */
+.pass { position: relative; margin-top: 12px; background: var(--paper); border: 3px solid var(--ink); box-shadow: 6px 6px 0 var(--lime); }
+.pass.compact { margin-top: 0; }
+.pass-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 8px 12px; background: var(--ink); color: var(--lime); font: 700 10.5px/1.2 var(--mono); letter-spacing: 1px; }
+.pass-stg { padding: 2px 6px; background: var(--lime); color: var(--ink); letter-spacing: .4px; }
+.pass-stg.s-proposed { background: var(--yellow); } .pass-stg.s-checked { background: var(--mint); }
+.pass-route { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: end; gap: 8px; padding: 14px 12px 12px; }
+.pass-route .leg { display: grid; gap: 3px; min-width: 0; }
+.pass-route .leg.to { text-align: right; }
+.pass-route small { font: 700 9.5px/1.2 var(--mono); letter-spacing: .6px; color: var(--mute); }
+.pass-route b { font: 400 28px/.95 var(--big); letter-spacing: .3px; overflow-wrap: anywhere; }
+.pass.compact .pass-route b { font-size: 24px; }
+.pass-route em { font: 700 13px/1 var(--mono); font-style: normal; }
+.pass-arrow { display: grid; justify-items: center; gap: 4px; padding-bottom: 16px; }
+.pass-arrow i { position: relative; display: block; width: 44px; border-top: 2.5px dashed var(--ink); }
+.pass-arrow i::after { content: ""; position: absolute; right: -2px; top: -6.5px; border: 5px solid transparent; border-left: 8px solid var(--ink); }
+.pass-arrow small { font: 700 9.5px/1 var(--mono); color: var(--mute); }
+.pass-perf { position: relative; height: 0; margin: 0 12px; border-top: 2px dashed var(--grey); }
+.pass-perf::before, .pass-perf::after { content: ""; position: absolute; top: -10px; width: 18px; height: 18px; border-radius: 50%; background: var(--cream); border: 3px solid var(--ink); }
+.pass-perf::before { left: -25px; clip-path: inset(0 0 0 50%); } .pass-perf::after { right: -25px; clip-path: inset(0 50% 0 0); }
+.pass-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px 8px; margin: 0; padding: 12px; }
+.pass-grid div { min-width: 0; }
+.pass-grid dt { font: 700 9.5px/1.2 var(--mono); letter-spacing: .6px; color: var(--mute); }
+.pass-grid dd { margin: 2px 0 0; font: 400 13px/1.15 var(--word); overflow-wrap: anywhere; }
+.pass-grid .bad dd { color: #C2004F; text-decoration: underline 2px var(--pink); text-underline-offset: 3px; }
+.pass-now { padding: 12px 12px 0; }
+.pass-now small { display: block; font: 700 9.5px/1 var(--mono); letter-spacing: 1px; color: var(--mute); }
+.pass-now b { display: block; margin-top: 4px; font: 400 17px/1.15 var(--word); }
+.pass-now p { margin: 4px 0 0; font-size: 12px; line-height: 1.45; }
+.pass-act { padding: 12px 12px 0; }
+.pass-act .jn { width: 100%; min-height: 52px; font-size: 14px; }
+.pass-tools { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 12px 12px; }
+.pass-tools .jn { min-height: 40px; padding: 0 11px; font-size: 11px; filter: none; }
+.pass-late { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 12px 12px; padding: 8px 10px; border: 2px solid var(--ink); background: #fff; font: 700 10.5px/1 var(--mono); }
+.pass-late span { margin-right: auto; }
+.tl { list-style: none; margin: 0; padding: 4px 12px 10px 34px; border-top: 2px dashed var(--grey); counter-reset: tl; }
+.tl li { position: relative; padding: 6px 0; font-size: 12px; color: var(--mute); }
+.tl li::before { content: ""; position: absolute; left: -22px; top: 9px; width: 10px; height: 10px; border: 2.5px solid var(--ink); border-radius: 50%; background: #fff; }
+.tl li:not(:last-child)::after { content: ""; position: absolute; left: -16px; top: 22px; bottom: -7px; border-left: 2.5px dotted var(--grey); }
+.tl li.done { color: var(--ink); }
+.tl li.done::before { background: var(--lime); }
+.tl li.done:not(:last-child)::after { border-left-style: solid; border-color: var(--ink); }
+.tl li.now { color: var(--ink); font: 400 12.5px/1.3 var(--word); }
+.tl li.now::before { background: var(--pink); box-shadow: 0 0 0 4px rgba(255, 45, 120, .22); }
+.pass-crew { margin: 0; padding: 0 12px 12px; font-size: 11.5px; line-height: 1.5; color: var(--mute); }
+.pass-crew span { display: inline-block; padding: 1px 5px 0; margin-right: 6px; background: var(--ink); color: var(--lime); font: 700 10px/1.5 var(--mono); }
+.pass-now { position: relative; }
+.pass-now:has(.pass-stamp) { padding-right: 112px; }
+.pass-stamp { position: absolute; top: 10px; right: 12px; padding: 4px 8px 2px; border: 3px solid currentColor; font: 400 18px/1 var(--big); letter-spacing: 1px; transform: rotate(-8deg); pointer-events: none; background: rgba(247, 245, 238, .82); }
+.pass-stamp.in { color: #C2004F; }
+.pass-stamp.ok { color: #2E6B00; }
+.pass.just-in .pass-stamp, .pass-stamp.ok { animation: stampIn .5s cubic-bezier(.2, 1.5, .4, 1) both; }
+@keyframes stampIn { from { opacity: 0; transform: rotate(-8deg) scale(1.8); } to { opacity: 1; transform: rotate(-8deg) scale(1); } }
+.nx-pass { display: grid; gap: 0; }
+.nx-pass .pask { margin: 0 0 12px; }
+
+/* ---- Plan B ---- */
+.pb { margin-top: 12px; padding: 12px; border: 3px solid var(--ink); background: #fff; }
+.pb h4 { margin: 0 0 8px; font: 400 13px/1 var(--word); letter-spacing: .4px; }
+.pb-o { display: grid; gap: 2px; width: 100%; margin-top: 8px; padding: 10px 12px; border: 2.5px solid var(--ink); background: var(--paper); text-align: left; color: var(--ink); cursor: pointer; }
+.pb-o:hover, .pb-o:focus-visible { background: var(--lime); }
+.pb-o small { font: 700 9.5px/1.2 var(--mono); letter-spacing: .6px; color: var(--mute); }
+.pb-o b { font: 400 16px/1.1 var(--word); }
+.pb-o span { font-size: 12px; }
+
+/* ---- Smart Weekend proposal ---- */
+.wk { margin-top: 14px; border: 3px solid var(--ink); background: var(--paper); box-shadow: 6px 6px 0 var(--pink); }
+.wk-h { padding: 16px 14px 14px; color: var(--cream); background-size: 6px 6px, 100% 100%; }
+.wk-h small { display: block; font: 700 11px/1.2 var(--mono); letter-spacing: .8px; color: var(--lime); text-shadow: 1px 1px 0 var(--ink); }
+.wk-h > b { display: block; margin-top: 8px; font: 400 40px/.95 var(--big); text-transform: uppercase; text-shadow: 3px 3px 0 var(--ink); }
+.wk-h p { margin: 8px 0 0; font-size: 12.5px; line-height: 1.45; text-shadow: 1px 1px 0 var(--ink); }
+.wk-st { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin-top: 14px; }
+.wk-st b { display: block; font: 400 26px/1 var(--big); text-shadow: 2px 2px 0 var(--ink); }
+.wk-st span { font: 700 9.5px/1.2 var(--mono); letter-spacing: .5px; }
+.wk-b { margin: 12px; padding: 12px; border: 3px solid var(--ink); background: #fff; color: var(--ink); }
+.wk-b h4 { margin: 0 0 10px; font: 400 14px/1.1 var(--word); }
+.wk-up { display: flex; align-items: center; gap: 6px; padding-bottom: 10px; border-bottom: 2px dashed var(--sand); }
+.wk-up > span { margin-left: 6px; font: 400 13px/1.2 var(--word); }
+.wk-a { display: grid; place-items: center; width: 36px; height: 36px; border: 2.5px solid var(--ink); border-radius: 50%; font: 400 15px/1 var(--word); animation: popIn .32s cubic-bezier(.2, 1.4, .4, 1) both; }
+.wk-a.k0 { background: var(--steel2); color: #fff; } .wk-a.k1 { background: var(--pink); color: #fff; } .wk-a.k2 { background: var(--lime); } .wk-a.k3 { background: var(--yellow); }
+.wk-a:nth-child(2) { animation-delay: .06s; } .wk-a:nth-child(3) { animation-delay: .12s; } .wk-a:nth-child(4) { animation-delay: .18s; } .wk-a:nth-child(5) { animation-delay: .24s; }
+@keyframes popIn { from { opacity: 0; transform: scale(.4); } to { opacity: 1; transform: scale(1); } }
+.wk-l { list-style: none; margin: 10px 0 0; padding: 0; display: grid; gap: 6px; font-size: 12.5px; }
+.wk-l li::before { content: "› "; font-weight: 700; color: var(--pink); }
+.wk-go { margin: 0 12px; }
+.wk-f { margin: 10px 12px 12px; font-size: 11.5px; color: var(--mute); text-align: center; }
+.lkpre { margin: 2px 0 10px; gap: 8px; }
+.suit.s-closed { background: #fff; box-shadow: 4px 4px 0 var(--pink); border-left-width: 10px; }
+.suit.s-stale { background: var(--paper); }
+.scsuit.s-closed { background: #fff; box-shadow: 2px 2px 0 var(--pink); }
+@media (prefers-reduced-motion: reduce) { .pass-stamp, .wk-a { animation: none !important; } }
+.spotinfo ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.spotinfo li { display: grid; grid-template-columns: 96px 1fr; gap: 10px; align-items: start; font-size: 12.5px; }
+.spotinfo .k { padding: 2px 6px; background: var(--ink); color: var(--lime); font: 700 10px/1.4 var(--mono); width: fit-content; }
+.spotinfo small { display: block; margin-top: 3px; color: var(--mute); font-size: 11px; }
+.spotinfo a { font: 700 11px/1 var(--mono); }
+/* H20: the join form's headings get room above them */
+#joinForm .lb { margin-top: 16px; }
+#joinForm h3 + .lb, #joinForm h3 + .hint + .lb { margin-top: 0; }
+
+/* ---- pass: who drives whom, what's still open ---- */
+.pass-lift { display: grid; gap: 3px; margin: 12px 12px 0; padding: 10px 12px; border: 2.5px solid var(--ink); border-left-width: 8px; border-left-color: var(--steel2); background: #fff; }
+.pass-lift b { font: 400 14px/1.15 var(--word); }
+.pass-lift span { font-size: 12.5px; line-height: 1.4; }
+.pass-todo { margin: 0 12px 12px; padding: 10px 12px; background: var(--yellow); border: 2.5px solid var(--ink); }
+.pass-todo b { font: 700 10.5px/1.2 var(--mono); letter-spacing: .6px; }
+.pass-todo ul { margin: 6px 0 0; padding: 0 0 0 16px; font-size: 12.5px; line-height: 1.45; }
+#fxAnchor { scroll-margin-top: 8px; }
+
+/* ---- weekend: who is up which day ---- */
+.wk-g { width: 100%; margin-top: 10px; border-collapse: collapse; table-layout: fixed; font-size: 12.5px; }
+.wk-g caption { text-align: left; padding: 0 0 6px; font: 700 10.5px/1.2 var(--mono); letter-spacing: .6px; }
+.wk-g th, .wk-g td { padding: 6px 2px; text-align: center; border-bottom: 1.5px solid var(--sand); }
+.wk-g th[scope=row] { width: 30%; text-align: left; font: 400 12.5px/1.2 var(--word); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.wk-g thead th { font: 700 10px/1.1 var(--mono); letter-spacing: .4px; color: var(--mute); }
+.wk-g thead small { display: block; font: 400 15px/1.1 var(--word); color: var(--ink); }
+.wk-g .pick { background: var(--lime2); }
+.wk-g thead th.pick { background: var(--lime); box-shadow: inset 0 3px 0 var(--ink); }
+.wk-g i { font-style: normal; }
+.wk-g i.y { display: inline-grid; place-items: center; width: 22px; height: 22px; border-radius: 50%; background: var(--ink); color: var(--lime); font: 700 12px/1 var(--mono); }
+.wk-g i.n { color: var(--grey); font-weight: 700; }
+.wk-gf th[scope=row] { font: 700 9.5px/1.2 var(--mono); letter-spacing: .4px; color: var(--mute); }
+.wk-gf td span { display: inline-block; min-width: 26px; padding: 2px 4px; border: 2px solid var(--ink); font: 700 11px/1.2 var(--mono); }
+.wk-gf .t-epic { background: var(--pink); color: #fff; } .wk-gf .t-good { background: var(--lime); } .wk-gf .t-ok { background: var(--yellow); }
+
+.pass-now .pass-chk { margin-top: 6px; font: 700 11px/1.4 var(--mono); color: var(--mute); }
