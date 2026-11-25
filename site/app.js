@@ -880,7 +880,7 @@
       { t: 'You\'re in', d: true },
       { t: g.i >= 1 ? 'Crew confirmed' : 'Crew confirmed at ' + (c.min || 2) + ' sure', d: g.i >= 1 },
       { t: me.getting === 'seat' ? (L.seatOk ? 'Seat in ' + L.seat.toLowerCase().replace(/^\w/, function (x) { return x.toUpperCase(); }) : 'Seat not sorted') : me.getting === 'drive' ? 'You drive' : 'Your own way', d: L.seatOk },
-      { t: c.checked_at ? 'Forecast rechecked ' + clockAt(c.checked_at, c.city) : 'Forecast rechecked the day before', d: g.i >= 2 },
+      { t: c.checked_at ? 'Forecast rechecked ' + clockAt(c.checked_at, c.city) + (c.checked_note ? ': ' + c.checked_note : '') : 'Forecast rechecked the day before', d: g.i >= 2 },
       { t: L.from.t ? (me.getting === 'drive' ? 'Pick up at ' : 'Pick-up ') + L.from.t + ' · ' + L.from.n : 'At the spot ' + hm(c.start), d: today && now >= (L.from.t || hm(c.start)) },
       { t: 'Ride ' + L.to.t, d: today && now >= hm(c.start) },
       { t: 'How was it?', d: false }];
@@ -912,7 +912,9 @@
         '<div' + (L.seatOk ? '' : ' class="bad"') + '><dt>SEAT</dt><dd>' + esc(L.seat) + '</dd></div><div><dt>CREW</dt><dd>' + c.going + '/' + c.max + '</dd></div><div><dt>REF</dt><dd>' + esc(c.code) + '</dd></div></dl>' +
       '<div class="pass-perf" aria-hidden="true"></div>' +
       '<div class="pass-now" role="status">' + (o.joined ? '<span class="pass-stamp in" aria-hidden="true">YOU\'RE IN</span>' : set ? '<span class="pass-stamp ok" aria-hidden="true">ALL SET</span>' : '') +
-        '<small>NOW</small><b>' + esc(n.t) + '</b>' + (n.s ? '<p>' + esc(n.s) + '</p>' : '') + '</div>' +
+        '<small>NOW</small><b>' + esc(n.t) + '</b>' + (n.s ? '<p>' + esc(n.s) + '</p>' : '') +
+        (o.compact && c.checked_at ? '<p class="pass-chk">Rechecked ' + esc(clockAt(c.checked_at, c.city)) + (c.checked_note ? ': ' + esc(c.checked_note) : '') + '</p>' : '') +
+        (o.plate ? '<p class="pass-chk">Founding plate #' + pad3(o.plate) + ' is yours.</p>' : '') + '</div>' +
       (lift && !me.unsure && !c.captain_ask ? '<div class="pass-lift"><b>' + esc(lift.t) + '</b><span>' + esc(lift.s) + '</span></div>' : '') +
       '<div class="pass-act">' + (n.a || gmap) + '</div><div class="pass-tools">' + tools + '</div>' + lateRow(c) +
       (!o.compact && r.todo && r.todo.length ? '<div class="pass-todo"><b>STILL TO SORT OUT</b><ul>' + r.todo.map(function (t) { return '<li>' + esc(t) + '</li>'; }).join('') + '</ul></div>' : '') +
@@ -1874,7 +1876,7 @@
     if (member) {
       // members: what's open for you, then one tap to your first stop, the calendar and the chat (H12)
       // the Session Pass replaces the welcome box, the readiness box and the directions row (same data, one place)
-      if (!ended && c.status === 'on') head += '<div class="sec stgw">' + planAsk(c) + passHtml(c, { joined: !!C.welcome }) + '</div>';
+      if (!ended && c.status === 'on') head += '<div class="sec stgw">' + planAsk(c) + passHtml(c, { joined: !!C.welcome, plate: C.welcome && C.welcome.plate }) + '</div>';
       else head += (welcome ? '<div class="sec">' + welcome.replace('class="box welcome"', 'class="box welcome" style="margin:12px 0 0"') + '</div>' : '') + '<div class="sec stgw">' + planAsk(c) + readyBox(c) + stageBar(c) + (c.status === 'off' ? planB(c) : '') + '</div>';
     } else head += '<div class="sec stgw">' + essentials(c, f, hub) + '</div>';
     if (member) welcome = '';   // shown first, inside the header block (H05: "you're in", then what's open)

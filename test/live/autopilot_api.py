@@ -115,7 +115,7 @@ st, w2 = rpc('hi8_weekend', {'p_key': K['eve']})
 check(st == 200 and w2 == [], 'someone outside the crew sees nothing')
 check(sql(f"select count(*) from crews where squad = '{sq}'") == '2' and sql('select count(*) from crew_members') == before_members, 'reading the proposal commits nobody: no crew created, nobody added')
 print('seats: never more passengers than seats')
-S1 = crew(5, 'eve', spot='ijmuiden', seats=3)
+S1 = crew(6, 'eve', spot='zandvoort', seats=3)   # not the closed test day
 for n in ('ana', 'cy', 'di'): join(n, S1)
 drv = sql(f"select m.member_id from crew_members m join crews c on c.id = m.crew_id where c.code = '{S1}' and m.email = 'eve@example.com'")
 check(sql(f"select count(*) from crew_members where car_with = '{drv}'") == '3', 'three passengers in Eve\'s car')

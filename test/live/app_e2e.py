@@ -123,7 +123,7 @@ with sync_playwright() as p:
     check(B.locator('#joinForm [data-act=jfgo]').count() == 0 and B.locator('#sheet .box h3:text-is("WHO\'S GOING")').count() == 0, 'joining: one I\'M GOING (at the bottom), and the rest of the crew waits until you\'re in (2.24)')
     B.locator('.sh-foot [data-act=jfgo]').click()
     B.wait_for_selector('#chatBox', timeout=8000)
-    check("YOU'RE IN" in txt(B, '#sheet .welcome') and 'FOUNDING PLATE #002' in txt(B, '#sheet .welcome'), "in, with founding plate #002, in the crew page (2.24)")
+    check("YOU'RE IN" in txt(B, '#sheet .pass').upper() and 'FOUNDING PLATE #002' in txt(B, '#sheet .pass').upper(), "in, with founding plate #002, on the session pass (2.24)")
     check('rides with Kai'.upper() in txt(B, '#sheet') and 'MEETING POINT'.upper() in txt(B, '#sheet'), "Sam sees the meeting point and rides in Kai's car")
     B.wait_for_timeout(800)
     check('THE ROUTE' in txt(B, '#sheet') and 'KM NOT DRIVEN' in txt(B, '#sheet') and B.locator('.stops li').count() >= 2, "the route: Kai's pick-up for Sam, then the spot, and the km not driven")

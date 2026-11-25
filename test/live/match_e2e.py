@@ -54,7 +54,7 @@ with sync_playwright() as p:
     F = phone()
     F.goto(BASE + '/'); F.wait_for_timeout(3500)
     box = F.locator('#sessions .lookbox')
-    check(box.count() == 1 and 'NO CREW THAT FITS?' in box.inner_text().upper(), 'the landing: NO CREW THAT FITS? I\'M LOOKING')
+    check(box.count() == 1 and 'UP FOR A RIDE?' in box.inner_text().upper(), 'the landing: UP FOR A RIDE?')
     box.locator('[data-act=looking]').click(); F.wait_for_selector('#sheet.on'); F.wait_for_timeout(500)
     check(F.locator('[data-act=lksave][disabled]').count() == 1, 'the button waits for a day')
     good = F.locator('.lkdays .opt:has(small.t-good), .lkdays .opt:has(small.t-epic)')
@@ -67,7 +67,7 @@ with sync_playwright() as p:
     check(sql("select count(*) || '|' || bool_and(need_seat) || '|' || min(hub) from ride_asks where email = 'fi@example.com'") == f'{n}|true|cs', 'saved: her days, a seat from Centraal')
     check("ON THE LIST" in F.locator('#toast').inner_text().upper(), 'a toast: ' + F.locator('#toast').inner_text()[:100])
     F.wait_for_timeout(800)
-    check("YOU'RE LOOKING" in F.locator('#sessions .lookbox').inner_text().upper(), "the landing now says YOU'RE LOOKING, with CHANGE")
+    check("YOU'RE UP FOR A RIDE" in F.locator('#sessions .lookbox').inner_text().upper(), "the landing now says YOU'RE UP FOR A RIDE, with CHANGE")
 
     print('the captain sees it')
     B = phone(K['bo'], {'lv.kite': 'regular'})

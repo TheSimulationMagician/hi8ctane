@@ -209,7 +209,7 @@ begin
   if p_getting = ''drive'' then
     for gone in select x.member_id, x.email from public.crew_members x
              where x.crew_id = c.id and x.car_with = (select member_id from public.crew_members where crew_id = c.id and lower(email) = em)
-             order by x.joined_at desc offset greatest(0, least(7, coalesce(p_seats, 0))) loop
+             order by x.joined_at, x.member_id offset greatest(0, least(7, coalesce(p_seats, 0))) loop   -- the first in keep their seat
       update public.crew_members set car_with = null where member_id = gone.member_id;
       perform public.hi8_tell(gone.email, ''Your seat was released'', public.hi8_name(em, c.city) || '' has fewer seats now. Open the crew and ask for a lift, or come your own way.'', c, ''carless:'' || gone.member_id || '':'' || now()::date);
     end loop;

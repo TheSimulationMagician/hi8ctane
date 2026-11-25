@@ -1148,3 +1148,5 @@ div.lg { display: grid; grid-template-columns: 48px minmax(0, 1fr) auto; gap: 8p
 .wk-gf th[scope=row] { font: 700 9.5px/1.2 var(--mono); letter-spacing: .4px; color: var(--mute); }
 .wk-gf td span { display: inline-block; min-width: 26px; padding: 2px 4px; border: 2px solid var(--ink); font: 700 11px/1.2 var(--mono); }
 .wk-gf .t-epic { background: var(--pink); color: #fff; } .wk-gf .t-good { background: var(--lime); } .wk-gf .t-ok { background: var(--yellow); }
+
+.pass-now .pass-chk { margin-top: 6px; font: 700 11px/1.4 var(--mono); color: var(--mute); }
