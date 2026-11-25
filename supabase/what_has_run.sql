@@ -1,4 +1,4 @@
--- Which database updates (migrations 0013 to 0028) has this Supabase project had?
+-- Which database updates (migrations 0013 to 0029) has this Supabase project had?
 -- Paste into Supabase > SQL Editor and press Run. It only reads; it changes nothing.
 -- Every "no" is a file to run, in number order, from supabase/migrations/.
 select m.file, case when m.done then 'yes' else 'NO: run it' end as has_run
@@ -18,6 +18,7 @@ from (values
   ('0025_keys.sql',          to_regprocedure('public.hi8_join_v1(text, text, text, text)') is not null),
   ('0026_metrics.sql',       to_regclass('public.events') is not null),
   ('0027_release_guards.sql', to_regprocedure('public.hi8_still_in(uuid, text, integer)') is not null),
-  ('0028_autopilot.sql',     to_regclass('public.spot_notes') is not null)
+  ('0028_autopilot.sql',     to_regclass('public.spot_notes') is not null),
+  ('0029_one_step_ahead.sql', to_regprocedure('public.hi8_lifts()') is not null)
 ) as m(file, done)
 order by m.file;

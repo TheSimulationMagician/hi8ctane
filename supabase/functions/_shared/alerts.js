@@ -10,7 +10,9 @@
 //     the evening before (18:00-22:00) or that morning (07:00-21:00, if the window hasn't started).
 //  2. Forecast dropped: every crew today and tomorrow whose own window went NO GO gets one message.
 //  3. How was it: the morning after a session (or 2 hours after it ended), one "how was it?" per rider.
-//  4. Push: everything waiting in push_queue goes to the riders' phones.
+//  4. One step ahead (0029): free seats filled and the day-before lift ask; the next good window for a crew you kept,
+//     to whoever made it (17:00-21:00); after a session, the next good window at the same spot, to the captain.
+//  5. Push: everything waiting in push_queue goes to the riders' phones.
 //
 // opts: { rpc(name, args), FX, site, vapid: { publicKey, privateKey } | null, upload(name, json) | null,
 //         testHour, dry, log, fetch }
@@ -23,7 +25,7 @@ export async function runAlerts(opts) {
   const log = opts.log || (() => {});
   const env = { TEST_HOUR: opts.testHour };
   let VAPID_PUB = opts.vapid && opts.vapid.publicKey || '', VAPID_PRIV = opts.vapid && opts.vapid.privateKey || '';
-  const report = { cached: [], alerts: 0, alertsNew: 0, drops: 0, rates: 0, asks: 0, rechecks: 0, backOn: 0, captainsGone: 0, push: { waiting: 0, done: 0, delivered: 0, gone: 0, failed: 0 } };
+  const report = { cached: [], alerts: 0, alertsNew: 0, drops: 0, rates: 0, asks: 0, rechecks: 0, backOn: 0, captainsGone: 0, lifts: null, nudges: 0, agains: 0, push: { waiting: 0, done: 0, delivered: 0, gone: 0, failed: 0 } };
   const SPORT = { kite: ['Kite', '🪁'], wing: ['Wing', '🪽'], windsurf: ['Windsurf', '🏄'], surf: ['Surf', '🏄'], sup: ['SUP', '🛶'], mtb: ['MTB', '🚵'], mx: ['MX', '🏍️'] };
   const WINDY = { kite: 1, wing: 1, windsurf: 1 };
   const pad = (n) => (n < 10 ? '0' : '') + n;
@@ -136,6 +138,19 @@ export async function runAlerts(opts) {
     }
     const ended = c.day < today ? nowH >= 9 : c.day === today && nowH >= endH + 2;
     if (ended && nowH < 21 && !c.rated && c.status === 'on') { if (!DRY) rates += await rpc('hi8_rate_prompt', { p_code: c.code }); }
+    // 0029: the next one, asked for the captain: the next good window at the same spot (from tomorrow, a week out)
+    const done = c.day < today || (c.day === today && nowH >= endH + 1);
+    if (done && nowH >= 9 && nowH < 21 && !c.again_at && c.status === 'on' && (c.going || 0) >= 2 && sp && meta) {
+      let nw = null;
+      for (let i = 1; i <= 7 && !nw; i++) {
+        const d = FX.addDays(today, i), w = FX.windows(sp, d, c.sport, meta, { kg: 75 }).filter((x) => x.score >= 6 && x.to - x.from >= 2)[0];
+        if (w) nw = { d, w };
+      }
+      if (nw && !DRY) {
+        const line = (WINDY[c.sport] ? nw.w.w + ' kt ' + FX.compass(nw.w.dir) + ', ' : '') + nw.w.label;
+        report.agains += Number(await rpc('hi8_again_nudge', { p_code: c.code, p_day: nw.d, p_from: nw.w.from, p_to: nw.w.to, p_line: line }).catch((e) => { log('again failed:', e.message || e); return 0; })) || 0;
+      }
+    }
   }
   report.drops = drops; report.rates = rates;
   if (report.rechecks) log('crews rechecked:', report.rechecks, report.backOn ? '· told back on: ' + report.backOn : '');
@@ -147,11 +162,36 @@ export async function runAlerts(opts) {
   if (report.seatsReleased) log('seats released, no STILL IN by the deadline:', report.seatsReleased);
   log('forecast drops told:', drops, '· how-was-it asked:', rates);
 
+  // 0029: lifts sort themselves (free seats filled; the day before, riders going their own way asked once)
+  report.lifts = DRY ? null : await rpc('hi8_lifts', {}).catch((e) => { log('lifts failed:', e.message || e); return null; });
+  if (report.lifts && (report.lifts.filled || report.lifts.asked)) log('lifts: seats filled', report.lifts.filled, '· asked to drive', report.lifts.asked);
+  // 0029: the proposal comes to you: a crew you kept, a day 2+ of its people are up for, and a good window (evenings)
+  const SQ = (await rpc('hi8_worker_squads', {}).catch((e) => { log('kept crews failed:', e.message || e); return []; })) || [];
+  for (const q of SQ) {
+    const nowH = env.TEST_HOUR ? Number(env.TEST_HOUR) : hourOf(q.now);
+    if (nowH < 17 || nowH >= 21 || !q.spot || !q.last) continue;
+    if (q.nudged_at && Date.now() - Date.parse(q.nudged_at) < 20 * 3600e3) continue;
+    const meta = q.spot;
+    if (!D[meta.city] || !D[meta.city][meta.slug]) { try { D[meta.city] = Object.assign(D[meta.city] || {}, await FX.fetchCity(meta.city, [meta])); } catch (e) { log('forecast for', meta.slug, 'failed:', e.message); continue; } }
+    const sp = D[meta.city][meta.slug]; if (!sp) continue;
+    let best = null;
+    for (const [d, n] of Object.entries(q.up || {})) {
+      if (n < 2 || (q.busy || []).indexOf(d) >= 0) continue;
+      const w = FX.windows(sp, d, q.sport, meta, { kg: 75 }).filter((x) => x.score >= 6 && x.to - x.from >= 2)
+        .sort((a, b) => (Math.min(b.to, q.last.to) - Math.max(b.from, q.last.from)) - (Math.min(a.to, q.last.to) - Math.max(a.from, q.last.from)) || b.score - a.score)[0];
+      if (w && (!best || n * 10 + w.score > best.k)) best = { d, w, k: n * 10 + w.score };
+    }
+    if (!best || DRY) continue;
+    const line = (WINDY[q.sport] ? best.w.w + ' kt ' + FX.compass(best.w.dir) + ', ' : '') + best.w.label;
+    report.nudges += Number(await rpc('hi8_squad_nudge', { p_code: q.code, p_day: best.d, p_spot: meta.slug, p_from: best.w.from, p_to: best.w.to, p_line: line }).catch((e) => { log('proposal failed:', e.message || e); return 0; })) || 0;
+  }
+  if (report.nudges || report.agains) log('proposals sent:', report.nudges, '· next-one asks:', report.agains);
+
   // 3b. "I'm looking": tell riders about a crew that fits (once per day they asked for)
   report.asks = DRY ? 0 : Number(await rpc('hi8_ask_match', {}).catch((e) => { log('matching failed:', e.message || e); return 0; })) || 0;
   if (report.asks) log('riders told about a crew that fits:', report.asks);
 
-  // 4. push. The key pair lives in the database: made here on the first run (the site reads the public half).
+  // 5. push. The key pair lives in the database: made here on the first run (the site reads the public half).
   if (!VAPID_PRIV || !VAPID_PUB) {
     let v = await rpc('hi8_vapid');
     if (!v.private || !v.public) { const k = await vapidKeys(); v = await rpc('hi8_vapid', { p_public: k.publicKey, p_private: k.privateKey }); log('made the web push keys'); }
