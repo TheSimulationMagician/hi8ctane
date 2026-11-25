@@ -54,7 +54,8 @@ check(sql("select first_name || '|' || ref from signups where email = 'sam@examp
 mem = {m['name']: m for m in q['members']}
 check(mem['Sam']['car_with'] == mem['Paco']['member_id'], "any car: Sam rides in Paco's car")
 s, q2 = rpc('hi8_quick_join', {'p_email': 'sam@example.com', 'p_name': 'Samuel', 'p_code': code, 'p_level': 'regular', 'p_getting': 'seat'})
-check(s == 200 and sql("select first_name from signups where email = 'sam@example.com'") == 'Sam' and q2['going'] == 2, 'same email again: keeps the name, updates the level, not counted twice')
+check(s == 400 and q2['message'] == 'needs_link' and sql("select first_name from signups where email = 'sam@example.com'") == 'Sam' and sql(f"select count(*) from crew_members m join crews c on c.id = m.crew_id where c.code = '{code}' and m.email = 'sam@example.com'") == '1',
+      "same email again from another phone: no second key, a sign-in link instead (0025); still Sam, not counted twice")
 s, b = rpc('hi8_quick_join', {'p_email': 'bad', 'p_name': 'X', 'p_code': code, 'p_level': 'rookie'})
 check(s == 400 and b['message'] == 'bad_email', 'bad email: refused')
 s, q = rpc('hi8_quick_join', {'p_email': 'noor@example.com', 'p_name': 'Noor', 'p_code': code, 'p_level': 'regular', 'p_getting': 'own'})

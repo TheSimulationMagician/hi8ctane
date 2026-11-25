@@ -973,3 +973,15 @@ table.fx tr.rate td { color: var(--ink); }
 .blk.nextw { margin-top: 0; }
 .bcard-rel { margin-top: 8px; display: inline-block; padding: 3px 6px; border: 2px solid var(--ink); background: var(--lime); font: 400 11px/1 var(--word); }
 .bcard-rel.some { background: var(--yellow); }
+
+/* 2.31 P0-2: one tap to the exact point */
+.navr { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 10px 0 4px; }
+.navr .row { display: flex; gap: 8px; flex-wrap: wrap; width: 100%; }
+.navr .jn { min-height: 44px; padding: 0 12px; font-size: 11.5px; flex: 0 0 auto; }
+
+/* 2.31 P0-3: readiness, as facts, and the next thing to do */
+.rdy { margin-top: 12px; padding: 12px; border: 3px solid var(--ink); background: #fff; }
+.rdy > b { display: block; font: 400 15px/1.2 var(--word); }
+.rdy-l { margin: 8px 0 0; font: 700 11.5px/1.5 var(--mono); letter-spacing: .3px; }
+.rdy-s { margin: 4px 0 0; font-size: 12px; color: var(--mute); }
+.rdy .row { margin-top: 10px; }

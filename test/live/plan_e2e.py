@@ -57,7 +57,9 @@ with sync_playwright() as p:
     B.locator('[data-act=pin]').click(); B.wait_for_timeout(2500)
     check(sql(f"select round(meet_lat::numeric, 3)::text from crews where code = '{code}'") == f'{round(lat + 0.003, 3):.3f}', 'Bo at the beach entrance: DROP THE PIN WHERE I AM')
     A.goto(BASE + '/'); A.wait_for_timeout(3500)
-    check('EXACT PIN FROM THE CAPTAIN' in T(A, '#next') and abs(float((A.locator('#next .pl-a').first.get_attribute('href') or '=0,').split('=')[-1].split(',')[0]) - (lat + 0.003)) < 1e-4, 'Ana sees the exact pin, MAP opens it · ' + str(A.locator('#next .pl-a').first.get_attribute('href')) + ' · ' + T(A, '#next .pl')[:120])
+    check('EXACT PIN FROM THE CAPTAIN' in T(A, '#next'), 'Ana sees the captain dropped the exact pin')
+    A.goto(BASE + f'/?c={code}'); A.wait_for_selector('#sheet.on'); A.wait_for_timeout(2500)
+    check(any(f'{lat + 0.003:.5f}' in h for h in A.eval_on_selector_all('.navl', 'els => els.map(e => e.href)')), 'the crew page takes her to it in one tap (2.31: directions, not a map search)')
 
     print('moved: still in?')
     rpc('hi8_move_crew', {'p_key': K['bo'], 'p_code': code, 'p_day': sql("select (hi8_today('amsterdam') + 3)::text"), 'p_start': '14:00', 'p_end': '17:00'})
