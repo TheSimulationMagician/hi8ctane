@@ -56,19 +56,19 @@ jobs:
       - name: Secrets for the functions
         if: steps.gate.outputs.go == 'true' && env.STRIPE_SECRET_KEY != ''
         run: |
-          supabase secrets set --project-ref "$PROJECT_REF" STRIPE_SECRET_KEY="$STRIPE_SECRET_KEY" SITE_URL="https://hi8ctane.com"
-          if [ -n "$STRIPE_WEBHOOK_SECRET" ]; then supabase secrets set --project-ref "$PROJECT_REF" STRIPE_WEBHOOK_SECRET="$STRIPE_WEBHOOK_SECRET"; fi
+          supabase secrets set --yes --project-ref "$PROJECT_REF" STRIPE_SECRET_KEY="$STRIPE_SECRET_KEY" SITE_URL="https://hi8ctane.com"
+          if [ -n "$STRIPE_WEBHOOK_SECRET" ]; then supabase secrets set --yes --project-ref "$PROJECT_REF" STRIPE_WEBHOOK_SECRET="$STRIPE_WEBHOOK_SECRET"; fi
       - name: Cartoon secret
         if: steps.gate.outputs.go == 'true' && env.OPENAI_API_KEY != ''
-        run: supabase secrets set --project-ref "$PROJECT_REF" OPENAI_API_KEY="$OPENAI_API_KEY"
+        run: supabase secrets set --yes --project-ref "$PROJECT_REF" OPENAI_API_KEY="$OPENAI_API_KEY"
       - name: Forecast key for the alert worker
         if: steps.gate.outputs.go == 'true' && env.METEO_KEY != ''
-        run: supabase secrets set --project-ref "$PROJECT_REF" METEO_KEY="$METEO_KEY"
+        run: supabase secrets set --yes --project-ref "$PROJECT_REF" METEO_KEY="$METEO_KEY"
       - name: Deploy
         if: steps.gate.outputs.go == 'true'
         run: |
           cp site/fx.js supabase/functions/_shared/fx.js   # the alert worker rates with the same engine as the site
-          supabase functions deploy stripe-checkout --project-ref "$PROJECT_REF" --no-verify-jwt
-          supabase functions deploy stripe-webhook --project-ref "$PROJECT_REF" --no-verify-jwt
-          supabase functions deploy cartoon --project-ref "$PROJECT_REF" --no-verify-jwt
-          supabase functions deploy alerts --project-ref "$PROJECT_REF" --no-verify-jwt
+          supabase functions deploy stripe-checkout --yes --project-ref "$PROJECT_REF" --no-verify-jwt
+          supabase functions deploy stripe-webhook --yes --project-ref "$PROJECT_REF" --no-verify-jwt
+          supabase functions deploy cartoon --yes --project-ref "$PROJECT_REF" --no-verify-jwt
+          supabase functions deploy alerts --yes --project-ref "$PROJECT_REF" --no-verify-jwt
