@@ -11,6 +11,8 @@
 --   3. I'm running late: one tap on the day tells the crew chat, your driver and the captain. Rate-limited, deduped.
 --   4. The weekend proposal: for each crew you kept, who is up for a ride on which day, how many have driven before
 --      and the last set-up. Read-only: nobody is committed until they tap I'M GOING themselves.
+--   5. Seats can't be overbooked: a driver who lowers their seats lets the newest passengers go (they hear about it),
+--      and choosing where you start from (which can move you to another car) now waits its turn like joining does.
 --
 -- Way back (keeps every security fix): drop function public.hi8_late(uuid, text, integer), public.hi8_weekend(uuid),
 -- public.hi8_spot_notes(text), public.hi8_spot_open(text, text, date); drop table public.spot_notes; then re-run
@@ -194,11 +196,42 @@ begin
   end if;
 end $$;
 
--- check: should print t | t | t | t
+-- 5. seats: never more passengers than seats -------------------------------------------------------------------
+do $$
+declare d text; anchor text;
+begin
+  -- a driver who lowers their seats: the newest passengers beyond the new number need a seat again, and hear it
+  d := pg_get_functiondef('public.hi8_join_crew'::regproc);
+  if position('0028: seats' in d) = 0 then
+    anchor := 'if p_getting <> ''drive'' then';
+    if position(anchor in d) = 0 then raise exception 'hi8_join_crew changed shape (seats)'; end if;
+    execute replace(replace(d, anchor, '-- 0028: seats. Fewer seats than passengers: the newest ones need a seat again
+  if p_getting = ''drive'' then
+    for gone in select x.member_id, x.email from public.crew_members x
+             where x.crew_id = c.id and x.car_with = (select member_id from public.crew_members where crew_id = c.id and lower(email) = em)
+             order by x.joined_at desc offset greatest(0, least(7, coalesce(p_seats, 0))) loop
+      update public.crew_members set car_with = null where member_id = gone.member_id;
+      perform public.hi8_tell(gone.email, ''Your seat was released'', public.hi8_name(em, c.city) || '' has fewer seats now. Open the crew and ask for a lift, or come your own way.'', c, ''carless:'' || gone.member_id || '':'' || now()::date);
+    end loop;
+  end if;
+  ' || anchor), 'drv public.crew_members;', 'drv public.crew_members;' || chr(10) || '  gone record;');
+  end if;
+  -- choosing where you start can move you to another car: take the same lock as joining, so two riders can't both
+  -- get the last seat in one car
+  d := pg_get_functiondef('public.hi8_set_from'::regproc);
+  if position('for update' in d) = 0 then
+    anchor := 'select * into c from public.crews where code = upper(p_code);';
+    if position(anchor in d) = 0 then raise exception 'hi8_set_from changed shape'; end if;
+    execute replace(d, anchor, 'select * into c from public.crews where code = upper(p_code) for update;   -- 0028: seats');
+  end if;
+end $$;
+
+-- check: should print t | t | t | t | t
 select position('captain_pending' in pg_get_functiondef('public.hi8_move_crew'::regproc)) > 0 as captain_guard,
        position('hi8_spot_open' in pg_get_functiondef('public.hi8_join_crew'::regproc)) > 0 as join_checks_closures,
        to_regclass('public.spot_notes') is not null as spot_notes,
-       to_regprocedure('public.hi8_weekend(uuid)') is not null as weekend;
+       to_regprocedure('public.hi8_weekend(uuid)') is not null as weekend,
+       position('0028: seats' in pg_get_functiondef('public.hi8_join_crew'::regproc)) > 0 and position('for update' in pg_get_functiondef('public.hi8_set_from'::regproc)) > 0 as seats;
 
 -- Adding a spot note (in the SQL editor; examples, not real data):
 --   insert into public.spot_notes (city, spot, kind, body, from_day, to_day, source, checked_on)
