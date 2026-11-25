@@ -76,7 +76,7 @@ with sync_playwright() as p:
     check(asked.endswith('|true') and asked.split('|')[0] in ('ana', 'cy', 'di'), "I CAN'T MAKE IT: HAND IT OVER (tap twice): the next rider is asked · " + asked)
     X = phone(K[asked.split('|')[0]])
     X.goto(BASE + f'/?c={code}'); X.wait_for_selector('#sheet.on'); X.wait_for_timeout(2500)
-    check('YOU\'RE NEXT IN LINE TO CAPTAIN' in T(X, '#sheet .pask') and 'CAPTAIN NEEDED' in T(X, '#sheet .stg') and 'CAPTAIN NEEDED' in T(X, '#sheet .hero'), 'they see KEEP IT ON / PASS IT ON, and CAPTAIN NEEDED')
+    check('YOU\'RE NEXT IN LINE TO CAPTAIN' in T(X, '#sheet .pask') and 'CAPTAIN NEEDED' in T(X, '#sheet .pass-stg') and 'CAPTAIN NEEDED' in T(X, '#sheet .hero'), 'they see KEEP IT ON / PASS IT ON, and CAPTAIN NEEDED')
     X.locator('#sheet [data-act=captain][data-v="1"]').click(); X.wait_for_timeout(2000)
     check(sql(f"select split_part(host_email, '@', 1) || '|' || (captain_until is null) from crews where code = '{code}'") == asked.split('|')[0] + '|true', 'KEEP IT ON: they are the captain, it is on')
     check(not errs, 'no script errors: ' + '; '.join(errs)[:300])
