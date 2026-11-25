@@ -142,6 +142,9 @@ export async function runAlerts(opts) {
   // a captain who stepped down and nobody said yes by the deadline: called off (everyone is told by the crew trigger)
   report.captainsGone = DRY ? 0 : Number(await rpc('hi8_captain_expire', {}).catch((e) => { log('captain expiry failed:', e.message || e); return 0; })) || 0;
   if (report.captainsGone) log('called off, nobody took over as captain:', report.captainsGone);
+  // after a move: who didn't say STILL IN by the deadline loses their seat (0027; everyone affected is told)
+  report.seatsReleased = DRY ? 0 : Number(await rpc('hi8_release_unsure', {}).catch((e) => { log('seat release failed:', e.message || e); return 0; })) || 0;
+  if (report.seatsReleased) log('seats released, no STILL IN by the deadline:', report.seatsReleased);
   log('forecast drops told:', drops, '· how-was-it asked:', rates);
 
   // 3b. "I'm looking": tell riders about a crew that fits (once per day they asked for)

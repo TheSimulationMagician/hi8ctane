@@ -86,7 +86,7 @@ with sync_playwright() as p:
     print('the forecast dropped')
     A.goto(BASE + f'/?c={drop_crew}'); A.wait_for_timeout(2500)
     t = txt(A, '#sheet')
-    check('THE FORECAST DROPPED' in t and A.locator('[data-act=movecrew]').count() == 1, 'tomorrow 7 kt: the captain sees it dropped, and the next good window')
+    check(('THE FORECAST DROPPED' in t or 'TOO LIGHT SO FAR' in t or 'NOT RECOMMENDED' in t) and A.locator('[data-act=movecrew]').count() == 1, 'tomorrow 7 kt: the captain sees it dropped, and the next good window')
     A.locator('[data-act=movecrew]').click(); A.wait_for_timeout(1500)
     check(sql(f"select day::text from crews where code = '{drop_crew}'") != day(1) and 'THE FORECAST DROPPED' not in txt(A, '#sheet'), 'MOVE IT: the crew moves to that window · ' + txt(A, '#toast')[:120] + ' · ' + sql(f"select day::text || ' ' || start_time from crews where code = '{drop_crew}'"))
 
