@@ -188,3 +188,9 @@ Tests: `test/live/` (see its README): 55 app checks in a browser, 57 pilot API c
 - **Links:** FOR SCHOOLS opens /schools/ (it opened the 2.7 mock-up); the footer adds The world.
 - **Alerts worker:** "Next good window" now counts a window that's still running today, from the next hour, if 2 good hours are left.
 
+## 2.32 · the sport cards are back; the app opens at the spot
+
+- **Sport cards on the home.** CREWS GOING is a swipe row of the sport cards again: the sport's logo on its own colour (kite teal, MTB blue, MX olive), the dotted banner, badges, JOIN NOW (one tap to the join form). Best fit first, up to 8, then "+ MORE".
+- **No saying it twice.** With the Session Pass on screen, the hero goes back to the forecast (the pass already says you're going).
+- **Offline at the spot.** sw.js keeps a copy of the site's own files and serves it when the network fails or takes over 4 s; always the network first, so a deploy is live as soon as the phone can fetch it. Registered for everyone after load (push works as before).
+

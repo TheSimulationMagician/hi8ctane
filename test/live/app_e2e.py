@@ -150,7 +150,7 @@ with sync_playwright() as p:
     C.goto(BASE + '/'); C.wait_for_timeout(2500)
     check('AT THE SPOTS NOW'.upper() in txt(C, '#live') and 'Castelldefels'.upper() in txt(C, '#live') and 'on a 9'.upper() in txt(C, '#live') and 'Sam'.upper() not in txt(C, '#live'), 'everyone sees it on the landing, without the name')
     check('CREW ON NOW'.upper() in txt(C, '#mapnote'), 'the map says a crew is on now')
-    check('LIVE' in txt(C, '#sessions') and "KAI'S CREW" in txt(C, '#sessions') and C.locator('#sessions [data-act=going]').count() >= 1, "the session shows LIVE and Kai's crew, with I'M GOING")
+    check('CAPTAIN KAI' in txt(C, '#sessions .homerail') and C.locator('#sessions .homerail .sc .sc-t').count() >= 1 and C.locator('#sessions .homerail [data-act=going]').count() >= 1, "Kai's crew shows as a sport card (logo, colour), and a tap joins (2.32)")
 
     print('alerts and the stop link')
     C.locator('#sports [data-sport=mx]').click(); C.wait_for_timeout(400)

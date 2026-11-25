@@ -372,7 +372,7 @@
     var b = $('#dockGo'); if (!b) return;
     // UX review H07: the dock never promotes a session the forecast is against
     var o = (L || sessions()).filter(function (x) { return !x.crews.length ? FX.tone(x.fx && x.fx.score) !== 'no' : suitRank(x.crews[0]) < 2; })[0], mc = myNext();
-    heroWind(o); drawHeroMine(mc);
+    heroWind(o); drawHeroMine(mc && !(signedIn() && nextCrew()) ? mc : null);
     // UX review H14: with a session booked (any day), the dock opens it instead of pitching another crew
     if (!mc) { var nc = nextCrew(); if (nc && nc.status === 'on') mc = nc; }
     if (mc) {
@@ -1447,6 +1447,13 @@
     }).join('') + '</div><p class="bd-k"><span class="t-epic">EPIC</span><span class="t-good">GOOD</span><span class="t-ok">OK</span><span class="t-no">NO GO</span> for ' + esc(levelWord()) + ' <button class="lvb" data-act="level">' + (lvSet() ? 'CHANGE LEVEL' : 'SET YOUR LEVEL') + '</button> Small word = why. Tap a day to go. <i>3</i> = riders going.</p>';
   }
   var SHORT = { GUSTY: 'GUST', ONSHORE: 'ONSH', OFFSHORE: 'OFF', COLD: 'COLD', UNSURE: '?', 'TOO LIGHT': 'LITE', 'TOO STRONG': 'MAX', 'WRONG DIR': 'DIR', STORM: 'STRM', RAIN: 'RAIN', MUD: 'MUD', DARK: 'DARK', HOT: 'HOT', WET: 'WET' };
+  // 2.32: the crews on the home are the sport cards again: the sport's logo on its own colour, a swipe row, best fit first
+  function homeCrews(withCrew) {
+    var list = [].concat.apply([], withCrew.map(function (o) { return o.crews; })).sort(byFit); if (!list.length) return '';
+    return '<div class="h2 sub"><span class="pdot"></span>CREWS GOING</div><div class="h2s">' + list.length + ' COMING UP · ' + esc(SPORT[S.sport].name.toUpperCase()) + (list.length > 1 ? ' · SWIPE →' : '') + '</div>' +
+      '<div class="rail homerail">' + list.slice(0, 8).map(function (c) { return crewCard(c).replace('data-act="crew"', 'data-act="going"'); }).join('') +
+      (list.length > 8 ? '<button class="nocrew more" data-act="join"><b>+' + (list.length - 8) + ' MORE</b><br>See them all →</button>' : '') + '</div>';
+  }
   function drawSessions() {
     var el = $('#sessions'); if (!el) return;
     var h = home(), L = sessions();
@@ -1456,7 +1463,7 @@
     if (!FX.data[S.city]) { el.innerHTML = head + (FX.error ? '<div class="nocrew">No forecast right now: Open-Meteo can\'t be reached. You can still start or join a crew.</div>' : '<div class="skel" style="height:220px"></div>') + (L.length ? '<div class="sess">' + L.slice(0, 3).map(sessCard).join('') + '</div>' : '') + foot; return; }
     var withCrew = L.filter(function (o) { return o.crews.length; }).sort(function (a, b) { return byFit(a.crews[0], b.crews[0]); });
     el.innerHTML = head + boardHtml(upcoming(S.sport, 14)) +
-      (withCrew.length ? '<div class="h2 sub"><span class="pdot"></span>CREWS GOING</div><div class="sess">' + withCrew.slice(0, 3).map(sessCard).join('') + '</div>' : '') + foot +
+      homeCrews(withCrew) + foot +
       lookBox() + '<div class="alertw">' + alertCta() + '</div>';
   }
 
@@ -2322,6 +2329,8 @@
     return PUSH.sub ? 'on' : 'off';
   }
   function swReg() { return navigator.serviceWorker.register('sw.js', { scope: './' }); }
+  // 2.32: the worker also keeps the site's files for a weak signal at the spot, so it's registered for everyone, once the page is up
+  if ('serviceWorker' in navigator && location.protocol !== 'file:') window.addEventListener('load', function () { setTimeout(function () { swReg().catch(function () {}); }, 1500); });
   function pushCheck() {
     if (!pushSupported()) { PUSH.checked = true; return Promise.resolve(null); }
     return navigator.serviceWorker.getRegistration('./').then(function (r) { return r ? r.pushManager.getSubscription() : null; })

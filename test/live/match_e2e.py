@@ -42,9 +42,9 @@ with sync_playwright() as p:
     print('the crew that fits you first')
     D = phone(K['di'], {'lv.kite': 'regular', 'getting': 'seat'})
     D.goto(BASE + '/'); D.wait_for_timeout(3500)
-    ss = D.locator('#sessions .ss.has').first
-    check(fits in (ss.locator('.sgl').first.get_attribute('href') or ''), "Di (a rider, needs a seat): on the landing Ana's crew is the one shown, not the sooner rookie session")
-    why = ss.locator('.ss-why').inner_text().upper()
+    ss = D.locator('#sessions .homerail .sc').first  # 2.32: the home's crews are sport cards, best fit first
+    check(fits in (ss.get_attribute('href') or ''), "Di (a rider, needs a seat): on the landing Ana's crew comes first, not the sooner rookie session")
+    why = ss.locator('.scwhy').inner_text().upper()
     check('A SEAT FROM CENTRAAL' in why and "1 RIDER YOU'VE RIDDEN WITH" in why, 'and it says why: ' + why)
     D.goto(BASE + '/#join'); D.wait_for_selector('#sheet.on'); D.wait_for_timeout(1500)
     cards = D.locator('#sheet .sc')
