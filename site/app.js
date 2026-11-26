@@ -1015,6 +1015,8 @@
         '<small>NOW</small><b>' + esc(n.t) + '</b>' + (n.s ? '<p>' + esc(n.s) + '</p>' : '') +
         (o.compact && c.checked_at ? '<p class="pass-chk">Rechecked ' + esc(clockAt(c.checked_at, c.city)) + (c.checked_note ? ': ' + esc(c.checked_note) : '') + '</p>' : '') +
         (o.plate ? '<p class="pass-chk">Founding plate #' + pad3(o.plate) + ' is yours.</p>' : '') + '</div>' +
+      // PR #50: a warning leads, but what's open for you doesn't vanish: it follows, as a quieter second step
+      (n.warn && r.next && r.next.b ? '<div class="pass-then"><small>THEN, FOR YOU</small><b>' + esc(r.next.t) + '</b>' + r.next.b.replace('class="jn lm"', 'class="jn wh"') + '</div>' : '') +
       (lift && !me.unsure && !c.captain_ask ? '<div class="pass-lift"><b>' + esc(lift.t) + '</b><span>' + esc(lift.s) + '</span>' + (o.compact ? '' : passRoute(c)) + passMoney(c) + '</div>' : '') +
       (o.compact ? '<div class="pass-act">' + (n.a || gmap) + '</div>' : '') + '<div class="pass-tools">' + (o.compact ? tools : gmap.replace('class="jn lm lg navl"', 'class="jn wh navl"') + tools.replace(gmap, '')) + '</div>' + lateRow(c) +
       (o.compact ? '' : passPack(c)) +
@@ -1914,6 +1916,9 @@
     var me = c.me, cost = hub && spot && spot.lat ? tripCost(hub, spot) : null;
     if (!cost || c.status !== 'on' || c.past) return '';
     var M = c.members || [], n = 4;
+    // PR #50: one price per page. Once there is a real split (a seat in a car, or the driver entered the cost), the
+    // estimate goes and the share box below is the only number.
+    if (me && (me.car_with || (me.getting === 'drive' && me.trip_cost != null))) return '';
     if (me && me.getting === 'drive') {
       var ps = M.filter(function (m) { return m.car_with === me.member_id; }).length, k = Math.max(ps, 1), m2 = seatMath(cost, k + 1);
       return '<div class="box sav"><h3>YOUR CAR <span class="tag good">' + money(m2.share * k) + ' BACK</span></h3><p class="hint" style="margin:0">About ' + money(cost) + ' of fuel from ' + esc(title(hub.name)) + ' and back. ' +

@@ -120,7 +120,9 @@ with sync_playwright() as pw:
     check('WHEN ARE WE RIDING?' in g and 'Bo' in g and 'Cy' in g and 'Di' in g, 'who is up which day, by first name, for the people in the kept crew')
     check(pg.locator('.wk-g thead th.pick').count() == 1, 'the proposed day is marked in the grid')
     before = sql('select count(*) from crews')
-    pg.locator('[data-act=propose]').click(); pg.wait_for_timeout(1500)
+    wk, dk = pg.locator('.wk-go[data-act=propose]'), pg.locator('#dockGo')
+    check(dk.get_attribute('data-act') == 'propose' and dk.get_attribute('data-date') == wk.get_attribute('data-date') and dk.get_attribute('data-spot') == wk.get_attribute('data-spot'), 'J9A: the dock proposes the same day and spot as the weekend card')
+    wk.click(); pg.wait_for_timeout(1500)
     check(pg.locator('#sheet.on').count() == 1 and sql('select count(*) from crews') == before, 'PROPOSE opens the start form, filled in: nothing is posted yet'); c.close()
 
     print('Plan B')
