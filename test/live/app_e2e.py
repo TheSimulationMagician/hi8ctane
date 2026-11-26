@@ -1,3 +1,5 @@
+from zoneinfo import ZoneInfo
+import datetime
 # TEST ONLY. The 2.9 app (site/index.html) in a real browser against Postgres + PostgREST and the stand-in
 # Open-Meteo: the live map, the two options (start a crew, join a crew) for people with no account, sharing,
 # the duplicate warning, the crew chat, settling up with Bizum, checking in and reporting, alerts and the stop
@@ -58,8 +60,14 @@ with sync_playwright() as p:
     A.locator('.mapsec').scroll_into_view_if_needed(); A.wait_for_timeout(1200)
     check(320 <= A.locator('.mapsec .mapwrap').bounding_box()['height'] <= 525, 'on a phone the live map closes the page, tall')
     # 2.25: the map is three stacked canvases (base, wind flow, markers): count the colours of all of them
-    px = A.evaluate("""(() => { const seen = new Set(); document.querySelectorAll('#map canvas').forEach(c => { const x = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+    # after sunset the wind field goes dark on purpose (about 19 colours instead of 29), so this check reads the map at
+    # 13:00 on a pinned clock: it tests that the map is drawn, not what time it is
+    ctxM = br.new_context(viewport={'width': 390, 'height': 844}, timezone_id='Europe/Amsterdam'); MP = ctxM.new_page()
+    MP.clock.set_fixed_time(datetime.datetime.now(ZoneInfo('Europe/Amsterdam')).replace(hour=13, minute=0, second=0, microsecond=0))
+    MP.goto(BASE + '/?city=barcelona'); MP.wait_for_timeout(3500); MP.locator('.mapsec').scroll_into_view_if_needed(); MP.wait_for_timeout(1500)
+    px = MP.evaluate("""(() => { const seen = new Set(); document.querySelectorAll('#map canvas').forEach(c => { const x = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
                         for (let i = 0; i < x.length; i += 4 * 997) if (x[i + 3]) seen.add(x[i] >> 4 << 8 | x[i + 1] >> 4 << 4 | x[i + 2] >> 4); }); return seen.size; })()""")
+    ctxM.close()
     check(px > 25, f'the map is drawn: wind colours, coast, spots ({px} colours)')
     check('THE WEEK AHEAD' in txt(A, '#week') and A.locator('#week .wc').count() == 21 and 'AROME' in txt(A, '#week'), 'the week ahead: kite, MTB and MX x 7 days, and where it comes from')
     check('THE BEST WINDOW' in txt(A, '#best') and ('MODELS' in txt(A, '#best') or 'NO GOOD' in txt(A, '#best')), 'the best window, with the numbers and the models')
