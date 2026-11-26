@@ -103,26 +103,26 @@
   }
 
   // ---------------------------------------------------------------- the 2.7 look: tiles, ribbons, verdicts
-  var SCOL = { kite: '#2A6F86', wing: '#5B3F99', surf: '#2297AA', sup: '#2A8C74', mtb: '#1F4FA0', mx: '#5C6B2F', windsurf: '#B4472E', wake: '#0E7A8C', snow: '#3B6FB5', other: '#4A4538' };
+  var SCOL = { kite: '#2A6F86', wing: '#6B3FA0', surf: '#2BA3B5', sup: '#2E9B82', mtb: '#1A4FA0', mx: '#B5532B', windsurf: '#B4472E', wake: '#0E7A8C', snow: '#3B6FB5', other: '#4A4538' };
   var ICON = {
     kite: '<path d="M3 11l18-8-8 18-2-8z"/>',
     wing: '<path d="M3.5 16 C5 9 11 5 20 4.5 C17 9 15.5 13.5 15.5 19.5 C12 17.5 8 16.3 3.5 16 Z"/><path d="M9.8 10.4 L15.5 19.5"/>',
     surf: '<path d="M3 17.5 C3 10.5 8.3 6 14 6 C18 6 21 8.6 21 11.6 C21 14 19 15.4 17 14.6 C15.6 14 15.4 12.2 16.8 11.6"/><path d="M3 20.5 H21"/>',
-    sup: '<circle cx="12.6" cy="4.4" r="2"/><path d="M12.2 7.4 L9.6 16.4 M12.2 7.4 L15.4 11 M17.6 6.2 L13.4 21"/><path d="M3 17.4 C7.4 19.4 14.6 19.6 21 16"/>',
+    sup: '<path d="M2.5 17 H17.5 C19.8 17 21.2 16 21.5 14.8"/><path d="M16.5 3 L11.2 14.6"/><path d="M9.6 13.4 L13 14.9 L11.7 18.6 L8.3 17.1 Z"/>',
     mtb: '<circle cx="5.5" cy="16" r="3.5"/><circle cx="18.5" cy="16" r="3.5"/><path d="M5.5 16 L9.5 8.5 L15.5 8.5 L18.5 16 M9.5 8.5 L12 16"/>',
-    mx: '<circle cx="5.5" cy="16.5" r="3.6"/><circle cx="18.5" cy="16.5" r="3.6"/><path d="M5.5 16.5 L8.8 11.4 H14 L18.5 16.5 M7.2 9 H12.2 L14 11.4 L16.2 6.2 M14.6 6.2 H18.2 M16.8 9.6 L20.8 10.6"/>',
+    mx: '<g transform="rotate(-16 12 12)"><circle cx="5.5" cy="16.5" r="3.5" stroke-dasharray="2.2 1.3"/><circle cx="18.5" cy="16.5" r="3.5" stroke-dasharray="2.2 1.3"/><path d="M5.5 16.5 L9.5 12.5 H14 L18.5 16.5 M8 9.5 H13.5 L16 6.5 L18.5 16.5 M14.5 5.5 H17.5"/></g>',
     windsurf: '<path d="M12 3 V17 H19 Z"/><path d="M12 3 C8 7 7.4 12 8.6 17"/><path d="M3 20 H21"/>',
     wake: '<path d="M3 19.5 C8 21.5 16 21.5 21 19.5"/><circle cx="8.5" cy="6.5" r="2"/><path d="M8.5 9.5 L9.5 16.5 M9 11.5 L15 8 M13.5 4 L20.5 10"/>',
     snow: '<path d="M12 2.5 V21.5 M3.8 7.2 L20.2 16.8 M20.2 7.2 L3.8 16.8"/><path d="M9.5 4.5 L12 7 L14.5 4.5 M9.5 19.5 L12 17 L14.5 19.5"/>',
     other: '<circle cx="12" cy="12" r="8"/><path d="M12 7 V12 L15 14"/>'
   };
-  // a sport tile: colour square, white inner square, the line icon (framed = with the black outline, for buttons)
+  // a sport tile (the 2.5 marks): the white line logo straight on the sport colour (framed = with the black outline, for buttons)
   function tile(k, size, framed) {
     var c = SCOL[k] || SCOL.other, ic = ICON[k] || ICON.other;
     return '<svg class="tile" width="' + size + '" height="' + size + '" viewBox="0 0 48 48" aria-hidden="true">' +
-      (framed ? '<rect x="1.5" y="1.5" width="45" height="45" fill="' + c + '" stroke="#111" stroke-width="3"/><rect x="8" y="8" width="32" height="32" fill="#fff"/><g transform="translate(12 12)"'
-        : '<rect width="48" height="48" fill="' + c + '"/><rect x="7" y="7" width="34" height="34" fill="#fff"/><g transform="translate(11 11) scale(1.0833)"') +
-      ' fill="none" stroke="' + c + '" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">' + ic + '</g></svg>';
+      (framed ? '<rect x="1.5" y="1.5" width="45" height="45" fill="' + c + '" stroke="#111" stroke-width="3"/><g transform="translate(9 9) scale(1.25)"'
+        : '<rect width="48" height="48" fill="' + c + '"/><g transform="translate(7 7) scale(1.4167)"') +
+      ' fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' + ic + '</g></svg>';
   }
   // the ransom-note wordmark: one cut-out letter each
   function logo() {
@@ -1119,7 +1119,7 @@
       '<span class="sc-f"><span class="sc-l"><span class="sc-w">' + esc(dayRel(c.day)) + ' ' + esc(hm(c.start)) + (key ? ' <em>' + esc(key) + '</em>' : '') + '</span>' +
       '<span class="sc-g">' + faces(c) + '<span>' + (c.min && !c.min_met ? '<span class="needs">NEEDS ' + (c.min - c.going) + ' MORE</span> ' : '') + c.going + ' going' + (free > 0 && free <= 3 ? ' · ' + free + ' left' : '') + (c.here ? ' · ' + c.here + ' there' : '') + '</span>' +
       (c.seats_free > 0 && seat ? '<span class="seat" title="A seat, fuel split four ways">' + CAR + '<b>' + money(seat.pay) + '</b></span>' : '') + '</span></span>' +
-      '<span class="jn' + (inIt || free <= 0 || suitRank(c) >= 2 ? ' wh' : '') + '">' + (inIt ? "YOU'RE IN" : free <= 0 ? 'FULL' : suitRank(c) >= 2 ? 'SEE WHY' : 'JOIN NOW') + '</span></span></a>';
+      (function () { var b = inIt ? ['lm', "YOU'RE IN ✓"] : free <= 0 ? ['wh', 'FULL'] : suitRank(c) >= 2 ? ['wh', 'SEE WHY'] : c.min && !c.min_met ? ['pk', 'MAKE IT GO'] : ['', 'JOIN NOW']; return '<span class="jn' + (b[0] ? ' ' + b[0] : '') + '">' + b[1] + '</span>'; })() + '</span></a>';
   }
   function title(x) { return String(x || '').toLowerCase().replace(/(^|[\s'-])(\S)/g, function (m, a, b) { return a + b.toUpperCase(); }); }
   function pad3(n) { n = String(n); return n.length >= 3 ? n : ('00' + n).slice(-3); }
@@ -1552,16 +1552,38 @@
       '<div class="sh-body">' + body + '</div>' + (foot ? '<div class="sh-foot">' + foot + '</div>' : '');
   }
 
-  // ---- JOIN A CREW
+  // ---- EXPLORE (2.33): the three sport modes, the sport cards, and the next move always in the bar at the bottom
+  function nextMove(sport, list) {
+    var mine = mineCodes(), when = function (c) { return c.day + ' ' + hm(c.start); };
+    var my = list.filter(function (c) { return mine.indexOf(c.code) >= 0; }).sort(function (a, b) { return when(a).localeCompare(when(b)); })[0];
+    if (my) return { k: 'mine', t: "YOU'RE IN", l: dayRel(my.day) + ' ' + hm(my.start) + ' · ' + my.spot_name, b: 'OPEN MY CREW', a: 'data-act="crew" data-code="' + esc(my.code) + '"' };
+    var open = list.filter(function (c) { return mine.indexOf(c.code) < 0 && c.max - c.going > 0 && suitRank(c) === 0; }).sort(byFit)[0];
+    if (open) return { k: 'join', t: open.min && !open.min_met ? 'GOES AHEAD WITH ' + (open.min - open.going) + ' MORE' : 'BEST FIT FOR YOU', l: dayRel(open.day) + ' ' + hm(open.start) + ' · ' + open.spot_name + ' · ' + open.going + ' going', b: 'JOIN THIS CREW', a: 'data-act="crew" data-code="' + esc(open.code) + '"' };
+    var best = FX.data[S.city] ? FX.bestDays(S.city, spotsFor(S.city, sport), sport, fxo(sport), 7).filter(function (d) { return !d.none && d.score >= 6; })[0] : null;
+    if (best) return { k: 'start', t: 'NO CREW ON THE BEST WINDOW', l: dayRel(best.date) + ' ' + pad(best.from) + '–' + pad(best.to) + ' · ' + best.spot.name + ' · ' + best.label, b: 'START THIS ONE', a: 'data-act="startwin" data-date="' + best.date + '" data-from="' + best.from + '" data-to="' + best.to + '" data-spot="' + esc(best.spot.slug) + '"' };
+    if (!(signedIn() && myAlert(sport))) return { k: 'alert', t: 'NOTHING GOOD THIS WEEK YET', l: 'One message the moment it\'s on', b: 'TELL ME WHEN IT\'S ON', a: 'data-act="alerts" data-sport="' + sport + '"' };
+    return { k: 'look', t: 'ALERT ON · NOTHING GOOD YET', l: 'Say when you\'re free: crews that fit find you', b: 'I\'M UP FOR A RIDE', a: 'data-act="looking"' };
+  }
   function sheetJoin() {
-    var list = upcoming(S.sport, 14), dates = [];
+    var list = upcoming(S.sport, 14), dates = [], mine = mineCodes();
     list.forEach(function (c) { if (dates.indexOf(c.day) < 0) dates.push(c.day); });
+    if (S.joinDay !== 'all' && dates.indexOf(S.joinDay) < 0) S.joinDay = 'all';
     var shown = (S.joinDay === 'all' ? list : list.filter(function (c) { return c.day === S.joinDay; })).slice().sort(function (a, b) { return suitRank(a) - suitRank(b) || byFit(a, b); });
-    var tabs = '<div class="tabs" role="group" aria-label="Day"><button class="tab" data-act="joinday" data-day="all" aria-pressed="' + (S.joinDay === 'all') + '">ALL</button>' +
-      dates.map(function (d) { return '<button class="tab" data-act="joinday" data-day="' + d + '" aria-pressed="' + (S.joinDay === d) + '">' + esc(dayRel(d)) + '</button>'; }).join('') + '</div>';
-    var sp = '<div class="tabs" role="group" aria-label="Sport">' + LIVE_SPORTS.map(function (k) { return '<button class="tab" data-act="sport" data-sport="' + k + '" aria-pressed="' + (k === S.sport) + '">' + SPORT[k].name.toUpperCase() + '</button>'; }).join('') + '</div>';
-    var body = sp + (list.length ? tabs + '<div class="sec"><div class="crews">' + shown.map(crewCard).join('') + '</div></div>' : '<div class="sec">' + emptyCrews() + '</div>');
-    return shell('JOIN A CREW · ' + esc(cityObj(S.city).name), body + '<div class="sec">' + lookBox() + '</div>', list.length ? '<button class="big start" data-act="start">OR START ONE</button>' : '');
+    var modes = '<div class="modes" role="group" aria-label="Sport">' + LIVE_SPORTS.map(function (k) {
+      var l = upcoming(k, 14), inK = l.some(function (c) { return mine.indexOf(c.code) >= 0; });
+      return '<button class="mode" data-act="sport" data-sport="' + k + '" aria-pressed="' + (k === S.sport) + '" style="--sc:' + SCOL[k] + '">' + tile(k, 30) +
+        '<b>' + SPORT[k].name.toUpperCase() + '</b><small>' + (inK ? "YOU'RE IN" : l.length ? l.length + ' CREW' + (l.length > 1 ? 'S' : '') : 'BE FIRST') + '</small></button>';
+    }).join('') + '</div>';
+    var nm = SPORT[S.sport].name.toUpperCase(), go = list.filter(function (c) { return suitRank(c) === 0; }).length;
+    var band = '<div class="xband art a-' + S.sport + '"><span class="xk">' + esc(regionName().toUpperCase()) + ' · NEXT 14 DAYS</span><span class="xt">' + nm + '</span>' +
+      '<span class="xs">' + (list.length ? list.length + ' CREW' + (list.length > 1 ? 'S' : '') + ' · ' + go + ' ON' : 'NO CREW YET') + '</span></div>';
+    var tabs = dates.length > 1 ? '<div class="tabs" role="group" aria-label="Day"><button class="tab" data-act="joinday" data-day="all" aria-pressed="' + (S.joinDay === 'all') + '">ALL</button>' +
+      dates.map(function (d) { return '<button class="tab" data-act="joinday" data-day="' + d + '" aria-pressed="' + (S.joinDay === d) + '">' + esc(dayRel(d)) + '</button>'; }).join('') + '</div>' : '';
+    var body = band + modes + (list.length ? tabs + '<div class="sec"><div class="crews">' + shown.map(crewCard).join('') + '</div></div>' : '<div class="sec">' + emptyCrews() + '</div>');
+    var n = nextMove(S.sport, list);
+    var foot = '<button class="big nmv n-' + n.k + '" ' + n.a + '><small>' + esc(n.t) + ' · ' + esc(n.l.toUpperCase()) + '</small>' + esc(n.b) + ' →</button>' +
+      (n.k === 'start' ? '' : '<button class="big ghost nmplus" data-act="start" aria-label="Start a crew">+<small>START</small></button>');
+    return shell('EXPLORE · ' + esc(regionName()), body + '<div class="sec">' + lookBox() + '</div>', foot);
   }
 
   // ---- START A CREW

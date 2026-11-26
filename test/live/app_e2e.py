@@ -277,7 +277,7 @@ with sync_playwright() as p:
     C.goto(BASE + '/B27-Start.dc.html?spot=trabucador&sp=kite'); C.wait_for_url(re.compile(r'.*\?spot=trabucador&sport=kite#start$')); C.wait_for_timeout(800)
     check(C.locator('[data-act=sfspot][data-spot=trabucador]').get_attribute('aria-pressed') == 'true', 'an old start link opens START with that spot')
     C.goto(BASE + '/join?ref=pinkflyer'); C.wait_for_url(re.compile(r'.*/\?ref=pinkflyer#join$')); C.wait_for_timeout(500)
-    check('JOIN A CREW'.upper() in txt(C, '#shTitle'), 'hi8ctane.com/join opens JOIN A CREW')
+    check('EXPLORE' in txt(C, '#shTitle'), 'hi8ctane.com/join opens EXPLORE')
 
     print('desktop and the landing iterations')
     ctxD, D = fresh(1440, 900)
