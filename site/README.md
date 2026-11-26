@@ -202,3 +202,9 @@ Tests: `test/live/` (see its README): 55 app checks in a browser, 57 pilot API c
 - **The home** uses the same card for the sport picked at the top.
 - **The 2.5 marks and colours, app-wide:** the white logo straight on the sport's colour. MX is rust #B5532B, MTB #1A4FA0 and wing #6B3FA0, and surf (#2BA3B5) and SUP (#2E9B82) have their own colours.
 - Trips, lessons and rentals can reuse the Adventure Card later; the Session Pass and the Crew & Rider Card are the other two components.
+
+## 2.34 · the sport card opens into the conditions; the pass and the riders in the same look
+
+- **The Adventure Card is the sport card first:** logo tile, the sport's colour, the verdict and the spot; under it the day, who's going, whether a driver is confirmed, and one button. **CONDITIONS ▾** (or a tap on the card) opens the day's line, wind/gusts/drive (ground/temp/drive for MTB and MX) and why, in place; the swipe position stays.
+- **Session Pass:** the black strip with the sport's logo, the route and times on the sport's texture; the boarding-pass perforations are gone (BOARD → LEAVE, REF → HI8).
+- **Crew & Rider Card:** everyone in a crew is a small card: cartoon, name, level, sessions, and how they get there (drives · 3 seats, rides with Marta).

@@ -968,14 +968,12 @@
       '<button class="jn wh" data-act="ics" data-code="' + esc(c.code) + '">CALENDAR</button>' +
       (o.compact ? '<a class="jn wh" href="?c=' + esc(c.code) + '">THE CREW ↗</a>' : '<button class="jn wh" data-act="tofx">CONDITIONS ↓</button><button class="jn wh" data-act="tochat">CHAT ↓</button>');
     return '<section class="pass' + (o.compact ? ' compact' : '') + (o.joined ? ' just-in' : '') + '" aria-label="Your session pass">' +
-      '<div class="pass-top"><span>SESSION PASS · ' + esc(SPORT[c.sport].name.toUpperCase()) + '</span><span class="pass-stg s-' + g.k + '">' + esc(g.t) + '</span></div>' +
-      '<div class="pass-route"><div class="leg"><small>' + esc(L.from.k) + '</small><b>' + esc(String(L.from.n).toUpperCase()) + '</b><em>' + esc(L.from.t || ' ') + '</em></div>' +
+      '<div class="pass-top"><span class="pass-sp"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--lime)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (ICON[c.sport] || ICON.other) + '</svg>SESSION PASS · ' + esc(SPORT[c.sport].name.toUpperCase()) + '</span><span class="pass-stg s-' + g.k + '">' + esc(g.t) + '</span></div>' +
+      '<div class="pass-hero art a-' + esc(c.sport) + '"><div class="pass-route"><div class="leg"><small>' + esc(L.from.k) + '</small><b>' + esc(String(L.from.n).toUpperCase()) + '</b><em>' + esc(L.from.t || ' ') + '</em></div>' +
         '<div class="pass-arrow" aria-hidden="true"><i></i>' + (L.mins && L.from.t ? '<small>' + L.mins + ' MIN</small>' : '') + '</div>' +
         '<div class="leg to"><small>' + esc(L.to.k) + '</small><b>' + esc(String(L.to.n).toUpperCase()) + '</b><em>' + esc(L.to.t) + '</em></div></div>' +
-      '<div class="pass-perf" aria-hidden="true"></div>' +
-      '<dl class="pass-grid"><div><dt>DATE</dt><dd>' + esc(dayRel(c.day)) + '</dd></div><div><dt>' + (L.from.t ? 'BOARD' : 'START') + '</dt><dd>' + esc(L.from.t || hm(c.start)) + '</dd></div>' +
-        '<div' + (L.seatOk ? '' : ' class="bad"') + '><dt>SEAT</dt><dd>' + esc(L.seat) + '</dd></div><div><dt>CREW</dt><dd>' + c.going + '/' + c.max + '</dd></div><div><dt>REF</dt><dd>' + esc(c.code) + '</dd></div></dl>' +
-      '<div class="pass-perf" aria-hidden="true"></div>' +
+      '<dl class="pass-grid"><div><dt>DATE</dt><dd>' + esc(dayRel(c.day)) + '</dd></div><div><dt>' + (L.from.t ? 'LEAVE' : 'START') + '</dt><dd>' + esc(L.from.t || hm(c.start)) + '</dd></div>' +
+        '<div' + (L.seatOk ? '' : ' class="bad"') + '><dt>SEAT</dt><dd>' + esc(L.seat) + '</dd></div><div><dt>CREW</dt><dd>' + c.going + '/' + c.max + '</dd></div><div><dt>HI8</dt><dd>' + esc(c.code) + '</dd></div></dl></div>' +
       '<div class="pass-now" role="status">' + (o.joined ? '<span class="pass-stamp in" aria-hidden="true">YOU\'RE IN</span>' : set ? '<span class="pass-stamp ok" aria-hidden="true">ALL SET</span>' : '') +
         '<small>NOW</small><b>' + esc(n.t) + '</b>' + (n.s ? '<p>' + esc(n.s) + '</p>' : '') +
         (o.compact && c.checked_at ? '<p class="pass-chk">Rechecked ' + esc(clockAt(c.checked_at, c.city)) + (c.checked_note ? ': ' + esc(c.checked_note) : '') + '</p>' : '') +
@@ -1576,6 +1574,7 @@
     return '<svg class="ad-ch" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" aria-hidden="true"><path d="' + line + ' L' + x(rows[rows.length - 1].h) + ',' + H + ' L' + x(rows[0].h) + ',' + H + 'Z" fill="rgba(200,255,61,.2)"/>' +
       mark(from) + mark(to) + '<path d="' + line + '" fill="none" stroke="var(--lime)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>';
   }
+  // 2.34: the sport card on top (logo tile, the sport's colour, the verdict, the spot); the conditions open under it on a tap
   function adCard(a, i, act) {
     var c = a.c, w = a.w, k = a.sport, slug = c ? c.spot : w.spot.slug, spot = HI8.spot(slug), sp = fxSpot(slug);
     a.spotObj = spot;
@@ -1586,32 +1585,34 @@
     var stats = f ? (k === 'kite' ? st((function (lo, hi) { return lo === hi ? String(lo) : lo + '–' + hi; })(Math.min.apply(null, f.rows.map(function (r) { return Math.round(r.w); })), Math.max.apply(null, f.rows.map(function (r) { return Math.round(r.w); }))), 'WIND · KT') + st(f.g + ' KT', 'GUSTS')
       : st((f.ground || f.label || '').toUpperCase(), 'GROUND') + st(f.temp + '°', 'TEMP')) : st('—', 'FORECAST SOON');
     stats += min ? st(min + ' MIN', 'FROM ' + String(hub.name).toUpperCase()) : '';
-    var t, sub, btn, attrs, free = c ? c.max - c.going : 0;
+    var t, sub, btn, attrs, free = c ? c.max - c.going : 0, drive = '';
     if (c) {
       var cost = hub && spot ? tripCost(hub, spot) : null, seat = cost && c.seats_free > 0 ? seatMath(cost, 4) : null;
-      var who = c.going + ' going' + (c.min && !c.min_met ? ' · goes ahead with ' + (c.min - c.going) + ' more' : free > 0 && free <= 3 ? ' · ' + free + ' left' : '') + (seat ? ' · seat ' + money(seat.pay) : '');
+      sub = c.going + ' going' + (c.min && !c.min_met ? ' · goes ahead with ' + (c.min - c.going) + ' more' : free > 0 && free <= 3 ? ' · ' + free + ' left' : '') + (seat ? ' · seat ' + money(seat.pay) : '');
+      drive = c.drivers ? (c.seats_free > 0 ? 'DRIVER CONFIRMED · ' + c.seats_free + ' SEAT' + (c.seats_free > 1 ? 'S' : '') + ' FREE' : 'DRIVER CONFIRMED · CAR FULL') : 'NO DRIVER YET · OWN WAY, OR OFFER A LIFT';
       attrs = 'data-act="' + (a.mine ? 'crew' : act) + '" data-code="' + esc(c.code) + '"';
-      if (a.mine) { t = "YOU'RE IN."; sub = who; btn = 'OPEN MY CREW'; }
-      else if (a.rank >= 2) { var u = suit(c); t = u.t + '.'; sub = u.s || who; btn = 'SEE WHY'; attrs = 'data-act="crew" data-code="' + esc(c.code) + '"'; }
-      else if (free <= 0) { t = 'FULL.'; sub = who; btn = 'SEE THE CREW'; attrs = 'data-act="crew" data-code="' + esc(c.code) + '"'; }
-      else { t = (c.host ? String(c.host).toUpperCase() + "'S CREW IS GOING." : 'A CREW IS GOING.'); sub = who; btn = c.min && !c.min_met ? 'MAKE IT GO' : 'JOIN THIS CREW'; }
+      if (a.mine) { t = "YOU'RE IN."; btn = 'OPEN MY CREW'; }
+      else if (a.rank >= 2) { var u = suit(c); t = u.t + '.'; sub = u.s || sub; btn = 'SEE WHY'; attrs = 'data-act="crew" data-code="' + esc(c.code) + '"'; }
+      else if (free <= 0) { t = 'FULL.'; btn = 'SEE THE CREW'; attrs = 'data-act="crew" data-code="' + esc(c.code) + '"'; }
+      else { t = (c.host ? String(c.host).toUpperCase() + "'S CREW IS GOING." : 'A CREW IS GOING.'); btn = c.min && !c.min_met ? 'MAKE IT GO' : 'JOIN THIS CREW'; }
     } else {
       t = 'NO CREW YET. START IT.'; sub = 'The best ' + SPORT[k].name + ' window this week. Share it to your chats: 20 seconds.'; btn = 'START THIS ONE';
       attrs = 'data-act="startwin" data-sport="' + k + '" data-date="' + w.date + '" data-from="' + w.from + '" data-to="' + w.to + '" data-spot="' + esc(slug) + '"';
     }
-    var name = (c ? c.spot_name : spot ? spot.name : slug).toUpperCase();
+    var name = (c ? c.spot_name : spot ? spot.name : slug).toUpperCase(), key = f ? (k === 'kite' ? f.w + ' KT' : (f.ground || '').toUpperCase()) : '';
+    var vd = c ? verdict(f, c) : f ? '<span class="vd t-' + FX.tone(f.score) + '">' + esc(f.label) + (key ? ' · ' + esc(key) : '') + '</span>' : '<span class="vd t-none">FORECAST SOON</span>';
     return '<article class="ad' + (a.mine ? ' mine' : '') + (a.rank >= 2 ? ' off' : '') + '" aria-label="' + esc(SPORT[k].name + ', ' + name + ', ' + dayRel(a.date)) + '">' +
-      '<div class="ad-h"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--lime)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (ICON[k] || ICON.other) + '</svg><b>' + esc(SPORT[k].name.toUpperCase()) + '</b><span>HI8 / ' + pad(i + 1) + '</span></div>' +
-      '<div class="ad-b art a-' + k + '"><span class="ad-d">' + esc(dayRel(a.date)) + ' · ' + pad(from) + '–' + pad(to) + 'H' + (f ? ' · ' + esc(f.label) : '') + '</span>' +
-      '<span class="ad-n">' + esc(name) + '.</span>' + adChart(sp, a, from, to) + '<div class="ad-sts">' + stats + '</div>' +
-      '<div class="ad-s"><b>' + esc(t) + '</b><span>' + esc(sub) + '</span>' + (c && !a.mine && a.rank < 2 ? whyFit(c, 'scwhy') : '') + '</div></div>' +
-      '<div class="ad-f"><button class="ad-go" ' + attrs + '>' + esc(btn) + ' ↗</button></div></article>';
+      '<button class="ad-top sc-h" data-act="adx" aria-expanded="false" aria-label="' + esc(name) + ': show the conditions"><span class="sc-t" style="background:' + SCOL[k] + '">' + tile(k, 40) + '<span>' + esc(SPORT[k].name.toUpperCase()) + '</span></span>' +
+        '<span class="sc-a art a-' + k + '">' + (a.date === S.today ? '<span class="rib">TODAY</span>' : '') + '<span>' + vd + '</span><span class="sc-n">' + esc(name) + '</span></span></button>' +
+      '<div class="ad-m"><span class="ad-d">' + esc(dayRel(a.date)) + ' ' + pad(from) + '–' + pad(to) + 'H' + (key ? ' <em>' + esc(key) + '</em>' : '') + '</span><span class="ad-i">HI8 / ' + pad(i + 1) + '</span></div>' +
+      '<div class="ad-s"><b>' + (c ? faces(c) : '') + esc(t) + '</b><span>' + esc(sub) + '</span>' + (drive ? '<span class="ad-dr' + (c.drivers ? ' ok' : '') + '">' + CAR + esc(drive) + '</span>' : '') + (c && !a.mine && a.rank < 2 ? whyFit(c, 'scwhy') : '') + '</div>' +
+      '<div class="ad-x art a-' + k + '">' + adChart(sp, a, from, to) + '<div class="ad-sts">' + stats + '</div>' + (f && f.why && f.why.length ? '<p class="ad-why">' + esc(f.why.join(' · ')) + '</p>' : '') + '</div>' +
+      '<div class="ad-f"><button class="ad-cx" data-act="adx">CONDITIONS <i>▾</i></button><button class="ad-go" ' + attrs + '>' + esc(btn) + ' ↗</button></div></article>';
   }
   // the last card: nothing fits
   function adEnd() {
-    return '<article class="ad end"><div class="ad-h"><b>YOUR CALL</b><span>HI8 / ++</span></div><div class="ad-b"><span class="ad-n">NOTHING FITS?</span>' +
-      '<div class="ad-s"><b>SAY WHEN YOU\'RE FREE.</b><span>When a crew fits, you hear it first. Or start your own: pick a window, a spot, share it.</span></div></div>' +
-      '<div class="ad-f"><button class="ad-go" data-act="looking">I\'M UP FOR A RIDE ↗</button><button class="ad-go wh" data-act="start">START YOUR OWN ↗</button></div></article>';
+    return '<article class="ad end"><div class="ad-e"><span class="ad-d">YOUR CALL</span><span class="ad-n">NOTHING FITS?</span><b>SAY WHEN YOU\'RE FREE.</b><span>When a crew fits, you hear it first. Or start your own: pick a window, a spot, share it.</span></div>' +
+      '<div class="ad-f col"><button class="ad-go" data-act="looking">I\'M UP FOR A RIDE ↗</button><button class="ad-go wh" data-act="start">START YOUR OWN ↗</button></div></article>';
   }
   function adRail(list, act, cls) {
     return '<div class="rail adrail' + (cls ? ' ' + cls : '') + '">' + list.map(function (a, i) { return adCard(a, i, act); }).join('') + adEnd() + '</div>';
@@ -3040,6 +3041,7 @@
         closeSheet(); go('#start'); track('again', src0.code);
         break;
       }
+      case 'adx': { var ac = t.closest('.ad'); if (ac) { var op = ac.classList.toggle('open'); ac.querySelectorAll('[data-act=adx]').forEach(function (b) { b.setAttribute('aria-expanded', String(op)); }); if (op) track('ad_open'); } break; }
       case 'startwin': { if (d.sport && d.sport !== S.sport) setSport(d.sport); var cl = clash(S.sport, d.spot, d.date, d.from); if (cl) { S.autoJoin = cl.code; openCrew(cl.code); toast('A crew is already going then: join it.', 3500); break; }
         newStart({ date: d.date, from: d.from, to: d.to, spot: d.spot, quick: true }); go('#start'); break; }
       case 'going': S.autoJoin = String(d.code).toUpperCase(); openCrew(d.code); break;
