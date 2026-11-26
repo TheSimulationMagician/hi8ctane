@@ -195,9 +195,10 @@ Tests: `test/live/` (see its README): 55 app checks in a browser, 57 pilot API c
 - **Offline at the spot.** sw.js keeps a copy of the site's own files and serves it when the network fails or takes over 4 s; always the network first, so a deploy is live as soon as the phone can fetch it. Registered for everyone after load (push works as before).
 
 
-## 2.33 · Explore: three sport modes, the next move always on screen
+## 2.33 · WHAT'S ON: the cards are the interface
 
-- **Explore** (was JOIN A CREW, still at hi8ctane.com/join): a band in the sport's colour, then three sport modes, KITE · MTB · MX, each with its count ("3 CREWS", "BE FIRST", or "YOU'RE IN").
-- **The 2.5 marks and colours everywhere:** the white logo straight on the sport's colour; MX rust #B5532B, MTB #1A4FA0, wing #6B3FA0; surf #2BA3B5 and SUP #2E9B82 get their own colours (no more shared teal).
-- **One button per card state:** JOIN NOW · MAKE IT GO (needs riders) · YOU'RE IN ✓ · FULL · SEE WHY.
-- **The next move, always in the bar:** open my crew → join the best fit → start the best window → tell me when it's on → I'M UP FOR A RIDE, with the one line that says why. "+ START" sits beside it.
+- **One component, the Adventure Card.** A black strip with the sport's logo and name in lime and "HI8 / 01". Below it, the sport's own texture: day and window, the spot (WIJK AAN ZEE.), the day's line (the wind for kite, the conditions for MTB and MX) with the window marked, three numbers (wind, gusts, the drive; or ground, temp, the drive), one line on who's going, and one lime button: the next move.
+- **What's on** (hi8ctane.com/join): one swipe row across all sports. Your crews first, then crews going, then each sport's best window with no crew yet (START THIS ONE). The last card: I'M UP FOR A RIDE, or start your own. No tabs, no filters, no extra bar.
+- **The home** uses the same card for the sport picked at the top.
+- **The 2.5 marks and colours, app-wide:** the white logo straight on the sport's colour. MX is rust #B5532B, MTB #1A4FA0 and wing #6B3FA0, and surf (#2BA3B5) and SUP (#2E9B82) have their own colours.
+- Trips, lessons and rentals can reuse the Adventure Card later; the Session Pass and the Crew & Rider Card are the other two components.

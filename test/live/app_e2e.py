@@ -150,7 +150,7 @@ with sync_playwright() as p:
     C.goto(BASE + '/'); C.wait_for_timeout(2500)
     check('AT THE SPOTS NOW'.upper() in txt(C, '#live') and 'Castelldefels'.upper() in txt(C, '#live') and 'on a 9'.upper() in txt(C, '#live') and 'Sam'.upper() not in txt(C, '#live'), 'everyone sees it on the landing, without the name')
     check('CREW ON NOW'.upper() in txt(C, '#mapnote'), 'the map says a crew is on now')
-    check('CAPTAIN KAI' in txt(C, '#sessions .homerail') and C.locator('#sessions .homerail .sc .sc-t').count() >= 1 and C.locator('#sessions .homerail [data-act=going]').count() >= 1, "Kai's crew shows as a sport card (logo, colour), and a tap joins (2.32)")
+    check("KAI'S CREW" in txt(C, '#sessions .homerail') and C.locator('#sessions .homerail .ad .ad-h').count() >= 1 and C.locator('#sessions .homerail [data-act=going]').count() >= 1, "Kai's crew shows as an adventure card (logo, colour), and a tap joins (2.33)")
 
     print('alerts and the stop link')
     C.locator('#sports [data-sport=mx]').click(); C.wait_for_timeout(400)
@@ -277,7 +277,7 @@ with sync_playwright() as p:
     C.goto(BASE + '/B27-Start.dc.html?spot=trabucador&sp=kite'); C.wait_for_url(re.compile(r'.*\?spot=trabucador&sport=kite#start$')); C.wait_for_timeout(800)
     check(C.locator('[data-act=sfspot][data-spot=trabucador]').get_attribute('aria-pressed') == 'true', 'an old start link opens START with that spot')
     C.goto(BASE + '/join?ref=pinkflyer'); C.wait_for_url(re.compile(r'.*/\?ref=pinkflyer#join$')); C.wait_for_timeout(500)
-    check('EXPLORE' in txt(C, '#shTitle'), 'hi8ctane.com/join opens EXPLORE')
+    check("WHAT'S ON?" in txt(C, '#sheet .won'), "hi8ctane.com/join opens WHAT'S ON?")
 
     print('desktop and the landing iterations')
     ctxD, D = fresh(1440, 900)

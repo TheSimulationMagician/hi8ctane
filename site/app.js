@@ -1448,11 +1448,9 @@
   }
   var SHORT = { GUSTY: 'GUST', ONSHORE: 'ONSH', OFFSHORE: 'OFF', COLD: 'COLD', UNSURE: '?', 'TOO LIGHT': 'LITE', 'TOO STRONG': 'MAX', 'WRONG DIR': 'DIR', STORM: 'STRM', RAIN: 'RAIN', MUD: 'MUD', DARK: 'DARK', HOT: 'HOT', WET: 'WET' };
   // 2.32: the crews on the home are the sport cards again: the sport's logo on its own colour, a swipe row, best fit first
-  function homeCrews(withCrew) {
-    var list = [].concat.apply([], withCrew.map(function (o) { return o.crews; })).sort(byFit); if (!list.length) return '';
-    return '<div class="h2 sub"><span class="pdot"></span>CREWS GOING</div><div class="h2s">' + list.length + ' COMING UP · ' + esc(SPORT[S.sport].name.toUpperCase()) + (list.length > 1 ? ' · SWIPE →' : '') + '</div>' +
-      '<div class="rail homerail">' + list.slice(0, 8).map(function (c) { return crewCard(c).replace('data-act="crew"', 'data-act="going"'); }).join('') +
-      (list.length > 8 ? '<button class="nocrew more" data-act="join"><b>+' + (list.length - 8) + ' MORE</b><br>See them all →</button>' : '') + '</div>';
+  function homeCrews() {
+    var list = adventures().filter(function (a) { return a.sport === S.sport; }); if (!list.length) return '';  // the home follows the sport picked at the top
+    return '<div class="h2 sub"><span class="pdot"></span>WHAT\'S ON</div><div class="h2s">' + list.length + ' COMING UP · ' + esc(SPORT[S.sport].name.toUpperCase()) + (list.length > 1 ? ' · SWIPE →' : '') + '</div>' + adRail(list.slice(0, 8), 'going', 'homerail');
   }
   function drawSessions() {
     var el = $('#sessions'); if (!el) return;
@@ -1552,38 +1550,77 @@
       '<div class="sh-body">' + body + '</div>' + (foot ? '<div class="sh-foot">' + foot + '</div>' : '');
   }
 
-  // ---- EXPLORE (2.33): the three sport modes, the sport cards, and the next move always in the bar at the bottom
-  function nextMove(sport, list) {
-    var mine = mineCodes(), when = function (c) { return c.day + ' ' + hm(c.start); };
-    var my = list.filter(function (c) { return mine.indexOf(c.code) >= 0; }).sort(function (a, b) { return when(a).localeCompare(when(b)); })[0];
-    if (my) return { k: 'mine', t: "YOU'RE IN", l: dayRel(my.day) + ' ' + hm(my.start) + ' · ' + my.spot_name, b: 'OPEN MY CREW', a: 'data-act="crew" data-code="' + esc(my.code) + '"' };
-    var open = list.filter(function (c) { return mine.indexOf(c.code) < 0 && c.max - c.going > 0 && suitRank(c) === 0; }).sort(byFit)[0];
-    if (open) return { k: 'join', t: open.min && !open.min_met ? 'GOES AHEAD WITH ' + (open.min - open.going) + ' MORE' : 'BEST FIT FOR YOU', l: dayRel(open.day) + ' ' + hm(open.start) + ' · ' + open.spot_name + ' · ' + open.going + ' going', b: 'JOIN THIS CREW', a: 'data-act="crew" data-code="' + esc(open.code) + '"' };
-    var best = FX.data[S.city] ? FX.bestDays(S.city, spotsFor(S.city, sport), sport, fxo(sport), 7).filter(function (d) { return !d.none && d.score >= 6; })[0] : null;
-    if (best) return { k: 'start', t: 'NO CREW ON THE BEST WINDOW', l: dayRel(best.date) + ' ' + pad(best.from) + '–' + pad(best.to) + ' · ' + best.spot.name + ' · ' + best.label, b: 'START THIS ONE', a: 'data-act="startwin" data-date="' + best.date + '" data-from="' + best.from + '" data-to="' + best.to + '" data-spot="' + esc(best.spot.slug) + '"' };
-    if (!(signedIn() && myAlert(sport))) return { k: 'alert', t: 'NOTHING GOOD THIS WEEK YET', l: 'One message the moment it\'s on', b: 'TELL ME WHEN IT\'S ON', a: 'data-act="alerts" data-sport="' + sport + '"' };
-    return { k: 'look', t: 'ALERT ON · NOTHING GOOD YET', l: 'Say when you\'re free: crews that fit find you', b: 'I\'M UP FOR A RIDE', a: 'data-act="looking"' };
+  // ---- WHAT'S ON (2.33): one Adventure Card per thing worth doing; the card is the interface, its button the next move
+  // an adventure: a crew going (yours first), or the best window of a sport with no crew on it yet
+  function adventures() {
+    var mine = mineCodes(), out = [];
+    var crews = [].concat.apply([], LIVE_SPORTS.map(function (k) { return upcoming(k, 14); }));
+    crews.forEach(function (c) { out.push({ c: c, sport: c.sport, date: c.day, mine: mine.indexOf(c.code) >= 0, rank: suitRank(c) }); });
+    if (FX.data[S.city]) LIVE_SPORTS.forEach(function (k) {
+      FX.bestDays(S.city, spotsFor(S.city, k), k, fxo(k), 7).filter(function (d) { return !d.none && d.score >= 6 && !clash(k, d.spot.slug, d.date, d.from); }).slice(0, 1)
+        .forEach(function (w) { out.push({ w: w, sport: k, date: w.date, rank: 0 }); });
+    });
+    return out.sort(function (a, b) {
+      return (b.mine ? 1 : 0) - (a.mine ? 1 : 0) || (a.rank >= 2) - (b.rank >= 2) || a.date.localeCompare(b.date) ||
+        (a.c && b.c ? byFit(a.c, b.c) : a.c ? -1 : b.c ? 1 : b.w.score - a.w.score);
+    });
+  }
+  // the day's line: the wind for kite, the conditions score for the rest, the window marked
+  function adChart(sp, a, from, to) {
+    var rows = sp ? FX.dayRows(sp, a.date, a.sport, a.spotObj, fxo(a.sport), 8, 20) : [];
+    if (rows.length < 4) return '<div class="ad-ch none"><span>FORECAST SOON</span></div>';
+    var kite = a.sport === 'kite', v = rows.map(function (r) { return kite ? (r.w || 0) : (r.rate ? r.rate.s : 0); });
+    var top = kite ? Math.max(30, Math.max.apply(null, v) + 4) : 10, W = 300, H = 92, x = function (h) { return (h - 8) / 12 * W; }, y = function (q) { return H - 6 - q / top * (H - 14); };
+    var pts = rows.map(function (r, i) { return x(r.h).toFixed(1) + ',' + y(v[i]).toFixed(1); }), line = 'M' + pts.join(' L');
+    var mark = function (h) { return h > 8 && h < 20 ? '<line x1="' + x(h) + '" y1="4" x2="' + x(h) + '" y2="' + H + '" stroke="var(--lime)" stroke-width="1.5" stroke-dasharray="3 4"/>' : ''; };
+    return '<svg class="ad-ch" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none" aria-hidden="true"><path d="' + line + ' L' + x(rows[rows.length - 1].h) + ',' + H + ' L' + x(rows[0].h) + ',' + H + 'Z" fill="rgba(200,255,61,.2)"/>' +
+      mark(from) + mark(to) + '<path d="' + line + '" fill="none" stroke="var(--lime)" stroke-width="3" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg>';
+  }
+  function adCard(a, i, act) {
+    var c = a.c, w = a.w, k = a.sport, slug = c ? c.spot : w.spot.slug, spot = HI8.spot(slug), sp = fxSpot(slug);
+    a.spotObj = spot;
+    var from = c ? Number(hm(c.start).slice(0, 2)) : w.from, to = c ? (c.end ? Number(hm(c.end).slice(0, 2)) : from + 3) : w.to;
+    var f = c ? crewFx(c) : sp ? FX.span(sp, a.date, from, to, k, spot, fxo(k)) : null;
+    var hub = c ? hubOf(c) : (home() || (spot ? nearestHub(spot) : null)), min = hub && spot ? HI8.driveMin(hub, spot) : null;
+    var st = function (big, lab) { return '<span class="ad-st"><b>' + esc(big) + '</b><small>' + esc(lab) + '</small></span>'; };
+    var stats = f ? (k === 'kite' ? st((function (lo, hi) { return lo === hi ? String(lo) : lo + '–' + hi; })(Math.min.apply(null, f.rows.map(function (r) { return Math.round(r.w); })), Math.max.apply(null, f.rows.map(function (r) { return Math.round(r.w); }))), 'WIND · KT') + st(f.g + ' KT', 'GUSTS')
+      : st((f.ground || f.label || '').toUpperCase(), 'GROUND') + st(f.temp + '°', 'TEMP')) : st('—', 'FORECAST SOON');
+    stats += min ? st(min + ' MIN', 'FROM ' + String(hub.name).toUpperCase()) : '';
+    var t, sub, btn, attrs, free = c ? c.max - c.going : 0;
+    if (c) {
+      var cost = hub && spot ? tripCost(hub, spot) : null, seat = cost && c.seats_free > 0 ? seatMath(cost, 4) : null;
+      var who = c.going + ' going' + (c.min && !c.min_met ? ' · goes ahead with ' + (c.min - c.going) + ' more' : free > 0 && free <= 3 ? ' · ' + free + ' left' : '') + (seat ? ' · seat ' + money(seat.pay) : '');
+      attrs = 'data-act="' + (a.mine ? 'crew' : act) + '" data-code="' + esc(c.code) + '"';
+      if (a.mine) { t = "YOU'RE IN."; sub = who; btn = 'OPEN MY CREW'; }
+      else if (a.rank >= 2) { var u = suit(c); t = u.t + '.'; sub = u.s || who; btn = 'SEE WHY'; attrs = 'data-act="crew" data-code="' + esc(c.code) + '"'; }
+      else if (free <= 0) { t = 'FULL.'; sub = who; btn = 'SEE THE CREW'; attrs = 'data-act="crew" data-code="' + esc(c.code) + '"'; }
+      else { t = (c.host ? String(c.host).toUpperCase() + "'S CREW IS GOING." : 'A CREW IS GOING.'); sub = who; btn = c.min && !c.min_met ? 'MAKE IT GO' : 'JOIN THIS CREW'; }
+    } else {
+      t = 'NO CREW YET. START IT.'; sub = 'The best ' + SPORT[k].name + ' window this week. Share it to your chats: 20 seconds.'; btn = 'START THIS ONE';
+      attrs = 'data-act="startwin" data-sport="' + k + '" data-date="' + w.date + '" data-from="' + w.from + '" data-to="' + w.to + '" data-spot="' + esc(slug) + '"';
+    }
+    var name = (c ? c.spot_name : spot ? spot.name : slug).toUpperCase();
+    return '<article class="ad' + (a.mine ? ' mine' : '') + (a.rank >= 2 ? ' off' : '') + '" aria-label="' + esc(SPORT[k].name + ', ' + name + ', ' + dayRel(a.date)) + '">' +
+      '<div class="ad-h"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--lime)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + (ICON[k] || ICON.other) + '</svg><b>' + esc(SPORT[k].name.toUpperCase()) + '</b><span>HI8 / ' + pad(i + 1) + '</span></div>' +
+      '<div class="ad-b art a-' + k + '"><span class="ad-d">' + esc(dayRel(a.date)) + ' · ' + pad(from) + '–' + pad(to) + 'H' + (f ? ' · ' + esc(f.label) : '') + '</span>' +
+      '<span class="ad-n">' + esc(name) + '.</span>' + adChart(sp, a, from, to) + '<div class="ad-sts">' + stats + '</div>' +
+      '<div class="ad-s"><b>' + esc(t) + '</b><span>' + esc(sub) + '</span>' + (c && !a.mine && a.rank < 2 ? whyFit(c, 'scwhy') : '') + '</div></div>' +
+      '<div class="ad-f"><button class="ad-go" ' + attrs + '>' + esc(btn) + ' ↗</button></div></article>';
+  }
+  // the last card: nothing fits
+  function adEnd() {
+    return '<article class="ad end"><div class="ad-h"><b>YOUR CALL</b><span>HI8 / ++</span></div><div class="ad-b"><span class="ad-n">NOTHING FITS?</span>' +
+      '<div class="ad-s"><b>SAY WHEN YOU\'RE FREE.</b><span>When a crew fits, you hear it first. Or start your own: pick a window, a spot, share it.</span></div></div>' +
+      '<div class="ad-f"><button class="ad-go" data-act="looking">I\'M UP FOR A RIDE ↗</button><button class="ad-go wh" data-act="start">START YOUR OWN ↗</button></div></article>';
+  }
+  function adRail(list, act, cls) {
+    return '<div class="rail adrail' + (cls ? ' ' + cls : '') + '">' + list.map(function (a, i) { return adCard(a, i, act); }).join('') + adEnd() + '</div>';
   }
   function sheetJoin() {
-    var list = upcoming(S.sport, 14), dates = [], mine = mineCodes();
-    list.forEach(function (c) { if (dates.indexOf(c.day) < 0) dates.push(c.day); });
-    if (S.joinDay !== 'all' && dates.indexOf(S.joinDay) < 0) S.joinDay = 'all';
-    var shown = (S.joinDay === 'all' ? list : list.filter(function (c) { return c.day === S.joinDay; })).slice().sort(function (a, b) { return suitRank(a) - suitRank(b) || byFit(a, b); });
-    var modes = '<div class="modes" role="group" aria-label="Sport">' + LIVE_SPORTS.map(function (k) {
-      var l = upcoming(k, 14), inK = l.some(function (c) { return mine.indexOf(c.code) >= 0; });
-      return '<button class="mode" data-act="sport" data-sport="' + k + '" aria-pressed="' + (k === S.sport) + '" style="--sc:' + SCOL[k] + '">' + tile(k, 30) +
-        '<b>' + SPORT[k].name.toUpperCase() + '</b><small>' + (inK ? "YOU'RE IN" : l.length ? l.length + ' CREW' + (l.length > 1 ? 'S' : '') : 'BE FIRST') + '</small></button>';
-    }).join('') + '</div>';
-    var nm = SPORT[S.sport].name.toUpperCase(), go = list.filter(function (c) { return suitRank(c) === 0; }).length;
-    var band = '<div class="xband art a-' + S.sport + '"><span class="xk">' + esc(regionName().toUpperCase()) + ' · NEXT 14 DAYS</span><span class="xt">' + nm + '</span>' +
-      '<span class="xs">' + (list.length ? list.length + ' CREW' + (list.length > 1 ? 'S' : '') + ' · ' + go + ' ON' : 'NO CREW YET') + '</span></div>';
-    var tabs = dates.length > 1 ? '<div class="tabs" role="group" aria-label="Day"><button class="tab" data-act="joinday" data-day="all" aria-pressed="' + (S.joinDay === 'all') + '">ALL</button>' +
-      dates.map(function (d) { return '<button class="tab" data-act="joinday" data-day="' + d + '" aria-pressed="' + (S.joinDay === d) + '">' + esc(dayRel(d)) + '</button>'; }).join('') + '</div>' : '';
-    var body = band + modes + (list.length ? tabs + '<div class="sec"><div class="crews">' + shown.map(crewCard).join('') + '</div></div>' : '<div class="sec">' + emptyCrews() + '</div>');
-    var n = nextMove(S.sport, list);
-    var foot = '<button class="big nmv n-' + n.k + '" ' + n.a + '><small>' + esc(n.t) + ' · ' + esc(n.l.toUpperCase()) + '</small>' + esc(n.b) + ' →</button>' +
-      (n.k === 'start' ? '' : '<button class="big ghost nmplus" data-act="start" aria-label="Start a crew">+<small>START</small></button>');
-    return shell('EXPLORE · ' + esc(regionName()), body + '<div class="sec">' + lookBox() + '</div>', foot);
+    var list = adventures();
+    var body = '<div class="won"><h2>WHAT\'S ON?</h2><span>' + esc(regionName().toUpperCase()) + ' · NEXT 14 DAYS</span></div>' + adRail(list.slice(0, 12), 'crew') +
+      '<div class="adfoot"><span>' + (list.length > 1 ? 'Swipe to explore →' : '') + '</span><button class="lnk" data-act="start">+ START A CREW</button></div>';
+    return shell('HI8CTANE · ' + esc(regionName()), body);
   }
 
   // ---- START A CREW
@@ -3003,7 +3040,7 @@
         closeSheet(); go('#start'); track('again', src0.code);
         break;
       }
-      case 'startwin': { var cl = clash(S.sport, d.spot, d.date, d.from); if (cl) { S.autoJoin = cl.code; openCrew(cl.code); toast('A crew is already going then: join it.', 3500); break; }
+      case 'startwin': { if (d.sport && d.sport !== S.sport) setSport(d.sport); var cl = clash(S.sport, d.spot, d.date, d.from); if (cl) { S.autoJoin = cl.code; openCrew(cl.code); toast('A crew is already going then: join it.', 3500); break; }
         newStart({ date: d.date, from: d.from, to: d.to, spot: d.spot, quick: true }); go('#start'); break; }
       case 'going': S.autoJoin = String(d.code).toUpperCase(); openCrew(d.code); break;
       case 'goingbest': { var nx = sessions().filter(function (x) { return !x.crews.length ? FX.tone(x.fx && x.fx.score) !== 'no' : suitRank(x.crews[0]) < 2; })[0];

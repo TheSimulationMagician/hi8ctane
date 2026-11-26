@@ -1172,23 +1172,35 @@ div.lg { display: grid; grid-template-columns: 48px minmax(0, 1fr) auto; gap: 8p
 .callbox p { margin: 6px 0 10px; font-size: 13px; line-height: 1.45; }
 .callbox .row { display: flex; gap: 8px; flex-wrap: wrap; }
 
-/* 2.33 Explore: a band in the sport's colour, three sport modes, the next move always in the bar */
-.xband { position: relative; display: grid; grid-template-columns: auto 1fr; grid-template-rows: auto auto; column-gap: 14px; row-gap: 6px; align-items: end; padding: 12px 16px 13px; color: #fff; border-bottom: 3px solid var(--ink); }
-.xband .xk { grid-column: 2; grid-row: 1; justify-self: end; text-align: right; font: 700 10px/1 var(--mono); letter-spacing: .6px; opacity: .9; }
-.xband .xt { grid-column: 1; grid-row: 1 / 3; font: 400 50px/.86 'Anton', Impact, sans-serif; letter-spacing: .5px; text-shadow: 3px 3px 0 var(--ink); }
-.xband .xs { grid-column: 2; grid-row: 2; justify-self: end; align-self: end; padding: 4px 7px; background: var(--ink); color: var(--lime); font: 700 10px/1 var(--mono); letter-spacing: .5px; }
-.modes { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding: 14px 16px 4px; }
-.mode { display: grid; grid-template-columns: 30px 1fr; grid-template-rows: auto auto; column-gap: 8px; row-gap: 3px; align-items: center; min-height: 56px; padding: 8px 8px; text-align: left; background: #fff; color: var(--ink); border: 2.5px solid var(--ink); box-shadow: 3px 3px 0 var(--ink); cursor: pointer; }
-.mode .tile { grid-row: 1 / 3; border: 2px solid var(--ink); box-sizing: border-box; }
-.mode b { font: 400 13px/1 var(--word); letter-spacing: .3px; }
-.mode small { font: 700 9px/1 var(--mono); letter-spacing: .3px; opacity: .75; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.mode[aria-pressed="true"] { background: var(--sc); color: #fff; box-shadow: 4px 4px 0 var(--pink); transform: translate(-1px, -1px); }
-.mode[aria-pressed="true"] small { opacity: 1; }
-.mode:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
-.sh-foot .big.nmv { flex: 1 1 0; min-width: 0; flex-direction: column; gap: 5px; min-height: 60px; padding: 8px 12px; background: var(--pink); color: #fff; }
-.sh-foot .big.nmv small { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font: 700 9.5px/1 var(--mono); letter-spacing: .3px; opacity: .95; }
-.sh-foot .big.nmv.n-mine { background: var(--lime); color: var(--ink); }
-.sh-foot .big.nmv.n-alert, .sh-foot .big.nmv.n-look { background: var(--ink); color: var(--lime); box-shadow: 5px 5px 0 var(--pink); }
-.sh-foot .big.nmplus { flex: 0 0 64px; flex-direction: column; gap: 3px; min-height: 60px; padding: 0; font-size: 22px; }
-.sh-foot .big.nmplus small { font-size: 8.5px; }
-.mode .tile, .sc-t .tile { display: block; }
+/* 2.33 WHAT'S ON: the Adventure Card. One component for crews, windows and (later) trips, lessons, rentals */
+.won { display: flex; flex-direction: column; gap: 6px; padding: 18px 16px 0; }
+.won h2 { margin: 0; font: 400 46px/.9 'Anton', Impact, sans-serif; letter-spacing: .5px; }
+.won span { font: 700 10px/1 var(--mono); letter-spacing: .6px; }
+.sh-body .adrail { margin: 0; scroll-padding-left: 16px; }
+.adrail { padding-top: 14px; padding-bottom: 18px; gap: 14px; scroll-snap-type: x mandatory; }
+.ad { flex: none; width: min(330px, calc(100vw - 58px)); display: flex; flex-direction: column; background: var(--cream); border: 3px solid var(--ink); box-shadow: 6px 6px 0 var(--ink); color: #fff; }
+.ad-h { display: flex; align-items: center; gap: 9px; height: 46px; padding: 0 14px; background: var(--ink); }
+.ad-h b { font: 400 16px/1 var(--word); color: var(--lime); letter-spacing: .4px; }
+.ad-h span { margin-left: auto; font: 700 11px/1 var(--mono); color: var(--cream); letter-spacing: .5px; }
+.ad-b { flex: 1; display: flex; flex-direction: column; gap: 10px; padding: 14px 14px 16px; border-bottom: 3px solid var(--ink); }
+.ad-d { font: 700 11px/1 var(--mono); color: var(--lime); letter-spacing: .5px; text-shadow: 1px 1px 0 var(--ink); }
+.ad-n { font: 400 38px/.92 'Anton', Impact, sans-serif; letter-spacing: .4px; text-shadow: 3px 3px 0 var(--ink); overflow-wrap: anywhere; }
+.ad-ch { display: block; width: 100%; height: 92px; background-image: radial-gradient(rgba(255,255,255,.28) 1px, transparent 1.2px); background-size: 8px 8px; }
+.ad-ch.none { display: flex; align-items: center; justify-content: center; font: 700 10px/1 var(--mono); letter-spacing: .5px; }
+.ad-sts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.ad-st { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+.ad-st b { font: 400 22px/1 'Anton', Impact, sans-serif; letter-spacing: .4px; text-shadow: 2px 2px 0 var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ad-st small { font: 700 9px/1.1 var(--mono); color: var(--lime); letter-spacing: .4px; text-shadow: 1px 1px 0 var(--ink); }
+.ad-s { display: flex; flex-direction: column; gap: 6px; padding-top: 11px; border-top: 1.5px solid rgba(255,255,255,.35); }
+.ad-s b { font: 400 15px/1.1 var(--word); text-shadow: 2px 2px 0 var(--ink); }
+.ad-s span { font: 400 11.5px/1.4 var(--mono); }
+.ad-s .scwhy { display: block; align-self: flex-start; padding: 3px 6px; background: var(--lime); color: var(--ink); border: 2px solid var(--ink); font: 700 9.5px/1.3 var(--mono); }
+.ad-f { display: flex; flex-direction: column; gap: 8px; padding: 12px; }
+.ad-go { min-height: 50px; width: 100%; border: 3px solid var(--ink); background: var(--lime); color: var(--ink); font: 400 15px/1 var(--word); letter-spacing: .3px; cursor: pointer; }
+.ad-go:active { transform: translate(2px, 2px); }
+.ad-go.wh { background: #fff; }
+.ad.mine .ad-h { background: var(--lime); } .ad.mine .ad-h b, .ad.mine .ad-h span { color: var(--ink); } .ad.mine .ad-h svg { stroke: var(--ink); }
+.ad.off .ad-b { filter: saturate(.35); } .ad.off .ad-go { background: #fff; }
+.ad.end .ad-b { background: var(--ink); } .ad.end .ad-n { color: var(--yellow); }
+.adfoot { display: flex; justify-content: space-between; align-items: center; padding: 0 16px 8px; font: 400 12px/1 var(--mono); }
+.adfoot .lnk { border: 0; background: none; padding: 12px 0; font: 700 11px/1 var(--mono); letter-spacing: .5px; color: var(--ink); text-decoration: underline; cursor: pointer; }
