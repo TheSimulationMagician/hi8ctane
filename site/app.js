@@ -144,6 +144,11 @@
   function spain(city) { var co = cityObj(city || S.city); return co.country ? co.country === 'ES' : ['barcelona', 'tarifa'].indexOf(city || S.city) >= 0; }
   function feePct() { var v = S.settings && S.settings.ride_fee_pct; return v == null ? 15 : Number(v); }
   function memberPct() { var v = S.settings && S.settings.member_fee_pct; return v == null ? 10 : Number(v); }
+  // The Hi8 Pass and its price stay private until the founder opens them (app_settings.pass_public = true). The wallet, the
+  // pass checkout and a member's own pass keep working; only the public offer is hidden. Same for the Founding Night
+  // (founding_night_public): it's a plan, not a date yet.
+  function passOn() { return !!(S.settings && S.settings.pass_public === true); }
+  function nightOn() { return !!(S.settings && S.settings.founding_night_public === true); }
   function feeLive() { return !!(S.settings && S.settings.fee_live === true); }
   function tripCost(a, b) { return a && b ? HI8.tripCost(a, b, S.city) : null; }
   function money(x) { return '€' + (Math.round(x * 100) / 100).toFixed(2); }
@@ -236,7 +241,7 @@
       '<details class="mo" id="moSafe"><summary><b>SAFETY AND THE SPLIT</b><span>The buddy rule, riding with people you don\'t know yet, the fuel</span></summary><section class="blk" id="buddy">' + buddyHtml() + '</section><section class="blk" id="save"></section><section class="blk" id="trust">' + trustHtml() + '</section></details>' +
       '<details class="mo" id="moPlans"><summary><b>DAYS OUT</b><span>Plans with our partners</span></summary><section class="blk" id="plans"></section></details>' +
       '<details class="mo" id="moWhere"><summary><b>WHERE NEXT</b><span>Your town, other regions, trips</span></summary><div id="towns"></div><div id="where"></div></details>' +
-      '<details class="mo" id="moPass"><summary><b>THE HI8 PASS</b><span>' + 'Members pay 10% instead of 15% on every ride' + '</span></summary><div id="passSlot"></div></details>' +
+      (passOn() ? '<details class="mo" id="moPass"><summary><b>THE HI8 PASS</b><span>Members pay ' + memberPct() + '% instead of ' + feePct() + '% on every ride</span></summary><div id="passSlot"></div></details>' : '') +
       '<details class="mo" id="moSoon"><summary><b>MORE SPORTS SOON</b><span>Get an email when yours opens</span></summary><div class="sps soonr" id="soonSports"></div></details>' +
       '<a class="mo" href="schools/"><b>FOR SCHOOLS + RENTAL SHOPS</b><span>We send you riders who already have a crew →</span></a>' +
       '</section>' +
@@ -290,7 +295,7 @@
   }
   function drawNight() {
     var el = $('#night'); if (!el) return;
-    if (S.city !== 'barcelona') { el.innerHTML = ''; el.style.display = 'none'; return; }
+    if (S.city !== 'barcelona' || !nightOn()) { el.innerHTML = ''; el.style.display = 'none'; return; }
     el.style.display = '';
     el.innerHTML = '<a class="night" href="B27-Night.dc.html"><div class="k">THE LAUNCH · SAT 23 JAN · BARCELONA · FREE</div><div class="t">FOUNDING NIGHT</div>' +
       '<p>Crews out by day, a party by night, the first 100 founding plates as patches.</p><div class="f"><span class="pill">150 SPOTS · FREE</span><span class="jn pk">RSVP FREE</span></div></a>';
@@ -1271,7 +1276,7 @@
       '<div class="bars">' + bars + '</div><div class="barl"><span>SOLO</span><span>2 IN</span><span>3 IN</span><span class="pk">FULL CAR</span></div>' +
       '<div class="svs"><div><span>A DAY OUT</span><b>' + money(full.save) + '</b><small>saved, full car</small></div><div><span>20 DAYS OUT</span><b>' + money(Math.round(full.save * 100) / 100 * 20) + '</b><small>a season</small></div><div><span>DRIVING?</span><b>' + money(full.share * 3) + '</b><small>back from 3 riders</small></div></div>' +
       '<p class="svn">' + esc(title(hub.name)) + ' to ' + esc(spot.name) + ' and back: about ' + Math.round(HI8.km(hub, spot) * 2.6) + ' km, ' + money(cost) + ' of fuel. In a full car you pay ' + money(full.share) + (full.fee ? ' + ' + feeLine(full) : '') + '. Tolls and parking split the same way.</p>' +
-      '<div class="feebox">' + SHIELD + '<span><b>How Hi8ctane stays free:</b> riders add ' + feePct() + '% to their share of the car (' + memberPct() + '% with the Hi8 Pass). The driver always gets the full share, no ads, nothing to install. <span class="mark">' + (feeLive() ? 'Paid in the app when you settle up.' : 'Free during the pilot.') + '</span></span></div></div>';
+      '<div class="feebox">' + SHIELD + '<span><b>How Hi8ctane stays free:</b> riders add ' + feePct() + '% to their share of the car' + (passOn() ? ' (' + memberPct() + '% with the Hi8 Pass)' : '') + '. The driver always gets the full share, no ads, nothing to install. <span class="mark">' + (feeLive() ? 'Paid in the app when you settle up.' : 'Free during the pilot.') + '</span></span></div></div>';
   }
 
   // PLANS: days out, better with others (from Supabase: public.plans)
@@ -1884,7 +1889,7 @@
     if (!c.drivers) return '<div class="box sav"><h3>NEED A DRIVER <span class="tag ok">NO CAR YET</span></h3><p class="hint" style="margin:0">Nobody is driving yet. When someone does, a seat from ' + esc(title(hub.name)) + ' costs about <b>' + money(m.share) + '</b> instead of ' + money(cost) + ' driving alone. Driving? Join and pick I\'LL DRIVE: ' + money(m.share * 3) + ' back from a full car.</p></div>';
     return '<div class="box sav"><h3>A SEAT, SPLIT <span class="tag good">YOU SAVE ' + money(m.save) + '</span></h3>' +
       '<div class="savrow"><span><small>DRIVING ALONE</small><s>' + money(cost) + '</s></span><span><small>A SEAT</small><b>' + money(m.share) + '</b></span><span><small>HI8 FEE ' + feePct() + '%</small>' + (m.feeFree ? '<b class="free">FREE</b>' : '<b>' + money(m.fee) + '</b>') + '</span></div>' +
-      '<p class="hint">Fuel from ' + esc(title(hub.name)) + ' to ' + esc(spot.name) + ' and back, split four ways in a full car, settled with the driver on the day.' + (m.feeFree ? ' The ' + feePct() + '% fee keeps Hi8ctane free: not charged during the pilot.' : '') + ' <button class="lnk" data-act="passinfo">' + memberPct() + '% with the Hi8 Pass →</button></p></div>';
+      '<p class="hint">Fuel from ' + esc(title(hub.name)) + ' to ' + esc(spot.name) + ' and back, split four ways in a full car, settled with the driver on the day.' + (m.feeFree ? ' The ' + feePct() + '% fee keeps Hi8ctane free: not charged during the pilot.' : '') + (passOn() ? ' <button class="lnk" data-act="passinfo">' + memberPct() + '% with the Hi8 Pass →</button>' : '') + '</p></div>';
   }
   // UX review H01/H02: what a guest needs to decide, before anything else. Facts only; the full forecast and
   // the plan stay one scroll down. No names (privacy page): riders show by level until you're in.
@@ -2239,6 +2244,7 @@
   function passBox() {
     var w = S.wallet; if (!w) return '';
     var P = passPrices(), perks = '<ul class="perks"><li>' + P.member + '% Hi8 fee instead of ' + P.fee + '% on every shared ride</li><li>Crew rates at partner schools, shops, tracks and cable parks</li><li>Season stats: days out, euros saved</li></ul>';
+    if (!passOn() && !(w.pass && w.pass.active)) return '';   // private until pass_public: a member still sees their own pass
     if (!(w.pass && w.pass.active) && !(w.live && S.settings && S.settings.fee_live === true)) return '<div class="box pass">' + passCard('me') + '</div>';
     if (w.pass && w.pass.active) return '<div class="box pass"><h3>HI8 PASS <span class="tag good">ON</span></h3><p class="hint" style="margin:0">' + (w.pass.plan === 'year' ? 'Yearly' : 'Monthly') + (w.pass.until ? ', renews ' + esc(dayLong(String(w.pass.until).slice(0, 10))) : '') + '. Cancel any time from the Stripe receipt email.</p>' + perks + '</div>';
     var fee = S.settings && S.settings.fee_live === true;
