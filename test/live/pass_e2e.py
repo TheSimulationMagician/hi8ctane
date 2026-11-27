@@ -107,11 +107,11 @@ with sync_playwright() as pw:
     dday = sql("select (hi8_today('amsterdam') + 4)::text")
     c, pg, errs = page(br, K['jo']); n0 = sql('select count(*) from crews')
     pg.goto(f'{BASE}/?propose=PASSQ&d={dday}&sp=wijk-aan-zee&f=13&t=16'); pg.wait_for_timeout(4000)
-    check(pg.locator('#sheet.on').count() == 1 and 'START A CREW' in txt(pg, '#sheet.on').upper() and sql('select count(*) from crews') == n0, 'the proposal link opens the start form, filled in; nothing posted')
+    check(pg.locator('#sheet.on').count() == 1 and any(x in txt(pg, '#sheet.on').upper() for x in ('START A CREW', 'PROPOSE IT')) and pg.locator('[data-act=sfpost][aria-pressed=true]').count() == 0 and sql('select count(*) from crews') == n0, 'the proposal link opens the start form, filled in; nothing posted')
     check('propose' not in pg.url, 'the link is tidied after it opens'); c.close()
     c, pg, errs = page(br, K['bo'])
     pg.goto(f'{BASE}/?c={P}&again={dday}&f=13&t=16'); pg.wait_for_timeout(4500)
-    check('START A CREW' in txt(pg, '#sheet.on').upper() and sql('select count(*) from crews') == n0, 'the next-one link opens RUN IT AGAIN, filled in; nothing posted')
+    check(any(x in txt(pg, '#sheet.on').upper() for x in ('START A CREW', 'START THIS CREW', 'PROPOSE IT')) and sql('select count(*) from crews') == n0, 'the next-one link opens RUN IT AGAIN, filled in; nothing posted')
     check(not errs, 'no page errors: ' + '; '.join(errs)[:200]); c.close()
 
     print('the weekend proposal')

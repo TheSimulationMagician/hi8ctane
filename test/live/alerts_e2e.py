@@ -74,18 +74,20 @@ with sync_playwright() as p:
     print('one tap')
     c3, R, eR = phone('Pixel 7', K['cy'], {'getting': 'seat', 'lv.kite': 'regular'})
     R.goto(BASE + '/'); R.wait_for_timeout(2500)
-    R.locator(f'#sessions [data-act=going][data-code="{today_crew}"]').first.click(); R.wait_for_timeout(2500)
-    check(sql(f"select count(*) from crew_members m join crews c on c.id = m.crew_id where c.code = '{today_crew}' and m.email = 'cy@example.com'") == '1' and "YOU'RE IN" in txt(R, '#toast'),
-          "a rider who's joined before: I'M GOING and she's in, no form")
-    check('CHANGE' in txt(R, '#toast'), '...with CHANGE right there')
+    R.locator(f'#sessions [data-act=going][data-code="{today_crew}"]').first.click(); R.wait_for_selector('#joinForm'); R.wait_for_timeout(300)
+    # card-first: transport is never reused without a tap. Her level is kept; the way she gets there is the I'M IN
+    check(R.locator('[data-act=jflevel][data-v=regular][aria-pressed=true]').count() == 1 and R.locator('[data-act=jfget][aria-pressed=true]').count() == 0, "a rider who's joined before: her level is kept, the way she gets there is not")
+    R.locator('[data-act=jfget][data-v=seat]').click(); R.wait_for_timeout(2500)
+    check(sql(f"select count(*) from crew_members m join crews c on c.id = m.crew_id where c.code = '{today_crew}' and m.email = 'cy@example.com'") == '1',
+          "...one tap on I'M IN · I NEED A SEAT and she's in (2 taps from the card)")
 
     print("I'm in if 2 more")
     R.goto(BASE + '/'); R.wait_for_timeout(2000)
-    R.locator('.bd-c[data-act=startwin]').first.click()
+    R.locator('#every summary').click(); R.locator('.bd-c[data-act=startwin]').first.click()
     R.wait_for_selector('#sheet.on'); R.wait_for_timeout(500)
     R.locator('[data-act=sfmin][data-v="3"]').click(); R.wait_for_timeout(200)
     check('NEEDS 2 MORE' in txt(R, '#sheet'), 'IF 2 MORE: it says it will show NEEDS 2 MORE')
-    R.locator('.sh-foot .big.start').click(); R.wait_for_selector('text=YOUR CREW IS UP', timeout=8000); R.wait_for_timeout(800)
+    R.locator('.sh-foot [data-act=sfpost][data-v=seat]').click(); R.wait_for_selector('text=YOUR CREW IS UP', timeout=8000); R.wait_for_timeout(800)
     check(sql("select min_riders from crews where host_email = 'cy@example.com' order by created_at desc limit 1") == '3' and 'NEEDS 2 MORE' in txt(R, '#sheet'), 'posted with a minimum of 3')
 
     print('the forecast dropped')
