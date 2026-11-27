@@ -229,7 +229,7 @@
       '<div class="band" id="band"><section class="hero ht" id="hero"><canvas class="herofx" id="heroFx" aria-hidden="true"></canvas>' +
       '<div class="kick"><span class="blink pdot"></span><span id="heroKick">LIVE CREWS · KITE · MTB · MX</span></div>' +
       '<h1 class="hl">THE FORECAST SAYS GO.<br><span>WE GET YOU THERE.</span></h1>' +
-      '<p class="lede0">Good sessions near you, a crew at your level and a seat in the car. Tap <b>I\'M GOING</b>. No app to install.</p>' +
+      '<p class="lede0">Good sessions near you, a crew at your level and a seat in the car. Tap <b>I\'M GOING</b>.' + (inApp() ? '' : ' No app to install.') + '</p>' +
       '<div class="herowind wait" id="heroWind" aria-hidden="true"><b>··</b> KT<span>CHECKING THE FORECAST</span></div><div class="herostat" id="heroStat"></div><div class="looking" id="looking" hidden></div>' +
       '<div class="herocta"><button class="big join" id="heroGo" data-act="goingbest">I\'M GOING</button></div>' +
       '<button class="heromini" id="heroMini" data-act="tomap" aria-label="Open the live map" hidden></button></section><div class="bandmap" id="bandmap"></div></div>' +
@@ -290,7 +290,7 @@
     }).join('') + '</div>';
   }
   function howHtml() {
-    return '<div class="sec2"><b>HOW IT WORKS</b><span>NO APP · NO ACCOUNT UNTIL YOU GO</span></div><ol class="how3">' +
+    return '<div class="sec2"><b>HOW IT WORKS</b><span>' + (inApp() ? 'NO ACCOUNT UNTIL YOU GO' : 'NO APP · NO ACCOUNT UNTIL YOU GO') + '</span></div><ol class="how3">' +
       '<li><i>1</i><span><b>We rate every spot,</b> hour by hour, for your level.</span></li>' +
       '<li><i>2</i><span><b>Tap I\'M GOING.</b> Drive and fill your car, take a seat, or meet there.</span></li>' +
       '<li><i>3</i><span><b>Check in at the spot.</b> Ride together. The fuel is split and the driver never profits.</span></li></ol>';
@@ -1225,7 +1225,7 @@
     var anyCrew = upcoming(null, 14).length > 0;
     if (!myNext()) $('#heroKick').textContent = (anyCrew ? 'LIVE CREWS · ' : 'BE THE FIRST CREW · ') + live.map(function (k) { return (SPORT[k] || { name: k }).name.toUpperCase(); }).join(' · ') + ' · ' + regionName().toUpperCase();
     var all = upcoming(null, 7), riders = all.reduce(function (n, x) { return n + (x.going || 0); }, 0);
-    $('#heroStat').innerHTML = all.length >= 5 ? '<b>' + all.length + '</b> CREW' + (all.length > 1 ? 'S' : '') + ' THIS WEEK · <b>' + riders + '</b> RIDER' + (riders === 1 ? '' : 'S') + ' GOING' : 'FREE · NO APP · FOUNDING PLATES OPEN';
+    $('#heroStat').innerHTML = all.length >= 5 ? '<b>' + all.length + '</b> CREW' + (all.length > 1 ? 'S' : '') + ' THIS WEEK · <b>' + riders + '</b> RIDER' + (riders === 1 ? '' : 'S') + ' GOING' : (inApp() ? 'FREE · FOUNDING PLATES OPEN' : 'FREE · NO APP · FOUNDING PLATES OPEN');
   }
   function drawCrews() {
     var el = $('#crews'), h = home(); if (!el) return;
@@ -1884,7 +1884,7 @@
       var done = S.told && S.told[q.code + ':' + c.code];
       return '<button class="big ' + (done ? 'ghost' : 'start') + '" data-act="sqcall" data-squad="' + esc(q.code) + '" data-code="' + esc(c.code) + '"' + (done ? ' disabled' : '') + '>' + (done ? 'TOLD ' + esc(q.name.toUpperCase()) + ' ✓' : 'TELL ' + esc(q.name.toUpperCase()) + '<small style="display:block;font:700 10.5px var(--mono)">' + (q.size - 1) + ' RIDERS GET AN EMAIL</small>') + '</button>';
     }).join('');
-    return shell('YOUR CREW IS UP', (tell ? '<div class="f"><span class="lb">YOUR CREWS</span><div style="display:grid;gap:8px">' + tell + '</div></div>' : '') + '<div class="ok-box"><b>' + esc(SPORT[c.sport].em + ' ' + c.spot_name.toUpperCase() + ' · ' + dayRel(c.day) + ' ' + hm(c.start)) + '</b><br>' + (c.min && !c.min_met ? 'It goes ahead with ' + c.min + ': it needs ' + (c.min - (c.going || 1)) + ' more. ' : '') + 'Now get people in: share it to your group chats. They join in one tap, no app to install.</div>' +
+    return shell('YOUR CREW IS UP', (tell ? '<div class="f"><span class="lb">YOUR CREWS</span><div style="display:grid;gap:8px">' + tell + '</div></div>' : '') + '<div class="ok-box"><b>' + esc(SPORT[c.sport].em + ' ' + c.spot_name.toUpperCase() + ' · ' + dayRel(c.day) + ' ' + hm(c.start)) + '</b><br>' + (c.min && !c.min_met ? 'It goes ahead with ' + c.min + ': it needs ' + (c.min - (c.going || 1)) + ' more. ' : '') + 'Now get people in: share it to your group chats. They join in one tap, no app needed on their side.</div>' +
       (S.prof && !cardMade() ? '<div class="cardnudge"><span><b>Riders see your card before they join.</b> Yours is empty: make it so they see who they\'d ride with.</span><button class="big start" data-act="mycard">MAKE MY CARD · 1 MIN</button></div>' : '') +
       '<div class="f"><span class="lb">THE MESSAGE</span><pre class="box" style="margin:0;white-space:pre-wrap;font:400 12.5px/1.5 var(--mono)">' + esc(txt) + '</pre></div>' +
       '<div class="f"><div style="display:grid;gap:8px"><a class="big wa" href="https://wa.me/?text=' + encodeURIComponent(txt) + '" target="_blank" rel="noopener" data-act="shared">SHARE TO WHATSAPP</a>' +
@@ -2667,7 +2667,10 @@
   function pushSupported() { return 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window; }
   // on | off | ios (add to home screen first) | inapp | denied | unsupported | nokey
   function vkey() { return CFG.vapidKey || (S.settings && S.settings.vapid_public) || ''; }
+  // the iPhone app (ios-app/native/native.js sets HI8_NATIVE): native notifications instead of web push
+  function inApp() { return !!((window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) || (window.HI8_NATIVE && HI8_NATIVE.app)); }
   function pushState() {
+    if (inApp()) return PUSH.nat === 'granted' ? 'on' : PUSH.nat === 'denied' ? 'denied' : 'off';
     if (!vkey()) return 'nokey';
     if (inAppBrowser()) return 'inapp';
     if (isIOS() && !standalone()) return 'ios';
@@ -2679,6 +2682,7 @@
   // 2.32: the worker also keeps the site's files for a weak signal at the spot, so it's registered for everyone, once the page is up
   if ('serviceWorker' in navigator && location.protocol !== 'file:') window.addEventListener('load', function () { setTimeout(function () { swReg().catch(function () {}); }, 1500); });
   function pushCheck() {
+    if (inApp()) return HI8_NATIVE.pushState().then(function (s) { PUSH.nat = s; PUSH.checked = true; return null; }, function () { PUSH.checked = true; return null; });
     if (!pushSupported()) { PUSH.checked = true; return Promise.resolve(null); }
     return navigator.serviceWorker.getRegistration('./').then(function (r) { return r ? r.pushManager.getSubscription() : null; })
       .then(function (s) { PUSH.sub = s; PUSH.checked = true; return s; }, function () { PUSH.checked = true; return null; });
@@ -2693,6 +2697,11 @@
     if (!signedIn()) { toast('First set an alert (it asks your email), then turn on push.', 5000); go('#alerts'); return; }
     if (PUSH.busy) return;
     PUSH.busy = true; renderSheet();
+    if (inApp()) {
+      HI8_NATIVE.pushOn().then(function () { PUSH.busy = false; PUSH.nat = 'granted'; drawSessions(); renderSheet(); toast('Notifications are on. Answer IN or NOT NOW right from the lock screen.', 5000); },
+        function () { PUSH.busy = false; PUSH.nat = 'denied'; renderSheet(); toast('Notifications are off: Settings › Notifications › Hi8ctane turns them on.', 6000); });
+      return;
+    }
     Notification.requestPermission().then(function (p) {
       if (p !== 'granted') throw new Error(p === 'denied' ? 'denied' : 'dismissed');
       return swReg();
@@ -2712,6 +2721,7 @@
     toast('Push is off on this phone. Your alerts come by email if you ticked it.', 5000);
   }
   function pushTest() {
+    if (inApp()) { toast('Notifications are on: the next alert or crew message lands here.', 4000); return; }
     navigator.serviceWorker.ready.then(function (reg) {
       return reg.showNotification('Hi8ctane · test', { body: 'This is how an alert shows up: the spot, the hours, the wind, and who\'s going.', icon: 'icon-192.png', badge: 'badge-72.png', tag: 'test', data: { url: location.origin + location.pathname + '#alerts' } });
     }).then(function () { toast('Sent. Look at the top of your screen (or your lock screen).'); }, function () { toast('The test didn\'t show: check notifications are allowed for this site.'); });
@@ -2835,16 +2845,18 @@
   function steps(list) { return '<ol class="psteps">' + list.map(function (x, i) { return '<li><b>' + (i + 1) + '</b><span>' + x + '</span></li>'; }).join('') + '</ol>'; }
   function sheetPush() {
     var st = pushState(), body, foot = '';
-    var head = '<div class="hero"><div class="k">' + BELL.replace('#111', '#8DF5E8') + ' PUSH · NO APP NEEDED</div><h2>Alerts on your phone</h2>' +
+    var head = inApp() ? '<div class="hero"><div class="k">' + BELL.replace('#111', '#8DF5E8') + ' NOTIFICATIONS</div><h2>Alerts on your phone</h2><div class="when2" style="font-weight:400">Your alert, a crew that fits, the evening-before check: answer IN or NOT NOW right from the lock screen.</div></div>' :
+      '<div class="hero"><div class="k">' + BELL.replace('#111', '#8DF5E8') + ' PUSH · NO APP NEEDED</div><h2>Alerts on your phone</h2>' +
       '<div class="when2" style="font-weight:400">A message on your lock screen, like a text, from hi8ctane.com. You get one when your alert hits or when a crew you\'re in changes. Nothing from the app store.</div></div>';
     var state = { on: ['good', 'ON FOR THIS PHONE'], off: ['ok', 'ONE TAP AWAY'], ios: ['ok', 'IPHONE: 3 STEPS'], inapp: ['no', 'OPEN IN YOUR BROWSER FIRST'], denied: ['no', 'BLOCKED: 4 TAPS TO FIX'], unsupported: ['no', 'NOT IN THIS BROWSER'], nokey: ['none', 'COMING SOON'] }[st];
     var how;
     if (st === 'on') {
       how = '<p class="hint" style="margin:0 0 10px">It\'s set. Send yourself a test to see how an alert looks.</p><div style="display:grid;gap:8px"><button class="big ghost" data-act="pushtest">SEND ME A TEST</button><button class="opt" data-act="pushoff">TURN PUSH OFF ON THIS PHONE</button></div>';
     } else if (st === 'off') {
-      how = steps(['Tap <b>TURN ON PUSH</b> below.', 'Your ' + (isIOS() ? 'iPhone' : isAndroid() ? 'phone' : 'browser') + ' asks if hi8ctane.com may send notifications: tap <b>Allow</b>.', 'Done. Send yourself a test to see one.']) +
+      how = inApp() ? steps(['Tap <b>TURN ON NOTIFICATIONS</b> below.', 'Your iPhone asks if Hi8ctane may send notifications: tap <b>Allow</b>.', 'Done. When a crew fits, answer IN or NOT NOW from the lock screen.']) :
+        steps(['Tap <b>TURN ON PUSH</b> below.', 'Your ' + (isIOS() ? 'iPhone' : isAndroid() ? 'phone' : 'browser') + ' asks if hi8ctane.com may send notifications: tap <b>Allow</b>.', 'Done. Send yourself a test to see one.']) +
         (signedIn() ? '' : '<p class="hint">First set an alert: it asks your email, so we know whose phone this is.</p>');
-      foot = signedIn() ? '<button class="big start" data-act="pushon"' + (PUSH.busy ? ' disabled' : '') + '>' + (PUSH.busy ? '<span class="spin"></span>' : 'TURN ON PUSH') + '</button>' : '<button class="big start" data-act="alerts">SET AN ALERT FIRST</button>';
+      foot = signedIn() ? '<button class="big start" data-act="pushon"' + (PUSH.busy ? ' disabled' : '') + '>' + (PUSH.busy ? '<span class="spin"></span>' : inApp() ? 'TURN ON NOTIFICATIONS' : 'TURN ON PUSH') + '</button>' : '<button class="big start" data-act="alerts">SET AN ALERT FIRST</button>';
     } else if (st === 'ios') {
       how = steps(['In <b>Safari</b>, tap <b>Share</b> ' + SHARE_I + '. Don\'t see it? Tap <b>⋯</b> next to the address first.', 'Scroll down, tap <b>Add to Home Screen</b> ' + ADD_I + ', then <b>Add</b>.', 'Open <b>Hi8ctane</b> from your home screen, set your alert there (just your email) and tap <b>TURN ON PUSH</b>. Then tap <b>Allow</b>.']) +
         '<p class="hint">Why: on iPhone, only sites on your home screen may send notifications (iOS 16.4 or newer: Settings › General › About › iOS Version). It opens full screen, like an app. Your alerts by email keep working meanwhile.</p>';
@@ -2863,7 +2875,7 @@
     body = head + '<div class="box"><h3>ON THIS PHONE <span class="tag ' + state[0] + '">' + state[1] + '</span></h3>' + how + '</div>' +
       '<div class="box"><h3>FAIR QUESTIONS</h3><div class="faq"><b>How many?</b><span>At most one wind alert a day per sport. Crew messages only for crews you\'re in.</span>' +
       '<b>Battery, data?</b><span>Nothing runs on your phone. It arrives like a text.</span><b>Stop it?</b><span>Here, in your phone\'s settings, or with the stop link in any email.</span>' +
-      '<b>Who sees my phone?</b><span>Nobody. We keep an address your browser gives us for this site, nothing else.</span></div></div>' +
+      '<b>Who sees my phone?</b><span>Nobody. We keep ' + (inApp() ? 'a code your iPhone gives us for this app' : 'an address your browser gives us for this site') + ', nothing else.</span></div></div>' +
       '<div class="f"><button class="lnk" data-act="alerts">← MY ALERTS</button></div>';
     return shell('PUSH', body, foot, true);
   }
@@ -3081,7 +3093,7 @@
       foot = '<button class="big join" data-act="sqjoin"' + (Q.busy ? ' disabled' : '') + '>' + (Q.busy ? '<span class="spin"></span>' : 'JOIN THIS CREW') + '</button>';
     } else {
       body += '<div class="f"><label class="lb" for="sqEmail">YOUR EMAIL</label><input class="inp" id="sqEmail" type="email" autocomplete="email" placeholder="you@example.com">' +
-        '<p class="hint">You hear when one of them goes. No app, no password. ' + (Q.err2 ? '<b style="color:var(--pink)">' + esc(Q.err2) + '</b>' : '') + '</p></div>';
+        '<p class="hint">You hear when one of them goes. ' + (inApp() ? 'No password. ' : 'No app, no password. ') + (Q.err2 ? '<b style="color:var(--pink)">' + esc(Q.err2) + '</b>' : '') + '</p></div>';
       foot = '<button class="big join" data-act="sqjoin"' + (Q.busy ? ' disabled' : '') + '>' + (Q.busy ? '<span class="spin"></span>' : 'JOIN THIS CREW') + '</button>';
     }
     return shell('CREW', body, foot, true);
@@ -3207,6 +3219,7 @@
     f.busy = true; renderSheet();
     p.then(function (d) {
       var was = !!c.me; f.busy = false; S.jf = null; C.data = d; S.me = HI8.me(); drawTop(); if (!was) track('join', c.code);
+      if (!was && inApp() && !HI8.store.get('pushAsked', false)) { HI8.store.set('pushAsked', true); setTimeout(function () { HI8_NATIVE.pushState().then(function (s) { if (s !== 'granted') HI8_NATIVE.pushOn().then(function () { PUSH.nat = 'granted'; }, noop); }, noop); }, 2500); }
       HI8.loadCrews(true).catch(noop); HI8.loadMine(true).catch(noop); loadLive();
       startChat(); renderSheet(); if (home()) loadPlan(true);
       if (!was && f.quick) {
