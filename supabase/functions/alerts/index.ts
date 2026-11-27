@@ -2,8 +2,10 @@
 // It publishes the shared forecast, sends wind alerts, "forecast dropped" and "how was it?", and delivers push.
 // Deploy: supabase functions deploy alerts --no-verify-jwt   (the deploy workflow copies site/fx.js next to it first)
 // Who may start it: only a caller with the secret pg_cron sends (x-hi8-cron), checked against the database.
-// Env (given by Supabase): SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY. Optional secrets: METEO_KEY, SITE_URL.
+// Env (given by Supabase): SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY. Optional secrets: METEO_KEY, SITE_URL, and for the
+// iPhone app (0031): APNS_KEY_P8, APNS_KEY_ID, APPLE_TEAM_ID, APNS_TOPIC.
 import { runAlerts } from '../_shared/alerts.js';
+import { apnsConfig } from '../_shared/apns.js';
 
 const env = Deno.env.toObject();
 const URL0 = (env.SUPABASE_URL || '').replace(/\/$/, '');
@@ -33,7 +35,7 @@ Deno.serve(async (req: Request) => {
   running = true;
   const lines: string[] = [];
   try {
-    const out = await runAlerts({ rpc, FX: (globalThis as any).FX, site: env.SITE_URL || 'https://hi8ctane.com', upload, vapid: null, log: (...a: unknown[]) => lines.push(a.join(' ')) });
+    const out = await runAlerts({ rpc, FX: (globalThis as any).FX, site: env.SITE_URL || 'https://hi8ctane.com', upload, vapid: null, apns: apnsConfig(env), log: (...a: unknown[]) => lines.push(a.join(' ')) });
     return new Response(JSON.stringify({ ok: true, ...out, log: lines }), { headers: { 'content-type': 'application/json' } });
   } catch (e) {
     return new Response(JSON.stringify({ ok: false, message: String((e as Error).message || e), log: lines }), { status: 500, headers: { 'content-type': 'application/json' } });

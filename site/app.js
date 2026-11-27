@@ -2670,7 +2670,7 @@
   // the iPhone app (ios-app/native/native.js sets HI8_NATIVE): native notifications instead of web push
   function inApp() { return !!((window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform()) || (window.HI8_NATIVE && HI8_NATIVE.app)); }
   function pushState() {
-    if (inApp()) return PUSH.nat === 'granted' ? 'on' : PUSH.nat === 'denied' ? 'denied' : 'off';
+    if (inApp()) return PUSH.nat === 'denied' ? 'denied' : PUSH.nat === 'granted' && !HI8.store.get('pushOff', false) ? 'on' : 'off';
     if (!vkey()) return 'nokey';
     if (inAppBrowser()) return 'inapp';
     if (isIOS() && !standalone()) return 'ios';
@@ -2698,7 +2698,7 @@
     if (PUSH.busy) return;
     PUSH.busy = true; renderSheet();
     if (inApp()) {
-      HI8_NATIVE.pushOn().then(function () { PUSH.busy = false; PUSH.nat = 'granted'; drawSessions(); renderSheet(); toast('Notifications are on. Answer IN or NOT NOW right from the lock screen.', 5000); },
+      HI8_NATIVE.pushOn().then(function () { PUSH.busy = false; PUSH.nat = 'granted'; HI8.store.set('pushOff', false); drawSessions(); renderSheet(); toast('Notifications are on. Answer IN or NOT NOW right from the lock screen.', 5000); },
         function () { PUSH.busy = false; PUSH.nat = 'denied'; renderSheet(); toast('Notifications are off: Settings › Notifications › Hi8ctane turns them on.', 6000); });
       return;
     }
@@ -2715,6 +2715,11 @@
     });
   }
   function pushOff() {
+    if (inApp()) {   // the app: drop this phone's token here; iOS keeps the permission (Settings › Notifications)
+      HI8.store.set('pushOff', true); renderSheet(); drawSessions();
+      if (signedIn()) HI8.withKey('hi8_push_native_off', { p_token: HI8_NATIVE.token || null }, { noQueue: true }).catch(noop);
+      return;
+    }
     var s = PUSH.sub; PUSH.sub = null; renderSheet(); drawSessions(); if (!s) return;
     var ep = s.endpoint; s.unsubscribe().catch(noop);
     if (signedIn()) HI8.withKey('hi8_push_unsub', { p_endpoint: ep }, { noQueue: true }).catch(noop);

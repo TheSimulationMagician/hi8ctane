@@ -12,11 +12,13 @@
 //  3. How was it: the morning after a session (or 2 hours after it ended), one "how was it?" per rider.
 //  4. One step ahead (0029): free seats filled and the day-before lift ask; the next good window for a crew you kept,
 //     to whoever made it (17:00-21:00); after a session, the next good window at the same spot, to the captain.
-//  5. Push: everything waiting in push_queue goes to the riders' phones.
+//  5. Push: everything waiting in push_queue goes to the riders' phones: web push, and the iPhone app (APNs, 0031)
+//     with its buttons when opts.apns holds the key (apns.js).
 //
 // opts: { rpc(name, args), FX, site, vapid: { publicKey, privateKey } | null, upload(name, json) | null,
 //         testHour, dry, log, fetch }
 import { send, vapidKeys } from './webpush.js';
+import { sendApns } from './apns.js';
 
 export async function runAlerts(opts) {
   const { rpc, FX } = opts;
@@ -198,19 +200,28 @@ export async function runAlerts(opts) {
     VAPID_PUB = v.public; VAPID_PRIV = v.private;
   }
   const Q = await rpc('hi8_push_pending', { p_limit: 300 });
-  const done = [], ok = [], gone = [], failed = [];
+  const done = [], ok = [], gone = [], failed = [], nOk = [], nGone = [], nFailed = [];
+  const APNS = opts.apns || null;
   for (const q of Q || []) {
-    let any = false, allGone = q.subs.length > 0;
+    const nat = APNS ? (q.native || []) : [];
+    let any = false, allGone = q.subs.length + nat.length > 0;
+    for (const t of nat) {
+      const st = DRY ? 'ok' : await sendApns(t, q, APNS, { post: opts.apnsPost, fetch: opts.fetch, debug: opts.debug });
+      if (st === 'ok') { any = true; allGone = false; nOk.push(t.token); }
+      else if (st === 'gone') nGone.push(t.token);
+      else { allGone = false; nFailed.push(t.token); }
+    }
     for (const s of q.subs) {
       const st = DRY ? 201 : await send(s, { title: q.title, body: q.body, url: q.url || SITE, tag: q.tag || undefined }, { subject: 'mailto:hello@hi8ctane.com', publicKey: VAPID_PUB, privateKey: VAPID_PRIV, topic: q.tag, fetch: opts.fetch || fetch, debug: opts.debug });
       if (st >= 200 && st < 300) { any = true; allGone = false; ok.push(s.endpoint); }
       else if (st === 404 || st === 410) gone.push(s.endpoint);
       else { allGone = false; failed.push(s.endpoint); }
     }
-    if (any || allGone || !q.subs.length) done.push(q.id);
+    if (any || allGone || (!q.subs.length && !nat.length && !(q.native || []).length)) done.push(q.id);
   }
-  if ((Q || []).length && !DRY) await rpc('hi8_push_done', { p_sent: done, p_ok: ok, p_gone: gone, p_failed: failed });
-  report.push = { waiting: (Q || []).length, done: done.length, delivered: ok.length, gone: gone.length, failed: failed.length };
+  if ((Q || []).length && !DRY) await rpc('hi8_push_done', Object.assign({ p_sent: done, p_ok: ok, p_gone: gone, p_failed: failed },
+    nOk.length + nGone.length + nFailed.length ? { p_native_ok: nOk, p_native_gone: nGone, p_native_failed: nFailed } : {}));
+  report.push = { waiting: (Q || []).length, done: done.length, delivered: ok.length + nOk.length, gone: gone.length + nGone.length, failed: failed.length + nFailed.length, iphone: nOk.length };
   log('push:', (Q || []).length, 'waiting,', done.length, 'done,', ok.length, 'delivered,', gone.length, 'gone,', failed.length, 'failed');
   return report;
 }

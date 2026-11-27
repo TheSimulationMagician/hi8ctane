@@ -24,7 +24,9 @@ with expected_public_functions(name) as (values
   -- 0026 (2.31): anonymous counts
   ('hi8_track'), ('hi8_late'), ('hi8_weekend'), ('hi8_spot_notes'),
   -- 0030: riders confirm the conditions at the spot, open to new riders
-  ('hi8_spot_report'), ('hi8_conditions'), ('hi8_crew_open')
+  ('hi8_spot_report'), ('hi8_conditions'), ('hi8_crew_open'),
+  -- 0031: the iPhone app's notifications
+  ('hi8_push_native'), ('hi8_push_native_off'), ('hi8_push_answer')
 ), problems(problem, object) as (
   -- 1. every table has row level security on
   select 'table without row level security', n.nspname || '.' || c.relname

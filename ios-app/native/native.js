@@ -58,6 +58,7 @@
       if (d.url) openUrl(d.url);
     });
     // already allowed: register again at each start (tokens can change)
-    N.pushState().then(function (s) { if (s === 'granted') Push.register(); });
+    var off = false; try { off = JSON.parse(localStorage.getItem('hi8.pushOff') || 'false'); } catch (e) {}
+    N.pushState().then(function (s) { if (s === 'granted' && !off) Push.register(); });   // turned off in the app: stay off
   }
 })();
