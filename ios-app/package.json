@@ -1,0 +1,22 @@
+{
+  "name": "hi8ctane-ios",
+  "version": "1.0.0",
+  "private": true,
+  "description": "The Hi8ctane iPhone app: the site, bundled, in a native shell (Capacitor) with native push (IN / NOT NOW), the location check for spot reports, and links that open the app.",
+  "scripts": {
+    "web": "sh scripts/web.sh",
+    "ios": "sh scripts/web.sh && npx cap sync ios"
+  },
+  "dependencies": {
+    "@capacitor/app": "7.0.1",
+    "@capacitor/core": "7.4.2",
+    "@capacitor/geolocation": "7.1.2",
+    "@capacitor/ios": "7.4.2",
+    "@capacitor/push-notifications": "7.0.1",
+    "@capacitor/splash-screen": "7.0.1",
+    "@capacitor/status-bar": "7.0.1"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "7.4.2"
+  }
+}

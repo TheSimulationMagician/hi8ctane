@@ -1,0 +1,93 @@
+# The iPhone app: build it on a Mac in the cloud and send it to TestFlight (then App Store review from App Store Connect).
+# Runs only when started by hand (Actions > "iPhone app" > Run workflow). Nothing here runs on the website's deploys.
+#
+# Secrets to add once (Settings > Secrets and variables > Actions), pasted by the founder, never through chat:
+#   APPLE_TEAM_ID            the 10-character Team ID (developer.apple.com > Membership)
+#   ASC_KEY_ID               App Store Connect API key: Users and Access > Integrations > App Store Connect API
+#   ASC_ISSUER_ID            the issuer ID shown on that page
+#   ASC_KEY_P8               the .p8 file's text (it is downloadable once)
+name: iPhone app
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version shown on the App Store (e.g. 1.0.0)"
+        required: true
+        default: "1.0.0"
+      upload:
+        description: "Send to TestFlight"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: ios-app
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install Capacitor
+        run: npm install --no-audit --no-fund
+
+      - name: The web part (the site, shrunk) and the iOS project
+        run: |
+          sh scripts/web.sh
+          [ -d ios ] || npx cap add ios
+          npx cap sync ios
+          VERSION="${{ inputs.version }}" BUILD="${{ github.run_number }}" sh scripts/native.sh
+
+      - name: The App Store Connect key
+        env:
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+        run: |
+          [ -n "$ASC_KEY_P8" ] || { echo "Add the App Store Connect secrets first (see the top of this file)."; exit 1; }
+          mkdir -p ~/.appstoreconnect/private_keys
+          printf '%s' "$ASC_KEY_P8" > ~/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8
+
+      - name: Build and sign
+        env:
+          TEAM: ${{ secrets.APPLE_TEAM_ID }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          xcodebuild -project ios/App/App.xcodeproj -scheme App -configuration Release -sdk iphoneos \
+            -archivePath $RUNNER_TEMP/Hi8ctane.xcarchive archive \
+            DEVELOPMENT_TEAM="$TEAM" CODE_SIGN_STYLE=Automatic PRODUCT_BUNDLE_IDENTIFIER=com.hi8ctane.app \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath ~/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8 \
+            -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+
+      - name: Send to TestFlight
+        if: ${{ inputs.upload }}
+        env:
+          TEAM: ${{ secrets.APPLE_TEAM_ID }}
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          cat > $RUNNER_TEMP/export.plist <<X
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>upload</string>
+            <key>teamID</key><string>$TEAM</string>
+            <key>signingStyle</key><string>automatic</string>
+          </dict></plist>
+          X
+          xcodebuild -exportArchive -archivePath $RUNNER_TEMP/Hi8ctane.xcarchive -exportOptionsPlist $RUNNER_TEMP/export.plist \
+            -exportPath $RUNNER_TEMP/out -allowProvisioningUpdates \
+            -authenticationKeyPath ~/.appstoreconnect/private_keys/AuthKey_${ASC_KEY_ID}.p8 \
+            -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+          echo "Uploaded build ${{ github.run_number }}: it shows in App Store Connect > TestFlight after Apple processes it (10-30 min)."
