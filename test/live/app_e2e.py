@@ -32,6 +32,7 @@ def txt(pg, sel='body'):  # headings are upper-cased by CSS; what's folded under
 sql("truncate public.signups, public.night_rsvps, public.rider_keys, public.crews, public.crew_members, public.crew_messages, public.rate_hits, public.outbox, public.spot_reports, public.crew_alerts, public.wind_alerts, public.push_subs, public.push_queue, public.alert_sent, public.spot_watch, public.plan_leads, public.wallet_ledger, public.seat_payments, public.passes, public.payout_accounts cascade")
 sql("delete from public.pass_interest")
 sql("update public.app_settings set value = 'false' where key in ('payments_live', 'fee_live')")
+sql("delete from public.app_settings where key in ('pass_public', 'founding_night_public')")   # both private by default
 sql("delete from public.hubs where kind = 'town'")
 sql("update public.app_settings set value = 'true' where key = 'open_posting'")
 
@@ -234,6 +235,9 @@ with sync_playwright() as p:
     Wp = ctxW.new_page(); Wp.errs = []; Wp.on('pageerror', lambda e: Wp.errs.append(str(e)))
     Wp.goto(BASE + '/#me'); Wp.wait_for_selector('#sheet.on'); Wp.wait_for_timeout(1500)
     check('WALLET' in txt(Wp, '#sheet') and 'OPENS SOON' in txt(Wp, '#sheet') and Wp.locator('[data-act=topup]').count() == 0, 'payments off: the wallet says it opens soon, nothing to press')
+    check('HI8 PASS' not in txt(Wp, '#sheet') and Wp.locator('#sheet [data-act=passin]').count() == 0, 'the Hi8 Pass and its price stay private until pass_public is on')
+    sql("insert into public.app_settings (key, value, public) values ('pass_public', 'true', true) on conflict (key) do update set value = 'true', public = true")
+    Wp.reload(); Wp.wait_for_selector('#sheet.on'); Wp.wait_for_timeout(1500)
     check('HI8 PASS' in txt(Wp, '#sheet') and '10% INSTEAD OF 15%' in txt(Wp, '#sheet') and '€9.99' in txt(Wp, '#sheet') and 'FREE WHILE THE PILOT RUNS' in txt(Wp, '#sheet') and Wp.locator('#sheet [data-act=passin]').count() == 1, 'the Pass: 10% instead of 15%, €9.99 for founding riders, free in the pilot, COUNT ME IN (2.17)')
     Wp.locator('#sheet [data-act=passin]').click(); Wp.wait_for_timeout(1200)
     check(sql("select count(*) from public.pass_interest where source = 'me'") == '1' and "ON THE LIST" in txt(Wp, '#sheet'), 'COUNT ME IN saves the rider to the Pass list')
@@ -288,6 +292,7 @@ with sync_playwright() as p:
     ctxV, V = fresh()
     V.goto(BASE + '/'); V.wait_for_timeout(1500)
     check(V.locator('.hero .hl').bounding_box()['y'] < V.locator('#sessions').bounding_box()['y'] < V.locator('#how').bounding_box()['y'] < V.locator('#moWeek').bounding_box()['y'] < V.locator('.mapwrap').bounding_box()['y'] and V.locator('#night').count() == 0 and V.locator('.seeyou').count() == 0, 'phone: the hero, the board, how it works, MORE, and the page ends on the live map')
+    check(V.locator('#moPass').count() == 0 and 'Hi8 Pass' not in V.locator('body').inner_text(), 'no Hi8 Pass offer or price on the landing')
     V.goto(BASE + '/?v=1'); V.wait_for_timeout(1500)
     check(V.locator('#crews').count() == 1 and V.locator('#sessions').count() == 0, 'iteration 1 (?v=1): the crew cards')
     V.goto(BASE + '/?v=2'); V.wait_for_timeout(1500)
