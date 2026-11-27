@@ -110,7 +110,9 @@ with sync_playwright() as pw:
 
     # 7 · on the day, before pick-up, nothing in the way: directions are the sticky
     pg, errs = crewpage('hu', T)
-    check(sticky(pg) == 'nav' and 'GOOGLE MAPS' in foot(pg).inner_text(), 'on the day: the sticky is GOOGLE MAPS to the pick-up')
+    # the local test forecast moves with the clock: when it warns for T's hours, the warning rightly comes first (rule 1)
+    if warn(pg): check(sticky(pg) == 'tofx', 'on the day, with the forecast warning at this hour: the warning comes first (SEE THE FORECAST)')
+    else: check(sticky(pg) == 'nav' and 'GOOGLE MAPS' in foot(pg).inner_text(), 'on the day: the sticky is GOOGLE MAPS to the pick-up')
     check(pg.locator('#sheet.on .pass .pass-act').count() == 0, 'and the pass itself holds no second copy of the main button')
 
     # 1 · closed: the closure beats everything
