@@ -1,3 +1,5 @@
+from zoneinfo import ZoneInfo
+import datetime
 # TEST ONLY. The 2.9 app (site/index.html) in a real browser against Postgres + PostgREST and the stand-in
 # Open-Meteo: the live map, the two options (start a crew, join a crew) for people with no account, sharing,
 # the duplicate warning, the crew chat, settling up with Bizum, checking in and reporting, alerts and the stop
@@ -59,11 +61,20 @@ with sync_playwright() as p:
     A.locator('.mapsec').scroll_into_view_if_needed(); A.wait_for_timeout(1200)
     check(320 <= A.locator('.mapsec .mapwrap').bounding_box()['height'] <= 525, 'on a phone the live map closes the page, tall')
     # 2.25: the map is three stacked canvases (base, wind flow, markers): count the colours of all of them
-    px = A.evaluate("""(() => { const seen = new Set(); document.querySelectorAll('#map canvas').forEach(c => { const x = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
+    # after sunset the wind field goes dark on purpose (about 19 colours instead of 29), so this check reads the map at
+    # 13:00 on a pinned clock: it tests that the map is drawn, not what time it is
+    ctxM = br.new_context(viewport={'width': 390, 'height': 844}, timezone_id='Europe/Amsterdam'); MP = ctxM.new_page()
+    MP.clock.set_fixed_time(datetime.datetime.now(ZoneInfo('Europe/Amsterdam')).replace(hour=13, minute=0, second=0, microsecond=0))
+    MP.goto(BASE + '/?city=barcelona'); MP.wait_for_timeout(3500); MP.locator('.mapsec').scroll_into_view_if_needed(); MP.wait_for_timeout(1500)
+    px = MP.evaluate("""(() => { const seen = new Set(); document.querySelectorAll('#map canvas').forEach(c => { const x = c.getContext('2d').getImageData(0, 0, c.width, c.height).data;
                         for (let i = 0; i < x.length; i += 4 * 997) if (x[i + 3]) seen.add(x[i] >> 4 << 8 | x[i + 1] >> 4 << 4 | x[i + 2] >> 4); }); return seen.size; })()""")
+    ctxM.close()
     check(px > 25, f'the map is drawn: wind colours, coast, spots ({px} colours)')
     check('THE WEEK AHEAD' in txt(A, '#week') and A.locator('#week .wc').count() == 21 and 'AROME' in txt(A, '#week'), 'the week ahead: kite, MTB and MX x 7 days, and where it comes from')
     check('THE BEST WINDOW' in txt(A, '#best') and ('MODELS' in txt(A, '#best') or 'NO GOOD' in txt(A, '#best')), 'the best window, with the numbers and the models')
+    # card-first B: the cards come first; the board of every spot is folded under EVERY SPOT, EVERY DAY
+    check(A.locator('#sessions .homerail .ad.k2').count() >= 1 and A.locator('#every[open]').count() == 0 and 'EVERY SPOT, EVERY DAY' in txt(A, '#every summary'), 'the best ways to ride first, as cards; the board folded below them')
+    A.locator('#every summary').click(); A.wait_for_timeout(200)
     check('ALL SPOTS · THIS WEEK' in txt(A, '#sessions') and A.locator('#sessions [data-act=startwin]').count() >= 1 and A.locator('#sessions [data-act=going]').count() == 0 and A.locator('#sessions .ss').count() == 0 and A.locator('#sessions .board .bd-r').count() >= 5 and A.locator('#sessions .board .bd-r').nth(1).locator('.bd-c').count() == 8, "no crews yet: the board of every nearby spot, now and seven days, a tap on a good day goes")
     check(A.locator('#now').count() == 0 and A.locator('#sessions .board button.bd-c.now').count() >= 4 and A.locator('#setup').count() == 0, 'right now at each spot is the first column of the board; no set-up box')
     check('SAFER' in txt(A, '#buddy') and 'MORE FUN' in txt(A, '#buddy') and 'SOMEONE SEES YOU GO OUT' in txt(A, '#buddy'), 'ride with a buddy: safer, more fun')
@@ -119,10 +130,9 @@ with sync_playwright() as p:
     check(B.locator('.hcell').count() >= 1 or 'forecast reaches 3 days'.upper() in t, 'the hour-by-hour forecast for its window')
     B.locator('.sh-foot [data-act=jfopen]').click(); B.wait_for_selector('#joinForm')
     check(B.locator('[data-act=jflevel]').count() == 2 and 'LEARNING'.upper() not in txt(B, '#joinForm'), 'a crew for riders who ride solo: no learner option')
-    B.locator('[data-act=jfget][data-v=seat]').click()
     B.fill('#jfEmail', 'sam@example.com'); B.fill('#jfName', 'Sam')
-    check(B.locator('#joinForm [data-act=jfgo]').count() == 0 and B.locator('#sheet .box h3:text-is("WHO\'S GOING")').count() == 0, 'joining: one I\'M GOING (at the bottom), and the rest of the crew waits until you\'re in (2.24)')
-    B.locator('.sh-foot [data-act=jfgo]').click()
+    check(B.locator('#joinForm [data-act=jfgo]').count() == 0 and B.locator('[data-act=jfget][data-go]').count() == 2 and B.locator('.sh-foot .inhint').count() == 1 and B.locator('#sheet .box h3:text-is("WHO\'S GOING")').count() == 0, 'joining: the way you get there is the I\'M IN, and the rest of the crew waits until you\'re in (2.24, card-first)')
+    B.locator('[data-act=jfget][data-v=seat]').click()
     B.wait_for_selector('#chatBox', timeout=8000)
     check("YOU'RE IN" in txt(B, '#sheet .pass').upper() and 'FOUNDING PLATE #002' in txt(B, '#sheet .pass').upper(), "in, with founding plate #002, on the session pass (2.24)")
     check('rides with Kai'.upper() in txt(B, '#sheet') and 'MEETING POINT'.upper() in txt(B, '#sheet'), "Sam sees the meeting point and rides in Kai's car")
@@ -151,7 +161,7 @@ with sync_playwright() as p:
     C.goto(BASE + '/'); C.wait_for_timeout(2500)
     check('AT THE SPOTS NOW'.upper() in txt(C, '#live') and 'Castelldefels'.upper() in txt(C, '#live') and 'on a 9'.upper() in txt(C, '#live') and 'Sam'.upper() not in txt(C, '#live'), 'everyone sees it on the landing, without the name')
     check('CREW ON NOW'.upper() in txt(C, '#mapnote'), 'the map says a crew is on now')
-    check('LIVE' in txt(C, '#sessions') and "KAI'S CREW" in txt(C, '#sessions') and C.locator('#sessions [data-act=going]').count() >= 1, "the session shows LIVE and Kai's crew, with I'M GOING")
+    check("KAI'S CREW" in txt(C, '#sessions .homerail') and C.locator('#sessions .homerail .ad .k2t .tile').count() >= 1 and C.locator('#sessions .homerail [data-act=going]').count() >= 1, "Kai's crew shows as an adventure card (logo, colour), and a tap joins (2.33)")
 
     print('alerts and the stop link')
     C.locator('#sports [data-sport=mx]').click(); C.wait_for_timeout(400)
@@ -215,7 +225,7 @@ with sync_playwright() as p:
     F.locator('#sheet [data-act=sethome][data-name=UTRECHT]').click(); F.wait_for_timeout(300)
     check(json.loads(F.evaluate("localStorage.getItem('hi8.home29.amsterdam')"))['name'] == 'UTRECHT' and sql("select count(*) from hubs where kind = 'town'") == '0', 'kept on the phone only: nothing sent yet')
     F.locator('.sh-foot .big').click(); F.wait_for_timeout(300)
-    check('NEAREST TO UTRECHT' in txt(F, '#sessions') and 'FROM UTRECHT' in txt(F, '#ctx') and F.locator('#setup .setupc').count() == 0 and 'NO CREW FROM UTRECHT YET?' in txt(F, '#towns') and 'START ONE FROM UTRECHT' in txt(F, '#towns'), 'crews near you, from Utrecht; start the first one from there')
+    check('FROM UTRECHT' in txt(F, '#sessions .hb-h') and 'NEAREST TO UTRECHT' in F.evaluate("document.querySelector('#every').textContent").upper() and 'FROM UTRECHT' in txt(F, '#ctx') and F.locator('#setup .setupc').count() == 0 and 'NO CREW FROM UTRECHT YET?' in txt(F, '#towns') and 'START ONE FROM UTRECHT' in txt(F, '#towns'), 'crews near you, from Utrecht; start the first one from there')
     F.locator('#moWhere summary').click(); F.locator('#towns [data-act=startfrom]').click(); F.wait_for_selector('#sheet.on'); F.wait_for_timeout(600)
     check('UTRECHT' in F.locator('[data-act=sfhub][aria-pressed=true]').inner_text() and 'NEW' in F.locator('[data-act=sfhub][aria-pressed=true]').inner_text(), 'START picks Utrecht as the pick-up, new')
     F.fill('#sfEmail', 'ruud@example.com'); F.fill('#sfName', 'Ruud'); F.locator('.sh-foot .big.start').click(); F.wait_for_selector('text=YOUR CREW IS UP', timeout=8000)
@@ -281,13 +291,17 @@ with sync_playwright() as p:
     C.goto(BASE + '/B27-Start.dc.html?spot=trabucador&sp=kite'); C.wait_for_url(re.compile(r'.*\?spot=trabucador&sport=kite#start$')); C.wait_for_timeout(800)
     check(C.locator('[data-act=sfspot][data-spot=trabucador]').get_attribute('aria-pressed') == 'true', 'an old start link opens START with that spot')
     C.goto(BASE + '/join?ref=pinkflyer'); C.wait_for_url(re.compile(r'.*/\?ref=pinkflyer#join$')); C.wait_for_timeout(500)
-    check('JOIN A CREW'.upper() in txt(C, '#shTitle'), 'hi8ctane.com/join opens JOIN A CREW')
+    check("WHAT'S ON?" in txt(C, '#sheet .won'), "hi8ctane.com/join opens WHAT'S ON?")
 
     print('desktop and the landing iterations')
     ctxD, D = fresh(1440, 900)
     D.goto(BASE + '/'); D.wait_for_timeout(2000)
-    m, pnl = D.locator('.mapwrap').bounding_box(), D.locator('.panel').bounding_box()
-    check(m['x'] == 0 and m['width'] > 900 and pnl['x'] >= 960 and m['height'] > 800, 'computer: the map fills the left, the app on the right')
+    m, h = D.locator('.mapwrap').bounding_box(), D.locator('.band .hero').bounding_box()
+    check(h['x'] == 0 and m['x'] >= h['width'] - 2 and 450 <= m['width'] <= 700 and abs(m['y'] - h['y']) < 3 and m['height'] >= 480 and D.locator('#bandmap .mapwrap').count() == 1, 'computer: the masthead on the left, the live map beside it (card-first B)')
+    check(not D.locator('.dock').is_visible() and D.locator('#heroGo').is_visible() and D.locator('.hbown').is_visible(), 'computer: no dock; the button sits in the masthead, START YOUR OWN CREW over the cards')
+    D.mouse.wheel(0, 900); D.wait_for_timeout(400)
+    cs = D.locator('#sessions .homerail .ad.k2')
+    check(D.evaluate('window.scrollY') > 300 and (cs.count() < 2 or abs(cs.nth(0).bounding_box()['y'] - cs.nth(1).bounding_box()['y']) < 3), 'computer: the page scrolls (the wheel over the map scrolls too) and the cards sit side by side')
     check(D.locator('.hero').bounding_box()['height'] > 200, 'computer: the hero keeps its full height')
     ctxV, V = fresh()
     V.goto(BASE + '/'); V.wait_for_timeout(1500)
@@ -304,21 +318,17 @@ with sync_playwright() as p:
     check(Q.locator('#sessions [data-act=going]').count() >= 1, "a session with a crew offers I'M GOING")
     Q.locator('#sessions [data-act=going]').first.click(); Q.wait_for_selector('#joinForm', timeout=8000); Q.wait_for_timeout(300)
     jt = txt(Q, '#joinForm')
-    check((jt.index('YOU') < jt.index('HOW ARE YOU GETTING THERE?') if 'RIDER NAME' in jt else True) and jt.index('HOW ARE YOU GETTING THERE?') < jt.index('YOUR LEVEL'), 'the crew opens with the join form: you first (when not signed in), then how you get there, then your level (UX review H03)')
-    check(Q.locator('.sh-foot .big.join').inner_text() == "CONFIRM JOIN" and Q.locator('#joinForm [data-act=jfgo]').count() == 0, "and the button says CONFIRM JOIN (one, at the bottom; UX review H03)")
+    check((jt.index('YOU') < jt.index('YOUR LEVEL') if 'RIDER NAME' in jt else True) and jt.index('YOUR LEVEL') < jt.index('HOW ARE YOU GETTING THERE?'), 'the crew opens with the join form: you first (when not signed in), your level, then how you get there, which is the I\'M IN (card-first)')
+    check(Q.locator('.sh-foot .inhint').count() == 1 and 'I\'M IN · I NEED A SEAT' in Q.locator('[data-act=jfget][data-v=seat]').inner_text() and Q.locator('#joinForm [data-act=jfgo]').count() == 0, "and the way you get there is the I'M IN: one tap, nothing picked for you (card-first)")
     Q.locator('[data-act=close]').click(); Q.wait_for_timeout(300)
     check(Q.locator('#sessions [data-act=startwin]').count() >= 1, 'a good session with nobody yet offers START IT')
     Q.locator('#sessions [data-act=startwin]').first.click(); Q.wait_for_selector('#sheet .qsum'); Q.wait_for_timeout(300)
-    check("START THIS CREW" in txt(Q, '#shTitle') and 'HOW ARE YOU GETTING THERE?' in txt(Q, '#sheet') and Q.locator('[data-act=sfwin]').count() == 0 and Q.locator('[data-act=sfspot]').count() == 0 and Q.locator('[data-act=sflevels]').count() == 0,
-          'no crew yet: the day, time and spot are already picked; one question, how you get there')
-    check(Q.locator('[data-act=sfget][aria-pressed=true]').count() == 0 and Q.locator('#sfNote').count() == 0, 'nothing chosen for you, and the note folded away')
-    Q.locator('.sh-foot .big.start').click(); Q.wait_for_timeout(300)
-    check("PICK HOW YOU'RE GETTING THERE" in txt(Q, '#sheet'), 'tap without choosing: it asks, nothing posted')
-    Q.locator('[data-act=sfget][data-v=seat]').click(); Q.wait_for_timeout(200)
-    check('MEET AT' in txt(Q, '#sheet') and 'A SEAT IN A FULL CAR' in txt(Q, '#sheet'), 'a seat: where to meet, and what it costs')
+    check("START THIS CREW" in txt(Q, '#shTitle') and Q.locator('.sh-foot [data-act=sfpost]').count() == 3 and Q.locator('[data-act=sfwin]').count() == 0 and Q.locator('[data-act=sfspot]').count() == 0 and Q.locator('[data-act=sflevels]').count() == 0,
+          'no crew yet: the day, time and spot are already picked; the way you get there is the post (card-first)')
+    check(Q.locator('[data-act=sfget]').count() == 0 and Q.locator('.sh-foot [data-act=sfpost][aria-pressed=true]').count() == 0 and Q.locator('#sfNote').count() == 0 and 'NEVER COPIED' in txt(Q, '.sh-foot .postnote').upper(), 'nothing chosen for you, the note folded away, and it says so')
     Q.fill('#sfEmail', 'quick@example.com'); Q.fill('#sfName', 'Lu')
-    Q.locator('.sh-foot .big.start').click(); Q.wait_for_selector('text=YOUR CREW IS UP', timeout=8000)
-    check(sql("select count(*) from crews where host_email = 'quick@example.com'") == '1' and Q.evaluate("localStorage.getItem('hi8.getting')") == '"seat"', "posted in one go, and the app remembers she takes a seat")
+    Q.locator('.sh-foot [data-act=sfpost][data-v=seat]').click(); Q.wait_for_selector('text=YOUR CREW IS UP', timeout=8000)
+    check(sql("select count(*) from crews where host_email = 'quick@example.com'") == '1' and sql("select m.getting from crew_members m join crews c on c.id = m.crew_id where c.host_email = 'quick@example.com'") == 'seat', "posted in one tap: I NEED A SEAT")
     Q.locator('[data-act=close]').click(); Q.wait_for_timeout(500)
     Q.locator('#sessions .two2 [data-act=start]').click(); Q.wait_for_timeout(300)
     check(Q.locator('[data-act=sfwin]').count() >= 1 and 'START A CREW' in txt(Q, '#shTitle'), 'START A CREW: the full form, any day, any spot')
@@ -332,7 +342,7 @@ with sync_playwright() as p:
     ctxN, N = fresh()
     N.route(re.compile(r'.*/v1/(forecast|marine).*|.*/storage/v1/object/public/fx/.*'), lambda r: r.abort())   # 2.27: and the shared forecast file
     N.goto(BASE + '/'); N.wait_for_timeout(2500)
-    check('No forecast right now'.upper() in txt(N, '#week') and 'ALL SPOTS · THIS WEEK' in txt(N, '#sessions') and not N.errs, 'Open-Meteo down: says so, crews still work, nothing breaks')
+    check('No forecast right now'.upper() in txt(N, '#week') and 'ALL SPOTS · THIS WEEK' in N.evaluate("document.querySelector('#sessions').textContent").upper() and not N.errs, 'Open-Meteo down: says so, crews still work, nothing breaks')
     check('CHECKING' not in txt(N, '#heroWind') and 'wait' not in (N.locator('#heroWind').get_attribute('class') or ''), 'and the hero stops saying it is checking the forecast (2.17)')
 
     for name, pg in (('A', A), ('B', B), ('C', C), ('D', D), ('E', E), ('F', F), ('G', G), ('W', Wp), ('V', V)):

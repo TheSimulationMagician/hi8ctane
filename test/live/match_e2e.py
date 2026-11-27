@@ -42,13 +42,13 @@ with sync_playwright() as p:
     print('the crew that fits you first')
     D = phone(K['di'], {'lv.kite': 'regular', 'getting': 'seat'})
     D.goto(BASE + '/'); D.wait_for_timeout(3500)
-    ss = D.locator('#sessions .ss.has').first
-    check(fits in (ss.locator('.sgl').first.get_attribute('href') or ''), "Di (a rider, needs a seat): on the landing Ana's crew is the one shown, not the sooner rookie session")
-    why = ss.locator('.ss-why').inner_text().upper()
+    ss = D.locator('#sessions .homerail .ad:has([data-code])').first  # 2.33: the home's crews are adventure cards, best fit first
+    check(ss.locator('[data-code]').get_attribute('data-code') == fits, "Di (a rider, needs a seat): on the landing Ana's crew comes first, not the sooner rookie session")
+    why = ss.locator('.scwhy').inner_text().upper()
     check('A SEAT FROM CENTRAAL' in why and "1 RIDER YOU'VE RIDDEN WITH" in why, 'and it says why: ' + why)
     D.goto(BASE + '/#join'); D.wait_for_selector('#sheet.on'); D.wait_for_timeout(1500)
-    cards = D.locator('#sheet .sc')
-    check(cards.count() == 2 and fits in (cards.first.get_attribute('href') or '') and first in (cards.nth(1).get_attribute('href') or ''), 'ALL CREWS: hers first, the rookie session after')
+    cards = D.locator('#sheet .ad:has([data-code])')
+    check(cards.count() == 2 and cards.first.locator('[data-code]').get_attribute('data-code') == fits and cards.nth(1).locator('[data-code]').get_attribute('data-code') == first, "WHAT'S ON: hers first, the rookie session after")
     check(cards.first.locator('.scwhy').count() == 1 and cards.nth(1).locator('.scwhy').count() == 0, 'the rookie session says nothing (not her level, no seat)')
     print("I'm looking, without an account")
     F = phone()

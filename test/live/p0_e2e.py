@@ -61,9 +61,8 @@ with sync_playwright() as p:
     n_auth = len(json.loads(urllib.request.urlopen(BASE + '/__auth').read()))
     X.goto(BASE + f'/?c={code}'); X.wait_for_selector('#sheet.on'); X.wait_for_timeout(2000)
     X.locator('.sh-foot [data-act=jfopen]').click(); X.wait_for_selector('#joinForm')   # I'M GOING, or JOIN ANYWAY when the forecast is against it
-    X.locator('[data-act=jfget][data-v=own]').click()
     X.fill('#jfEmail', 'ana@example.com'); X.fill('#jfName', 'Not Ana')
-    X.locator('.sh-foot [data-act=jfgo]').click(); X.wait_for_timeout(2500)
+    X.locator('[data-act=jfget][data-v=own]').click(); X.wait_for_timeout(2500)   # card-first: the way you get there is the I'M IN
     auth = json.loads(urllib.request.urlopen(BASE + '/__auth').read())[n_auth:]
     check(any(a['path'] == '/auth/v1/otp' and 'ana@example.com' in a['body'] for a in auth), 'joining with an email we know: the site asks Supabase to email Ana a sign-in link')
     check('SIGN-IN LINK' in X.locator('#sheet').inner_text().upper() and X.evaluate("JSON.parse(localStorage.getItem('hi8.me') || '{}').key || null") is None, '...says so, and this browser gets no key')
@@ -73,12 +72,14 @@ with sync_playwright() as p:
     B.goto(BASE + f'/?c={code}'); B.wait_for_selector('#sheet.on'); B.wait_for_timeout(2500)
     r = T(B, '#sheet .pass')
     check('5 GOING OF 6' in T(B, '#sheet .pass-crew') and 'EVE STILL NEEDS A LIFT' in T(B, '#sheet .pass-todo') and 'PIN' in T(B, '#sheet .pass-todo'), 'the captain sees the facts and what is still open: ' + r.replace('\n', ' / ')[:160])
-    check('FIND EVE A SEAT' in T(B, '#sheet .pass-now'), 'and one next action: find Eve a seat')
-    B.locator('#sheet .pass [data-act=askdriver]').click(); B.wait_for_timeout(1500)
+    warnB = B.locator('#sheet.on .pass-now.warn').count() == 1   # PR #50: when the forecast is against the session it leads; the seat moves to the next-action box
+    check('FIND EVE A SEAT' in T(B, '#sheet .pass-then' if warnB else '#sheet .pass-now'), 'and one next action: find Eve a seat' + (' (right after the forecast warning, which leads)' if warnB else ''))
+    B.locator('#sheet.on .sh-foot [data-act=askdriver]' if not warnB else '#sheet.on .pass-then [data-act=askdriver]').first.click(); B.wait_for_timeout(1500)
     check(sql(f"select count(*) from crew_messages m join crews c on c.id = m.crew_id where c.code = '{code}' and m.body like 'Eve still needs a lift from Centraal at 11:45%'") == '1', 'ASK THE CREW FOR A DRIVER: posted in the crew chat')
     E = phone(K['eve'])
     E.goto(BASE + f'/?c={code}'); E.wait_for_selector('#sheet.on'); E.wait_for_timeout(2500)
-    check("YOUR LIFT ISN'T SORTED YET" in T(E, '#sheet .pass-now') and E.locator('#sheet .pass [data-act=askdriver]').count() == 1, "Eve sees it from her side: her lift isn't sorted yet, ask the crew")
+    if warnB: check("YOUR LIFT ISN'T SORTED YET" in T(E, '#sheet .pass-then') and E.locator('#sheet.on .pass-now.warn').count() == 1, "Eve sees it from her side: the forecast warning leads, her lift is the next thing for her")
+    else: check("YOUR LIFT ISN'T SORTED YET" in T(E, '#sheet .pass-now') and E.locator('#sheet.on .sh-foot [data-act=askdriver]').count() == 1, "Eve sees it from her side: her lift isn't sorted yet, and the sticky button asks the crew (not SHARE)")
     G = phone()
     G.goto(BASE + f'/?c={code}'); G.wait_for_selector('#sheet.on'); G.wait_for_timeout(2500)
     g = T(G, '#sheet .ess')
@@ -123,7 +124,8 @@ with sync_playwright() as p:
     check(ag.count() == 1, 'a past session: RUN IT AGAIN · SAME CREW SET-UP')
     ag.click(); B.wait_for_selector('#sheet.on'); B.wait_for_timeout(1500)
     check(B.url.endswith('#start') and 'WIJK AAN ZEE' in T(B, '#sheet'), 'it opens the start form on the same spot, at the next good window')
-    B.locator('.sh-foot .big.start').click(); B.wait_for_timeout(3000)
+    check(B.locator('.sh-foot [data-act=sfpost]').count() == 3 and B.locator('[data-act=sfget][aria-pressed=true]').count() == 0, 'the way he gets there is never copied: three POST IT buttons, nothing picked (card-first)')
+    B.locator('.sh-foot [data-act=sfpost][data-v=drive]').click(); B.wait_for_timeout(3000)
     row = sql("select spot || '|' || levels || '|' || max_riders || '|' || meet_hub from crews where host_email = 'bo@example.com' and created_at > now() - interval '1 minute' and day >= hi8_today('amsterdam') order by created_at desc limit 1")
     check(row == 'wijk-aan-zee|regular|7|cs', 'published with the same set-up (spot, levels, 7 riders, pick-up Centraal) in one tap: ' + row)
     check(sql("select count(*) from events where name = 'publish' and extra = 'again'") == '1', '...and counted as a run-again')
