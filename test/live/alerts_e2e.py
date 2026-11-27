@@ -27,7 +27,9 @@ def crew(spot, off, host, members, start, end, mn=None):
     cid = sql(f"insert into public.crews (city, sport, spot, day, start_time, end_time, levels, max_riders, meet_hub, meet_time, host_email, min_riders) values ('amsterdam','kite','{spot}', '{day(off)}', '{start}', '{end}', 'all', 6, 'cs', '07:00', '{host}@example.com', {mn or 'null'}) returning id").split('\n')[0]
     for m in members: sql(f"insert into public.crew_members (crew_id, email, level, getting, seats) values ('{cid}', '{m}@example.com', 'regular', '{'drive' if m == host else 'seat'}', {3 if m == host else 0})")
     return sql(f"select code from public.crews where id = '{cid}'")
-today_crew = crew('wijk-aan-zee', 0, 'bo', ['bo'], '15:00', '18:00')
+# a crew a rider can still join: today when it's early enough, else tomorrow (this test failed when run after 18:00)
+late = os.environ.get('HI8_LATE') or int(sql("select extract(hour from now() at time zone 'Europe/Amsterdam')")) >= 14
+today_crew = crew('wijk-aan-zee', 1 if late else 0, 'bo', ['bo'], '15:00', '18:00')
 drop_crew = crew('zandvoort', 1, 'ana', ['ana'], '13:00', '17:00')      # tomorrow is 7 kt in the stand-in forecast
 past_crew = crew('wijk-aan-zee', -1, 'bo', ['bo', 'cy'], '12:00', '16:00')
 

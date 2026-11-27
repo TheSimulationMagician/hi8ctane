@@ -2536,3 +2536,11 @@ details.every[open] { padding: 0 12px 12px; } details.every[open] > summary { ma
 .c2.c2sm h2 { font-size: 32px; }
 .hblive { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; font: 700 10px/1.2 var(--mono); letter-spacing: .4px; }
 .hblive i { width: 9px; height: 9px; border-radius: 50%; background: var(--epic); border: 1.5px solid var(--ink); }
+
+/* ---- PR #50: the headline says the most important thing; a warning looks like one ---- */
+.pass-now.warn { margin: 10px 12px 0; padding: 10px 12px 2px; background: var(--pink2); border: 2.5px solid var(--ink); border-left-width: 8px; border-left-color: var(--pink); }
+.pass-now.warn small { color: var(--ink); }
+.pass-tools .navl { order: -1; }
+.pass-then { margin: 8px 12px 0; padding: 8px 12px; border: 2px dashed var(--ink); display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
+.pass-then small { flex-basis: 100%; font: 700 10px/1 var(--mono); letter-spacing: .6px; }
+.pass-then b { font: 400 16px/1.1 var(--word); flex: 1 1 auto; }
