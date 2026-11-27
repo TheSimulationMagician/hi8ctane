@@ -61,9 +61,8 @@ with sync_playwright() as p:
     n_auth = len(json.loads(urllib.request.urlopen(BASE + '/__auth').read()))
     X.goto(BASE + f'/?c={code}'); X.wait_for_selector('#sheet.on'); X.wait_for_timeout(2000)
     X.locator('.sh-foot [data-act=jfopen]').click(); X.wait_for_selector('#joinForm')   # I'M GOING, or JOIN ANYWAY when the forecast is against it
-    X.locator('[data-act=jfget][data-v=own]').click()
     X.fill('#jfEmail', 'ana@example.com'); X.fill('#jfName', 'Not Ana')
-    X.locator('.sh-foot [data-act=jfgo]').click(); X.wait_for_timeout(2500)
+    X.locator('[data-act=jfget][data-v=own]').click(); X.wait_for_timeout(2500)   # card-first: the way you get there is the I'M IN
     auth = json.loads(urllib.request.urlopen(BASE + '/__auth').read())[n_auth:]
     check(any(a['path'] == '/auth/v1/otp' and 'ana@example.com' in a['body'] for a in auth), 'joining with an email we know: the site asks Supabase to email Ana a sign-in link')
     check('SIGN-IN LINK' in X.locator('#sheet').inner_text().upper() and X.evaluate("JSON.parse(localStorage.getItem('hi8.me') || '{}').key || null") is None, '...says so, and this browser gets no key')
@@ -123,7 +122,8 @@ with sync_playwright() as p:
     check(ag.count() == 1, 'a past session: RUN IT AGAIN · SAME CREW SET-UP')
     ag.click(); B.wait_for_selector('#sheet.on'); B.wait_for_timeout(1500)
     check(B.url.endswith('#start') and 'WIJK AAN ZEE' in T(B, '#sheet'), 'it opens the start form on the same spot, at the next good window')
-    B.locator('.sh-foot .big.start').click(); B.wait_for_timeout(3000)
+    check(B.locator('.sh-foot [data-act=sfpost]').count() == 3 and B.locator('[data-act=sfget][aria-pressed=true]').count() == 0, 'the way he gets there is never copied: three POST IT buttons, nothing picked (card-first)')
+    B.locator('.sh-foot [data-act=sfpost][data-v=drive]').click(); B.wait_for_timeout(3000)
     row = sql("select spot || '|' || levels || '|' || max_riders || '|' || meet_hub from crews where host_email = 'bo@example.com' and created_at > now() - interval '1 minute' and day >= hi8_today('amsterdam') order by created_at desc limit 1")
     check(row == 'wijk-aan-zee|regular|7|cs', 'published with the same set-up (spot, levels, 7 riders, pick-up Centraal) in one tap: ' + row)
     check(sql("select count(*) from events where name = 'publish' and extra = 'again'") == '1', '...and counted as a run-again')
