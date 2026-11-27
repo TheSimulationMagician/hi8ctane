@@ -2511,3 +2511,28 @@ details.every[open] { padding: 0 12px 12px; } details.every[open] > summary { ma
 .c2why li i { flex: none; width: 17px; height: 17px; display: grid; place-items: center; font: 700 10px/1 var(--mono); font-style: normal; border: 1.5px solid var(--ink); background: #fff; color: var(--ink); }
 .c2why .c2-ok i { background: var(--good); } .c2why .c2-warn i { background: var(--ok); } .c2why .c2-no i { background: var(--epic); color: #fff; } .c2why .c2-info i { background: transparent; color: #fff; border-color: rgba(255,255,255,.5); }
 .c2none { margin: 0; font: 400 12px/1.4 var(--mono); }
+
+/* 0030: what riders at the spot say. On the card a thin live strip; on the open card AT THE SPOT NOW */
+.k2live { display: flex; align-items: center; gap: 7px; margin: 0 14px 8px; padding: 6px 8px 5px; border: 1.5px solid var(--ink); background: var(--ink); color: var(--cream); font: 400 10px/1.3 var(--mono); }
+.k2live b { color: var(--lime); font-weight: 700; letter-spacing: .4px; }
+.k2live i { flex: none; width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid var(--cream); animation: k2pulse 1.6s ease-in-out infinite; }
+.k2live i.t-good { background: var(--good); } .k2live i.t-ok { background: var(--ok); } .k2live i.t-no { background: #8a8578; }
+@keyframes k2pulse { 50% { opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { .k2live i { animation: none; } }
+.c2live { margin-top: 16px; padding-top: 12px; border-top: 1.5px dashed rgba(255,255,255,.35); }
+.c2live .c2h { margin-top: 0; }
+.c2lv { display: flex; align-items: center; gap: 12px; }
+.c2lv > div { flex: 1; min-width: 0; }
+.c2lv b { display: block; font: 400 15px/1.15 var(--word); color: var(--cream); }
+.c2stk.sm { font-size: 16px; padding: 6px 8px 5px; }
+.c2split { display: flex; height: 8px; margin-top: 7px; background: rgba(255,255,255,.16); }
+.c2split i { display: block; height: 100%; }
+.c2split i.t-good { background: var(--good); } .c2split i.t-ok { background: var(--ok); } .c2split i.t-no { background: #8a8578; }
+.c2facts { margin: 10px 0 0; font: 400 11.5px/1.45 var(--mono); }
+.c2ver { margin: 6px 0 0; font: 700 10px/1.4 var(--mono); letter-spacing: .3px; color: var(--mint); }
+.c2rep { display: block; width: 100%; margin-top: 12px; min-height: 46px; border: 2.5px solid var(--ink); background: var(--lime); color: var(--ink); box-shadow: 3px 3px 0 var(--ink); font: 400 13.5px/1 var(--word); letter-spacing: .3px; cursor: pointer; }
+.c2live.none .c2rep { background: var(--cream); }
+.c2.c2sm { padding-bottom: 16px; }
+.c2.c2sm h2 { font-size: 32px; }
+.hblive { display: inline-flex; align-items: center; gap: 6px; margin-top: 8px; font: 700 10px/1.2 var(--mono); letter-spacing: .4px; }
+.hblive i { width: 9px; height: 9px; border-radius: 50%; background: var(--epic); border: 1.5px solid var(--ink); }

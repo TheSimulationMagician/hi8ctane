@@ -22,7 +22,9 @@ with expected_public_functions(name) as (values
   -- 0024 (2.30): the session plan
   ('hi8_still_in'), ('hi8_set_pin'), ('hi8_step_down'), ('hi8_captain'),
   -- 0026 (2.31): anonymous counts
-  ('hi8_track'), ('hi8_late'), ('hi8_weekend'), ('hi8_spot_notes')
+  ('hi8_track'), ('hi8_late'), ('hi8_weekend'), ('hi8_spot_notes'),
+  -- 0030: riders confirm the conditions at the spot, open to new riders
+  ('hi8_spot_report'), ('hi8_conditions'), ('hi8_crew_open')
 ), problems(problem, object) as (
   -- 1. every table has row level security on
   select 'table without row level security', n.nspname || '.' || c.relname

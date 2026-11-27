@@ -681,7 +681,7 @@
     var mine = myAsks(sport), a = mine[0], hh = homeHub(), g = HI8.store.get('getting', null);
     var hubs = HI8.hubsOf(S.city), near = hh && hh.slug !== '__home' ? hh.slug : (home() && hubs.length ? nearestTo(home(), hubs).slug : null);
     S.lk = { sport: sport, days: mine.map(function (x) { return x.day; }), seat: a ? a.seat : g === 'seat', hub: a && a.hub ? a.hub : near,
-      level: a ? a.level : HI8.store.get('lv.' + sport, 'regular'), had: mine.length > 0, busy: false, err: null };
+      level: a ? a.level : HI8.store.get('lv.' + sport, 'regular'), open: a ? !!a.open : false, had: mine.length > 0, busy: false, err: null };
   }
   function sheetLooking() {
     var f = S.lk; if (!f) { newLook(); f = S.lk; }
@@ -706,12 +706,17 @@
     var err = f.err ? '<div class="err" role="alert">' + esc(f.err) + '</div>' : '';
     var n = f.days.length;
     var foot = '<button class="big join" data-act="lksave"' + (n || f.had ? '' : ' disabled') + '>' + (f.busy ? 'SAVING…' : n ? 'TELL ME WHEN A CREW FITS · ' + n + ' DAY' + (n > 1 ? 'S' : '') : f.had ? 'STOP LOOKING' : 'PICK A DAY') + '</button>';
-    return shell("I'M UP FOR A RIDE", pSport + pDays + pYou + pHow + pLevel + err + pHow2, foot, true);
+    // 0030: open to new riders (opt-in). Off: only the crews you kept count you. On: other crews' proposals can count you
+    var pOpen = S.v30 ? '<div class="f"><span class="lb">OPEN TO NEW RIDERS?</span><div class="row">' +
+      '<button class="opt" data-act="lkopen" data-v="1" aria-pressed="' + !!f.open + '">YES, COUNT ME IN<small>other crews can see 1 more rider at your level</small></button>' +
+      '<button class="opt" data-act="lkopen" data-v="0" aria-pressed="' + !f.open + '">ONLY MY CREWS<small>the crews you kept</small></button></div>' +
+      '<p class="hint">Either way, nobody sees your name until you say I\'M IN yourself.</p></div>' : '';
+    return shell("I'M UP FOR A RIDE", pSport + pDays + pYou + pHow + pLevel + pOpen + err + pHow2, foot, true);
   }
   function lookSave() {
     var f = S.lk; if (!f || f.busy) return;
     var go = function () {
-      return HI8.withKey('hi8_ask', { p_city: S.city, p_sport: f.sport, p_days: f.days, p_seat: !!f.seat, p_hub: f.seat ? f.hub : null, p_level: f.level }, { noQueue: true });
+      return HI8.withKey('hi8_ask', Object.assign({ p_city: S.city, p_sport: f.sport, p_days: f.days, p_seat: !!f.seat, p_hub: f.seat ? f.hub : null, p_level: f.level }, S.v30 ? { p_open: !!f.open } : {}), { noQueue: true });
     };
     var p;
     if (!signedIn()) {
@@ -1493,9 +1498,15 @@
     }
     return '<div class="days" role="group" aria-label="Day">' + out + '</div>';
   }
+  function homeLive() {
+    var c = (S.cond || []).filter(function (x) { return x.sport === S.sport && Date.now() - new Date(x.last).getTime() < 3 * 36e5; });
+    if (!c.length) return '';
+    var last = c.map(function (x) { return x.last; }).sort().pop();
+    return '<span class="hblive"><i aria-hidden="true"></i>LIVE FROM ' + c.length + ' SPOT' + (c.length === 1 ? '' : 'S') + ' · LAST REPORT ' + esc(agoMin(last).toUpperCase()) + '</span>';
+  }
   function homeCrews() {
     var list = adventures().filter(function (a) { return a.sport === S.sport && (!S.homeDay || a.date === S.homeDay); });  // the home follows the sport and the day picked at the top
-    return '<div class="hbest"><div class="hb-h"><b>THE BEST WAYS TO RIDE ' + (S.homeDay ? esc(dayRel(S.homeDay)).toUpperCase() : 'THIS WEEK') + '</b><span>' + (home() ? 'FROM ' + esc(home().name.toUpperCase()) + ' · ' : '') + 'BEST FIRST</span><button class="hbown" data-act="start">START YOUR OWN CREW<small>THE BEST WINDOW IS FILLED IN</small></button></div>' + homeDays() +
+    return '<div class="hbest"><div class="hb-h"><b>THE BEST WAYS TO RIDE ' + (S.homeDay ? esc(dayRel(S.homeDay)).toUpperCase() : 'THIS WEEK') + '</b><span>' + (home() ? 'FROM ' + esc(home().name.toUpperCase()) + ' · ' : '') + 'BEST FIRST</span>' + homeLive() + '<button class="hbown" data-act="start">START YOUR OWN CREW<small>THE BEST WINDOW IS FILLED IN</small></button></div>' + homeDays() +
       (list.length ? adRail(list.slice(0, 8), 'going', 'homerail') : '<div class="nocrew">Nothing good ' + (S.homeDay ? esc(dayRel(S.homeDay).toLowerCase()) : 'this week') + ' yet. Say when you\'re free and you hear it first.</div>') + '</div>';
   }
   function drawSessions() {
@@ -1562,6 +1573,7 @@
     else if (/^alerts/.test(h)) { var ap = h.split('/'), asp = LIVE_SPORTS.indexOf(ap[1]) >= 0 ? ap[1] : null; S.view = 'alerts';
       if (!S.al || (asp && S.al.sport !== asp) || ap[2]) newAlert(asp || (S.al && S.al.sport) || S.sport, ap[2] || null); if (signedIn() && !S.walerts) loadAlerts(); }
     else if (h === 'push') { S.view = 'push'; if (!PUSH.checked) pushCheck().then(renderSheet); }
+    else if (/^report\//.test(h)) { S.view = 'report'; if (!S.rf || S.rf.slug !== h.slice(7)) newReport(h.slice(7)); }
     else if (h === 'looking') { S.view = 'looking'; if (!S.lk) newLook(); loadAsks(S.lk.sport); }
     else if (h === 'card') { S.view = 'card'; S.cf = null; loadProf(); if (signedIn()) loadAvatar().then(function () { if (S.view === 'card') renderSheet(); }); }
     else if (/^soon\//.test(h)) { S.view = 'soon'; S.soonSport = h.slice(5); }
@@ -1575,7 +1587,7 @@
   }
   function renderSheet() {
     if (!S.view) return;
-    var fn = { join: sheetJoin, start: sheetStart, crew: sheetCrew, spot: sheetSpot, me: sheetMe, city: sheetCity, soon: sheetSoon, plan: sheetPlan, from: sheetFrom, kg: sheetKg, level: sheetLevel, pass: sheetPass, squad: sheetSquad, alerts: sheetAlerts, push: sheetPush, card: sheetCard, looking: sheetLooking }[S.view];
+    var fn = { join: sheetJoin, start: sheetStart, crew: sheetCrew, spot: sheetSpot, me: sheetMe, city: sheetCity, soon: sheetSoon, plan: sheetPlan, from: sheetFrom, kg: sheetKg, level: sheetLevel, pass: sheetPass, squad: sheetSquad, alerts: sheetAlerts, push: sheetPush, card: sheetCard, looking: sheetLooking, report: sheetReport }[S.view];
     if (!fn) return;
     var keep = sheet.querySelector('.sh-body'), top = keep ? keep.scrollTop : 0, focus = document.activeElement && document.activeElement.id;
     var vals = {}; sheet.querySelectorAll('input[id],textarea[id]').forEach(function (i) { vals[i.id] = i.value; });
@@ -1671,7 +1683,7 @@
     return '<article class="ad k2' + (a.mine ? ' mine' : '') + (a.rank >= 2 ? ' off' : '') + '" data-date="' + a.date + '" aria-label="' + esc(SPORT[k].name + ', ' + name + ', ' + dayRel(a.date)) + '">' +
       (a.mine ? '<div class="k2on" aria-hidden="true"></div>' : '') +
       '<div class="k2t a-' + k + '"><div class="k2m">' + tile(k, 20) + '<span>' + esc(SPORT[k].name.toUpperCase()) + ' · ' + esc(dayRel(a.date)) + ' ' + pad(from) + '–' + pad(to) + '</span>' + pill + '</div>' +
-        '<h3 class="k2n">' + esc(name) + '</h3><div class="k2s">' + esc(adLine(k, f, spot)) + '</div>' + adChart(sp, a, from, to) + '</div>' +
+        '<h3 class="k2n">' + esc(name) + '</h3><div class="k2s">' + esc(adLine(k, f, spot)) + '</div>' + adChart(sp, a, from, to) + '</div>' + (a.date === S.today ? adLive(slug, k) : '') +
       '<div class="ad-sts">' + stats + '</div>' +
       '<div class="k2c">' + (c ? faces(c) : '') + '<p><b>' + esc(t) + '</b>' + esc(sub) + '</p></div>' + (c && a.rank < 2 ? whyFit(c, 'scwhy k2fit') : '') + (warn ? '<div class="k2w">' + esc(warn) + '</div>' : '') +
       '<div class="ad-f"><button class="ad-go" ' + attrs + '>' + esc(btn) + '</button>' +
@@ -2120,10 +2132,10 @@
       var pPay = '<div id="payAnchor"></div>' + payHtml(c);
       var pChat = '<div class="box" id="chatAnchor"><h3>CREW CHAT</h3><div class="chat" id="chatBox">' + chatHtml(C.msgs) + '</div>' +
         '<form class="send" data-form="chat"><label class="sr" for="chatIn">Message</label><input class="inp" id="chatIn" maxlength="500" autocomplete="off" placeholder="Message the crew"><button type="submit">SEND</button></form></div>';
-      var pEdit = S.jf ? joinForm(c) : '<div class="f"><div class="row"><button class="opt" data-act="jfopen">CHANGE LEVEL OR RIDE</button><button class="opt" data-act="leave">' +
+      var pEdit = crewOpenBox(c) + (S.jf ? joinForm(c) : '<div class="f"><div class="row"><button class="opt" data-act="jfopen">CHANGE LEVEL OR RIDE</button><button class="opt" data-act="leave">' +
         (C.confirm === 'leave' ? (cap(c) ? 'TAP AGAIN: CALL IT OFF' : 'TAP AGAIN TO LEAVE') : cap(c) ? 'CALL IT OFF' : 'LEAVE THE CREW') + '</button>' +
         (cap(c) && c.going > 1 && c.status === 'on' && !c.past && !c.captain_until ? '<button class="opt" data-act="stepdown">' + (C.confirm === 'stepdown' ? 'TAP AGAIN: HAND IT OVER' : 'I CAN\'T MAKE IT: HAND IT OVER') + '</button>' : '') + '</div>' +
-        (cap(c) && c.going > 1 && c.status === 'on' && !c.past ? '<p class="hint">Can\'t make it? Hand it over: the next driver (or most experienced rider) is asked to keep it on, and anyone in the crew can take it.</p>' : '') + '</div>';
+        (cap(c) && c.going > 1 && c.status === 'on' && !c.past ? '<p class="hint">Can\'t make it? Hand it over: the next driver (or most experienced rider) is asked to keep it on, and anyone in the crew can take it.</p>' : '') + '</div>');
       // on the day: check in, the meeting point and the chat first; the forecast and the money after (2.24)
       if (ended) { pMeet = ''; pEdit = ''; }   // H15: nothing to navigate to, add or call off once it's over
       var pCards = cardsStrip(c);
@@ -2244,8 +2256,115 @@
   }
 
   // ---- A SPOT: the forecast table, crews there, reports
+  // ---- 0030: riders confirm the conditions at the spot. Only from the spot (checked in with a crew, or a location
+  // within 2 km that the server compares and never keeps). The last 3 hours per spot, numbers only.
+  var RF = {
+    verdict: [['on', 'ON', 'go now'], ['meh', 'MEH', 'rideable'], ['off', 'OFF', 'not worth it']],
+    wind: [['lighter', 'LIGHTER', 'than forecast'], ['as_forecast', 'AS FORECAST', ''], ['stronger', 'STRONGER', 'than forecast']],
+    gusts: [['steady', 'STEADY', ''], ['gusty', 'GUSTY', '']],
+    water: [['flat', 'FLAT', ''], ['chop', 'CHOP', ''], ['waves', 'WAVES', '']],
+    ground: [['dry', 'DRY', ''], ['tacky', 'TACKY', 'the best'], ['muddy', 'MUDDY', ''], ['wet', 'WET', '']],
+    crowd: [['quiet', 'QUIET', ''], ['busy', 'BUSY', ''], ['packed', 'PACKED', '']]
+  };
+  var RFTXT = { lighter: 'lighter than forecast', as_forecast: 'as forecast', stronger: 'stronger than forecast', steady: 'steady', gusty: 'gusty', flat: 'flat water', chop: 'chop', waves: 'waves',
+    dry: 'dry', tacky: 'tacky', muddy: 'muddy', wet: 'wet', quiet: 'quiet', busy: 'busy', packed: 'packed' };
+  function loadCond() {
+    if (!HI8.live) return;
+    HI8.rpc('hi8_conditions', { p_city: S.city }).then(function (c) { S.cond = c || []; S.v30 = true; drawSessions(); if (S.view === 'spot' || S.view === 'looking') renderSheet(); }, function () { S.v30 = false; });
+  }
+  function condFor(slug, sport) {
+    return (S.cond || []).filter(function (c) { return c.spot === slug && (!sport || c.sport === sport) && Date.now() - new Date(c.last).getTime() < 3 * 36e5; })[0] || null;
+  }
+  function condCall(c) { return c.on >= c.meh && c.on >= c.off ? 'on' : c.meh >= c.off ? 'meh' : 'off'; }
+  function agoMin(ts) { var m = Math.max(0, Math.round((Date.now() - new Date(ts).getTime()) / 6e4)); return m < 1 ? 'just now' : m < 60 ? m + ' min ago' : Math.floor(m / 60) + ' h ' + (m % 60) + ' min ago'; }
+  function condTone(v) { return v === 'on' ? 'good' : v === 'meh' ? 'ok' : 'no'; }
+  // the strip on a card: LIVE · ON · 3 riders · 12 min ago
+  function adLive(slug, k) {
+    var c = condFor(slug, k); if (!c) return '';
+    var v = condCall(c);
+    return '<div class="k2live"><i class="t-' + condTone(v) + '"></i><b>LIVE · ' + v.toUpperCase() + '</b> ' + c.n + ' rider' + (c.n === 1 ? '' : 's') + ' at the spot · ' + esc(agoMin(c.last)) + '</div>';
+  }
+  // the open card: AT THE SPOT NOW, and the button to say it yourself
+  function c2Live(spot, sport) {
+    if (!S.v30) return '';
+    var c = condFor(spot.slug, sport), btn = '<button class="c2rep" data-act="spotrep" data-spot="' + esc(spot.slug) + '" data-sport="' + esc(sport) + '">I\'M HERE · TELL THE OTHERS</button>';
+    if (!c) return '<div class="c2live none"><p class="c2h">AT THE SPOT NOW</p><p class="c2none">No rider has reported here in the last 3 hours. At the spot? Say how it is: riders deciding now see it.</p>' + btn + '</div>';
+    var v = condCall(c), pc = function (x) { return Math.round(x / c.n * 100); };
+    var facts = [c.wind ? 'Wind ' + RFTXT[c.wind] + (c.wind_n > 1 ? ' (' + c.wind_same + ' of ' + c.wind_n + ')' : '') : '', c.gusts ? RFTXT[c.gusts] : '', c.water ? RFTXT[c.water] : '', c.ground ? 'ground ' + RFTXT[c.ground] : '',
+      c.crowd ? RFTXT[c.crowd] : '', c.kites && c.kites.length ? 'on ' + c.kites.map(function (x) { return String(Number(x)); }).join(', ') + ' m' : ''].filter(Boolean);
+    var lv = c.levels || {}, lvs = ['ripper', 'regular', 'rookie'].filter(function (k) { return lv[k]; }).map(function (k) { return lv[k] + ' ' + { ripper: 'ripper', regular: 'independent', rookie: 'learning' }[k]; });
+    var how = [c.checkin ? c.checkin + ' checked in with a crew' : '', c.located ? c.located + ' by location at the spot' : ''].filter(Boolean).join(' · ');
+    return '<div class="c2live"><p class="c2h">AT THE SPOT NOW · ' + esc(agoMin(c.last).toUpperCase()) + '</p>' +
+      '<div class="c2lv"><span class="c2stk sm t-' + condTone(v) + '">' + v.toUpperCase() + '</span><div><b>' + (c[v] < c.n ? c[v] + ' OF ' + c.n + ' RIDERS SAY ' : c.n === 1 ? '1 RIDER SAYS ' : c.n + ' RIDERS SAY ') + v.toUpperCase() + '</b>' +
+        '<span class="c2split" aria-hidden="true"><i class="t-good" style="width:' + pc(c.on) + '%"></i><i class="t-ok" style="width:' + pc(c.meh) + '%"></i><i class="t-no" style="width:' + pc(c.off) + '%"></i></span></div></div>' +
+      (facts.length ? '<p class="c2facts">' + esc(facts.join(' · ')) + '</p>' : '') +
+      '<p class="c2ver">✓ ' + esc(how || 'at the spot') + (lvs.length ? ' · ' + esc(lvs.join(', ')) : '') + '</p>' + btn + '</div>';
+  }
+  function newReport(slug, sport) {
+    var spot = HI8.spot(slug) || {};
+    sport = sport && (spot.sports || []).indexOf(sport) >= 0 ? sport : (spot.sports || [S.sport])[0];
+    S.rf = { slug: slug, sport: sport, verdict: null, wind: null, gusts: null, water: null, ground: null, crowd: null, kite: null, busy: false, err: null };
+  }
+  function sheetReport() {
+    var f = S.rf, spot = HI8.spot(f.slug);
+    if (!spot) return shell('REPORT', '<div class="err">That spot isn\'t on the map.</div>', '', true);
+    var row = function (k, label, opts) {
+      return '<div class="f"><span class="lb">' + label + '</span><div class="row">' + opts.map(function (o) {
+        return '<button class="opt" data-act="rfset" data-k="' + k + '" data-v="' + o[0] + '" aria-pressed="' + (f[k] === o[0]) + '">' + o[1] + (o[2] ? '<small>' + o[2] + '</small>' : '') + '</button>';
+      }).join('') + '</div></div>';
+    };
+    var kite = windy(f.sport);
+    var body = '<div class="c2 a-' + esc(f.sport) + ' c2sm"><div class="c2k">' + tile(f.sport, 18) + '<span>AT THE SPOT · NOW</span></div><h2>' + esc(spot.name.toUpperCase()) + '</h2></div>' +
+      (!signedIn() ? '<div class="box"><p class="lede">Reports come from riders with a Hi8ctane account, at the spot. Join a crew here or sign in first.</p><button class="big join" data-act="me">SIGN IN</button></div>' :
+      row('verdict', 'HOW IS IT?', RF.verdict) +
+      (kite ? row('wind', 'THE WIND', RF.wind) + row('gusts', 'GUSTS', RF.gusts) + row('water', 'THE WATER', RF.water) +
+        '<div class="f"><span class="lb">YOUR KITE <small>optional</small></span><div class="row scroll">' + [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 17].map(function (m) { return '<button class="opt sm" data-act="rfset" data-k="kite" data-v="' + m + '" aria-pressed="' + (f.kite === String(m)) + '">' + m + ' M</button>'; }).join('') + '</div></div>'
+        : row('ground', 'THE GROUND', RF.ground)) +
+      row('crowd', 'HOW BUSY', RF.crowd) +
+      '<p class="hint" style="margin:4px 16px 0">Only riders at the spot can report: checked in with a crew here today, or by sharing your location once. Your location is only compared with the spot, never kept. Others see the answers and how many riders gave them, never who.</p>' +
+      (f.err ? '<div class="err" role="alert" style="margin:12px 16px 0">' + esc(f.err) + '</div>' : ''));
+    var foot = signedIn() ? '<button class="big join" data-act="rfsend"' + (f.verdict && !f.busy ? '' : ' disabled') + '>' + (f.busy ? '<span class="spin"></span>' : f.verdict ? 'SEND · I\'M AT THE SPOT' : 'PICK ON, MEH OR OFF') + '</button>' : '';
+    return shell('AT THE SPOT', body, foot, true);
+  }
+  function reportSend() {
+    var f = S.rf; if (!f || !f.verdict || f.busy) return;
+    var args = { p_spot: f.slug, p_sport: f.sport, p_verdict: f.verdict, p_wind: f.wind, p_gusts: f.gusts, p_water: f.water, p_ground: f.ground, p_crowd: f.crowd,
+      p_kite: f.kite ? Number(f.kite) : null, p_level: HI8.store.get('lv.' + f.sport, null) };
+    var done = function (r) {
+      S.cond = (S.cond || []).filter(function (c) { return c.spot !== f.slug; }).concat(r || []);
+      var slug = f.slug; S.rf = null; go('#spot/' + slug); drawSessions();
+      toast('Thanks: riders deciding now see it.', 3500);
+    };
+    var fail = function (e) { f.busy = false; f.err = (e && (e.hint || e.message)) || 'That didn\'t send. Try again.'; renderSheet(); };
+    f.busy = true; f.err = null; renderSheet();
+    HI8.withKey('hi8_spot_report', args, { noQueue: true }).then(done, function (e) {
+      if (!/not_at_spot/.test((e && (e.message + ' ' + e.code + ' ' + e.hint)) || '')) return fail(e);
+      if (!navigator.geolocation) return fail({ hint: 'Check in with your crew first: this phone can\'t share a location.' });
+      navigator.geolocation.getCurrentPosition(function (p) {
+        HI8.withKey('hi8_spot_report', Object.assign({ p_lat: p.coords.latitude, p_lon: p.coords.longitude }, args), { noQueue: true }).then(done, function (e2) {
+          fail(/not_at_spot/.test((e2 && (e2.message + ' ' + e2.hint)) || '') ? { hint: 'You don\'t seem to be at ' + (HI8.spot(f.slug) || {}).name + ' (more than 2 km away). Reports only come from the spot.' } : e2);
+        });
+      }, function () { fail({ hint: 'Share your location once (it is only compared with the spot), or check in with your crew.' }); }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 120000 });
+    });
+  }
   // card-first C2: the open card. Dark, in the sport's colour: the day tabs with a meter each, the verdict and the
   // good-day meter for the best window, and WHY IT'S A GO: checks per sport, each one straight from the engine's numbers.
+  // 0030: the captain decides whether the app may invite riders the crew doesn't know yet
+  function crewOpenBox(c) {
+    if (!S.v30 || !cap(c) || c.past || c.status !== 'on') return '';
+    S.crewOpen = S.crewOpen || {};
+    var o = S.crewOpen[c.code];
+    if (o == null) { S.crewOpen[c.code] = 'wait'; HI8.withKey('hi8_crew_open', { p_code: c.code, p_open: null }, { noQueue: true }).then(function (r) { S.crewOpen[c.code] = !!r.open; if (S.view === 'crew') renderSheet(); }, function () { delete S.crewOpen[c.code]; }); return ''; }
+    if (o === 'wait') return '';
+    return '<div class="f"><span class="lb">OPEN TO NEW RIDERS?</span><div class="row">' +
+      '<button class="opt" data-act="crewopen" data-code="' + esc(c.code) + '" data-v="1" aria-pressed="' + o + '">YES<small>riders who are free and fit hear about it</small></button>' +
+      '<button class="opt" data-act="crewopen" data-code="' + esc(c.code) + '" data-v="0" aria-pressed="' + !o + '">ONLY OUR CREW<small>still on the site, not pushed to new riders</small></button></div></div>';
+  }
+  function crewOpen(code, v) {
+    S.crewOpen = S.crewOpen || {}; var was = S.crewOpen[code]; S.crewOpen[code] = v; renderSheet();
+    HI8.withKey('hi8_crew_open', { p_code: code, p_open: v }, { noQueue: true }).then(function () { toast(v ? 'Open: riders who fit hear about it.' : 'Only your crew: new riders aren\'t told.', 3000); },
+      function () { S.crewOpen[code] = was; renderSheet(); toast('That didn\'t save. Try again.', 3000); });
+  }
   function c2Checks(sport, spot, f, di) {
     var out = [], add = function (t, txt) { out.push('<li class="c2-' + t + '"><i aria-hidden="true">' + (t === 'ok' ? '✓' : t === 'no' ? '✕' : t === 'warn' ? '!' : '·') + '</i>' + esc(txt) + '</li>'); };
     if (windy(sport)) {
@@ -2282,7 +2401,7 @@
         '<p class="c2h">' + (w.score >= 6 ? 'WHY IT\'S A GO' : 'WHAT HOLDS IT BACK') + '</p>' + c2Checks(sport, spot, f, di);
     return '<div class="c2 a-' + esc(sport) + '"><div class="c2k">' + tile(sport, 20) + '<span>' + esc((spot.sports || []).filter(function (k) { return LIVE_SPORTS.indexOf(k) >= 0; }).map(function (k) { return SPORT[k].name.toUpperCase(); }).join(' · ')) + '</span></div>' +
       '<h2>' + esc(spot.name.toUpperCase()) + '</h2>' + (spot.note ? '<p class="c2note">' + esc(spot.note) + '</p>' : '') + (sub ? '<p class="c2sub">' + esc(sub) + '</p>' : '') +
-      days + '<div class="c2body">' + verdict + '</div></div>';
+      days + '<div class="c2body">' + verdict + '</div>' + (date === S.today ? c2Live(spot, sport) : '') + '</div>';
   }
   function sheetSpot() {
     var spot = HI8.spot(S.spotSlug);
@@ -3417,6 +3536,11 @@
       case 'wkcell': if (d.sport !== S.sport) setSport(d.sport); S.spotDay = Number(d.i); if (d.spot) go('#spot/' + d.spot); break;
       case 'spotat': S.spotDay = Math.max(0, Math.round((dDate(d.date) - dDate(S.today)) / 864e5)); go('#spot/' + d.spot); break;
       case 'spotday': S.spotDay = Number(d.i); renderSheet(); break;
+      case 'spotrep': newReport(d.spot, d.sport); go('#report/' + d.spot); break;
+      case 'rfset': if (S.rf) { S.rf[d.k] = S.rf[d.k] === d.v ? null : d.v; S.rf.err = null; renderSheet(); } break;
+      case 'rfsend': reportSend(); break;
+      case 'lkopen': S.lk.open = d.v === '1'; S.lk.openSet = true; renderSheet(); break;
+      case 'crewopen': crewOpen(d.code, d.v === '1'); break;
       case 'homeday': S.homeDay = d.d || null; drawSessions(); break;
       case 'tomap': { var ms = $('#mapsec'); if (ms) ms.scrollIntoView({ behavior: 'smooth', block: 'start' }); break; }
       case 'alert': {
@@ -3510,6 +3634,7 @@
   function loadLive() {
     if (!HI8.live) return Promise.resolve();
     HI8.rpc('hi8_watchers', { p_city: S.city }).then(function (w) { S.watch = w || {}; drawSessions(); if (S.view === 'spot') renderSheet(); }, noop);
+    loadCond();
     return HI8.rpc('hi8_live', { p_city: S.city }).then(function (l) { S.live = l; drawMapSpots(); drawCrews(); drawSessions(); drawNow(); drawLive(); if (S.view && S.view !== 'start') renderSheet(); }, noop);
   }
   // WHO'S LOOKING: a random visitor id (not the rider key), one "I'm here" a minute while the page is open.
