@@ -73,7 +73,7 @@ with sync_playwright() as p:
     check('THE WEEK AHEAD' in txt(A, '#week') and A.locator('#week .wc').count() == 21 and 'AROME' in txt(A, '#week'), 'the week ahead: kite, MTB and MX x 7 days, and where it comes from')
     check('THE BEST WINDOW' in txt(A, '#best') and ('MODELS' in txt(A, '#best') or 'NO GOOD' in txt(A, '#best')), 'the best window, with the numbers and the models')
     # card-first B: the cards come first; the board of every spot is folded under EVERY SPOT, EVERY DAY
-    check(A.locator('#sessions .homerail .ad.k2').count() >= 1 and A.locator('#every[open]').count() == 0 and 'EVERY SPOT, EVERY DAY' in txt(A, '#every summary'), 'the best ways to ride first, as cards; the board folded below them')
+    check(A.locator('#sessions .homerail .ad.oc').count() >= 1 and A.locator('#every[open]').count() == 0 and 'EVERY SPOT, EVERY DAY' in txt(A, '#every summary'), 'the best ways to ride first, as cards; the board folded below them')
     A.locator('#every summary').click(); A.wait_for_timeout(200)
     check('ALL SPOTS · THIS WEEK' in txt(A, '#sessions') and A.locator('#sessions [data-act=startwin]').count() >= 1 and A.locator('#sessions [data-act=going]').count() == 0 and A.locator('#sessions .ss').count() == 0 and A.locator('#sessions .board .bd-r').count() >= 5 and A.locator('#sessions .board .bd-r').nth(1).locator('.bd-c').count() == 8, "no crews yet: the board of every nearby spot, now and seven days, a tap on a good day goes")
     check(A.locator('#now').count() == 0 and A.locator('#sessions .board button.bd-c.now').count() >= 4 and A.locator('#setup').count() == 0, 'right now at each spot is the first column of the board; no set-up box')
@@ -161,7 +161,7 @@ with sync_playwright() as p:
     C.goto(BASE + '/'); C.wait_for_timeout(2500)
     check('AT THE SPOTS NOW'.upper() in txt(C, '#live') and 'Castelldefels'.upper() in txt(C, '#live') and 'on a 9'.upper() in txt(C, '#live') and 'Sam'.upper() not in txt(C, '#live'), 'everyone sees it on the landing, without the name')
     check('CREW ON NOW'.upper() in txt(C, '#mapnote'), 'the map says a crew is on now')
-    check("KAI'S CREW" in txt(C, '#sessions .homerail') and C.locator('#sessions .homerail .ad .k2t .tile').count() >= 1 and C.locator('#sessions .homerail [data-act=going]').count() >= 1, "Kai's crew shows as an adventure card (logo, colour), and a tap joins (2.33)")
+    check("KAI'S CREW" in txt(C, '#sessions .homerail') and C.locator('#sessions .homerail .ad .oc-t .tile').count() >= 1 and C.locator('#sessions .homerail [data-act=going]').count() >= 1, "Kai's crew shows as an adventure card (logo, colour), and a tap joins (2.33)")
 
     print('alerts and the stop link')
     C.locator('#sports [data-sport=mx]').click(); C.wait_for_timeout(400)
@@ -300,7 +300,7 @@ with sync_playwright() as p:
     check(h['x'] == 0 and m['x'] >= h['width'] - 2 and 450 <= m['width'] <= 700 and abs(m['y'] - h['y']) < 3 and m['height'] >= 480 and D.locator('#bandmap .mapwrap').count() == 1, 'computer: the masthead on the left, the live map beside it (card-first B)')
     check(not D.locator('.dock').is_visible() and D.locator('#heroGo').is_visible() and D.locator('.hbown').is_visible(), 'computer: no dock; the button sits in the masthead, START YOUR OWN CREW over the cards')
     D.mouse.wheel(0, 900); D.wait_for_timeout(400)
-    cs = D.locator('#sessions .homerail .ad.k2')
+    cs = D.locator('#sessions .homerail .ad.oc')
     check(D.evaluate('window.scrollY') > 300 and (cs.count() < 2 or abs(cs.nth(0).bounding_box()['y'] - cs.nth(1).bounding_box()['y']) < 3), 'computer: the page scrolls (the wheel over the map scrolls too) and the cards sit side by side')
     check(D.locator('.hero').bounding_box()['height'] > 200, 'computer: the hero keeps its full height')
     ctxV, V = fresh()

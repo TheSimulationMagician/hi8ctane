@@ -1692,7 +1692,23 @@
     }
     return [f.ground, f.temp != null ? f.temp + ' °C' : '', (f.why || []).filter(function (w) { return /rain|shower|windy|cold|hot|freez/.test(w); })[0] || ''].filter(Boolean).join(' · ').toUpperCase();
   }
-  // 2.34 → card-first B: one calm card. Sport colour on top (spot, verdict, the day's line), three numbers, who, one button.
+  // card-first (round 5): the simple card, from the October kite card. The sport's banner (sea: water blues; land:
+  // earth) with one simple figure, the spot; then the day, the number that decides it (pink), who, one button; a note.
+  var OC_WORDS = { kite: 'KITE<br>SURF', mtb: 'MOUNTAIN<br>BIKE', mx: 'MOTO<br>CROSS', wing: 'WING<br>FOIL', surf: 'SURF', sup: 'STAND-UP<br>PADDLE', windsurf: 'WIND<br>SURF' };
+  var OC_Y = 'fill="#FCEE6B" stroke="#111" stroke-width="6" stroke-linejoin="round"';
+  function ocDot(x, y) { return '<circle cx="' + x + '" cy="' + y + '" r="19" fill="#D4FE63" stroke="#111" stroke-width="6"/>'; }
+  function ocArt(k) {
+    var a = k === 'mtb' ? '<path d="M408 206 C 452 156, 516 132, 556 132 C 596 132, 628 170, 662 206 Z" ' + OC_Y + '/>' +
+          '<path d="M446 197 L590 180 L502 160 L556 138" fill="none" stroke="#fff" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round"/>' +
+          '<path d="M556 132 V78" stroke="#fff" stroke-width="6" stroke-linecap="round"/><path d="M556 78 L596 90 L556 102 Z" fill="#fff"/>' + ocDot(502, 160)
+      : k === 'mx' ? '<path d="M360 206 L455 206 L455 160 Z" ' + OC_Y + '/><path d="M585 160 L585 206 L672 206 Z" ' + OC_Y + '/>' +
+          '<path d="M457 154 Q 520 30 583 154" fill="none" stroke="#fff" stroke-width="7.5" stroke-linecap="round" stroke-dasharray="15 11"/>' + ocDot(520, 93)
+      : '<ellipse cx="327" cy="199" rx="60" ry="17" transform="rotate(-9 327 199)" ' + OC_Y + '/>' +
+          '<path d="M349 176 L464 6" stroke="#fff" stroke-width="7.5" stroke-linecap="round"/><path d="M460 2 L532 14 L520 -12 Z" fill="#fff"/>' + ocDot(372, 124);
+    return '<svg class="oc-fig" viewBox="250 0 420 200" preserveAspectRatio="xMaxYMax meet" aria-hidden="true">' + a + '</svg>';
+  }
+  var OC_CAL = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15.5" rx="1.5"/><path d="M3.5 10 H20.5 M8 3 V7 M16 3 V7"/></svg>';
+  var OC_STAR = '<svg width="14" height="14" viewBox="0 0 24 24" aria-hidden="true"><path fill="#fff" d="M12 2.5l2.9 6.2 6.6.7-5 4.5 1.4 6.6L12 17.2 6.1 20.5l1.4-6.6-5-4.5 6.6-.7z"/></svg>';
   // CONDITIONS opens the spot's open card (C2) on that day; the button joins, starts or opens your crew.
   function adCard(a, i, act) {
     var c = a.c, w = a.w, k = a.sport, slug = c ? c.spot : w.spot.slug, spot = HI8.spot(slug), sp = fxSpot(slug);
@@ -1700,10 +1716,6 @@
     var from = c ? Number(hm(c.start).slice(0, 2)) : w.from, to = c ? (c.end ? Number(hm(c.end).slice(0, 2)) : from + 3) : w.to;
     var f = c ? crewFx(c) : sp ? FX.span(sp, a.date, from, to, k, spot, fxo(k)) : null;
     var hub = c ? hubOf(c) : (home() || (spot ? nearestHub(spot) : null)), min = hub && spot ? HI8.driveMin(hub, spot) : null;
-    var st = function (big, u, lab) { return '<span class="ad-st"><b>' + esc(big) + (u ? '<small>' + esc(u) + '</small>' : '') + '</b><i>' + esc(lab) + '</i></span>'; };
-    var stats = f ? (windy(k) ? st(f.w, 'KT', 'WIND') + st(f.g, 'KT', 'GUSTS') : st(String(f.ground || f.label || '').toUpperCase(), '', k === 'mx' ? 'TRACK' : 'GROUND') + st(f.temp, '°C', 'TEMP'))
-      : st('—', '', 'FORECAST SOON');
-    stats += min ? st(min, 'MIN', 'DRIVE') : '';
     var t, sub, btn, attrs, free = c ? c.max - c.going : 0, drive = '';
     if (c) {
       var cost = hub && spot ? tripCost(hub, spot) : null, seat = cost && c.seats_free > 0 ? seatMath(cost, 4) : null;
@@ -1719,17 +1731,22 @@
       t = 'No crew yet'; sub = lk ? lk.n + ' rider' + (lk.n > 1 ? 's are' : ' is') + ' up for a ride ' + dayRel(a.date).toLowerCase() : 'start it: riders who watch this spot hear first'; btn = 'START A CREW';
       attrs = 'data-act="startwin" data-sport="' + k + '" data-date="' + w.date + '" data-from="' + w.from + '" data-to="' + w.to + '" data-spot="' + esc(slug) + '"';
     }
-    var name = (c ? c.spot_name : spot ? spot.name : slug).toUpperCase(), lab = f ? f.label : null;
-    var pill = lab ? '<span class="pill p-' + FX.tone(f.score) + '">' + esc(lab) + '</span>' : '';
+    var name = (c ? c.spot_name : spot ? spot.name : slug).toUpperCase();
+    // the number that decides the day (pink): the wind for kite, the ground for MTB and MX
+    var key = !f ? 'FORECAST SOON' : windy(k) ? f.w + 'KT ' + FX.compass(f.dir) : String(f.ground || f.label || '').toUpperCase();
     var warn = f && windy(k) && f.shore === 'onshore' ? 'Onshore' + (f.g - f.w >= 8 ? ', gusts to ' + f.g + ' kt' : '') + ': choppy' : f && /gusty/.test((f.why || []).join(' ')) ? 'Gusty: ' + f.w + ' kt, gusts ' + f.g : '';
-    return '<article class="ad k2' + (a.mine ? ' mine' : '') + (a.rank >= 2 ? ' off' : '') + '" data-date="' + a.date + '" aria-label="' + esc(SPORT[k].name + ', ' + name + ', ' + dayRel(a.date)) + '">' +
-      (a.mine ? '<div class="k2on" aria-hidden="true"></div>' : '') +
-      '<div class="k2t a-' + k + '"><div class="k2m">' + tile(k, 20) + '<span>' + esc(SPORT[k].name.toUpperCase()) + ' · ' + esc(dayRel(a.date)) + ' ' + pad(from) + '–' + pad(to) + '</span>' + pill + '</div>' +
-        '<h3 class="k2n">' + esc(name) + '</h3><div class="k2s">' + esc(adLine(k, f, spot)) + '</div>' + adChart(sp, a, from, to) + '</div>' + (a.date === S.today ? adLive(slug, k) : '') +
-      '<div class="ad-sts">' + stats + '</div>' +
-      '<div class="k2c">' + (c ? faces(c) : '') + '<p><b>' + esc(t) + '</b>' + esc(sub) + '</p></div>' + (c && a.rank < 2 ? whyFit(c, 'scwhy k2fit') : '') + (warn ? '<div class="k2w">' + esc(warn) + '</div>' : '') +
-      '<div class="ad-f"><button class="ad-go" ' + attrs + '>' + esc(btn) + '</button>' +
-      '<button class="ad-cx" data-act="spotat" data-spot="' + esc(slug) + '" data-date="' + a.date + '">CONDITIONS, HOUR BY HOUR →</button></div></article>';
+    var best = i === 0 && f && f.score >= 8;   // the star: the best one, first in the row
+    var day = (a.date === S.today ? 'TODAY' : FX.dayName(a.date, S.today).slice(0, 3).toUpperCase()) + ' ' + pad(from) + ':00';
+    var meta = [f ? (f.label || '').toUpperCase() : '', windy(k) && f ? 'GUSTS ' + f.g : f && f.temp != null ? f.temp + '°C' : '', min ? min + ' MIN AWAY' : ''].filter(Boolean).join(' · ');
+    return '<article class="ad oc' + (a.mine ? ' mine' : '') + (a.rank >= 2 ? ' off' : '') + '" data-date="' + a.date + '" aria-label="' + esc(SPORT[k].name + ', ' + name + ', ' + dayRel(a.date)) + '">' +
+      '<div class="oc-b"><div class="oc-t s-' + k + '">' + tile(k, 30).replace('<rect width="48" height="48" fill="', '<rect width="48" height="48" fill-opacity="0" fill="') + '<span>' + (OC_WORDS[k] || esc(SPORT[k].name.toUpperCase())) + '</span></div>' +
+        '<div class="oc-a s-' + k + '">' + ocArt(k) + '<h3 class="oc-n">' + esc(name) + '</h3>' + (best ? '<span class="oc-c" title="One of the best windows this week">' + OC_STAR + '</span>' : '') + '</div></div>' +
+      '<div class="oc-r"><div class="oc-m"><span class="oc-d">' + OC_CAL + esc(day) + '</span><span class="oc-p">' + esc(key) + '</span><span>' + (c ? c.going + ' GOING' : 'NO CREW YET') + '</span></div>' +
+        '<button class="ad-go" ' + attrs + '>' + esc(btn) + '</button></div>' +
+      '<div class="oc-x">' + (meta ? '<div class="oc-meta">' + esc(meta) + '</div>' : '') +
+        '<div class="k2c">' + (c ? faces(c) : '') + '<p><b>' + esc(t) + '</b>' + esc(sub) + '</p></div>' + (c && a.rank < 2 ? whyFit(c, 'scwhy k2fit') : '') +
+        (a.date === S.today ? adLive(slug, k) : '') + (warn ? '<div class="k2w">' + esc(warn) + '</div>' : '') +
+        '<button class="ad-cx" data-act="spotat" data-spot="' + esc(slug) + '" data-date="' + a.date + '">CONDITIONS, HOUR BY HOUR →</button></div></article>';
   }
   // the last card: nothing fits
   function adEnd() {

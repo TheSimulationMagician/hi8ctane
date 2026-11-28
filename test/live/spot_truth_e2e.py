@@ -42,8 +42,12 @@ with sync_playwright() as p:
     check('STRONGER THAN FORECAST' in t and 'ON 9, 10, 12 M' in t and '1 CHECKED IN WITH A CREW' in t and '2 BY LOCATION' in t, '...the wind against the forecast, the kites, and how each was checked')
     check('EXAMPLE.COM' not in V.inner_text('#sheet').upper(), '...no names, no emails')
     V.goto(BASE + '/'); V.wait_for_timeout(2500)
-    strip = V.locator('#sessions .ad.k2 .k2live')
-    check(strip.count() >= 1 and 'LIVE · ON' in strip.first.inner_text().upper() and '3 RIDERS AT THE SPOT' in strip.first.inner_text().upper(), "a card for today at that spot: LIVE · ON · 3 riders at the spot")
+    strip = V.locator('#sessions .ad.oc .k2live')
+    today = V.locator(f'#sessions .ad.oc[data-date="{sql("select hi8_today(\'amsterdam\')::text")}"] [data-spot="wijk-aan-zee"]')
+    if today.count():
+        check(strip.count() >= 1 and 'LIVE · ON' in strip.first.inner_text().upper() and '3 RIDERS AT THE SPOT' in strip.first.inner_text().upper(), "a card for today at that spot: LIVE · ON · 3 riders at the spot")
+    else:   # late in the day there is no card left for today: the strip has nowhere to go
+        check(strip.count() == 0, "no card for today at that spot at this hour, so no LIVE strip (it shows on today's cards only)")
     check('LIVE FROM 1 SPOT' in V.inner_text('#sessions .hb-h').upper(), 'the cards header: LIVE FROM 1 SPOT · LAST REPORT …')
 
     print('reporting')

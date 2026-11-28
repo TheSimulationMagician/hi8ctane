@@ -2544,3 +2544,42 @@ details.every[open] { padding: 0 12px 12px; } details.every[open] > summary { ma
 .pass-then { margin: 8px 12px 0; padding: 8px 12px; border: 2px dashed var(--ink); display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; }
 .pass-then small { flex-basis: 100%; font: 700 10px/1 var(--mono); letter-spacing: .6px; }
 .pass-then b { font: 400 16px/1.1 var(--word); flex: 1 1 auto; }
+
+/* ================================================================ card-first round 5: the simple card
+   From the October kite card: the sport's banner (sea: water blues, land: earth) with one simple figure, the spot;
+   then the day, the pink number that decides it, who's going, one button; a note under a dashed line. */
+.ad.oc { background: #F7F5EE; border: 3px solid var(--ink); box-shadow: 8px 8px 0 #121212; display: flex; flex-direction: column; }
+.ad.oc.mine { box-shadow: 8px 8px 0 var(--lime), 8px 8px 0 3px var(--ink); }
+.oc-b { position: relative; display: flex; height: 132px; border-bottom: 3px solid var(--ink); overflow: hidden; }
+.oc-t { width: 82px; flex: none; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; color: #fff; text-align: center; font: 400 11.5px/1.05 var(--word); letter-spacing: .5px; }
+.oc-t .tile { width: 32px; height: 32px; }
+.oc-a { position: relative; flex: 1; min-width: 0; overflow: hidden; }
+.oc-a::after { content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none; background: rgba(12,32,48,.34);
+  -webkit-mask: conic-gradient(#000 25%, transparent 0 100%) 0 0 / 7px 7px; mask: conic-gradient(#000 25%, transparent 0 100%) 0 0 / 7px 7px; }
+.oc-fig { position: absolute; right: 0; bottom: 0; height: 100%; width: 72%; overflow: visible; }
+.oc-n { position: absolute; z-index: 2; left: 12px; right: 10px; bottom: 11px; margin: 0; font: 400 17px/1.05 var(--word); letter-spacing: .8px; color: #fff; text-shadow: 2px 2px 0 rgba(0,0,0,.6), 0 0 6px rgba(0,0,0,.35); }
+.oc-c { position: absolute; z-index: 2; right: 0; top: 0; width: 40px; height: 40px; background: linear-gradient(225deg, #EB457B 50%, transparent 50%); }
+.oc-c svg { position: absolute; right: 5px; top: 5px; }
+/* the colours: tile = the banner's middle tone. Sea: blues and greens of water. Land: forest, clay. */
+.oc-t.s-kite { background: #367789; } .oc-a.s-kite { background: linear-gradient(160deg, #5AA0BB 0%, #3B6D87 48%, #1A3953 100%); }
+.oc-t.s-mtb { background: #4F6E3B; } .oc-a.s-mtb { background: linear-gradient(160deg, #93AE6F 0%, #567A42 48%, #24381C 100%); }
+.oc-t.s-mx { background: #B0602F; } .oc-a.s-mx { background: linear-gradient(160deg, #E0A56C 0%, #B0602F 48%, #5E3317 100%); }
+.oc-t.s-wing { background: #3D5E9A; } .oc-a.s-wing { background: linear-gradient(160deg, #7397CF 0%, #3D5E9A 48%, #1E2F57 100%); }
+.oc-t.s-surf { background: #23899A; } .oc-a.s-surf { background: linear-gradient(160deg, #5CC3CF 0%, #23899A 48%, #0F4B57 100%); }
+.oc-r { display: flex; align-items: center; gap: 10px; padding: 12px 12px 12px 14px; }
+.oc-m { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; font: 700 12.5px/1.2 var(--mono); letter-spacing: .6px; color: #333; }
+.oc-d { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+.oc-p { color: #EB457B; white-space: nowrap; }
+.ad.oc .ad-go { flex: none; width: auto; min-width: 104px; min-height: 48px; padding: 0 12px; background: var(--lime); color: var(--ink); border: 3px solid var(--ink); border-width: 3px 4px 5px 3px;
+  box-shadow: none; clip-path: polygon(6px 0, 100% 0, 100% 100%, 0 100%, 0 6px); font: 400 14px/1 var(--word); letter-spacing: 1.6px; }
+.ad.oc.mine .ad-go { background: #fff; color: #555; }
+.ad.oc.off .ad-go { background: #fff; }
+.ad.oc.off .oc-a, .ad.oc.off .oc-t { filter: saturate(.35); }
+.oc-x { margin-top: auto; border-top: 2px dashed #CFCFCF; background: #fff; padding: 10px 14px 6px; }
+.oc-meta { font: 700 10px/1.3 var(--mono); letter-spacing: .5px; color: var(--mute); margin-bottom: 8px; }
+.ad.oc .k2c { margin: 0; padding: 0 0 8px; border: 0; }
+.ad.oc .k2fit, .ad.oc .k2w, .ad.oc .k2live { margin: 0 0 8px; }
+.ad.oc .ad-cx { display: block; min-height: 40px; border: 0; background: none; padding: 0; text-align: left; font: 700 10.5px/1 var(--mono); letter-spacing: .5px; color: #555; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+@media (min-width: 640px) {
+  .oc-b { height: 150px; } .oc-t { width: 96px; font-size: 13px; } .oc-n { font-size: 20px; } .oc-m { font-size: 13.5px; }
+}

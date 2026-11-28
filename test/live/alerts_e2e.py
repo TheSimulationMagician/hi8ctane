@@ -76,7 +76,9 @@ with sync_playwright() as p:
     print('one tap')
     c3, R, eR = phone('Pixel 7', K['cy'], {'getting': 'seat', 'lv.kite': 'regular'})
     R.goto(BASE + '/'); R.wait_for_timeout(2500)
-    R.locator(f'#sessions [data-act=going][data-code="{today_crew}"]').first.click(); R.wait_for_selector('#joinForm'); R.wait_for_timeout(300)
+    # the card's button depends on the hour's forecast (I'M IN, or SEE WHY when it turns): open the crew from its link
+    R.goto(BASE + f'/?c={today_crew}'); R.wait_for_selector('#sheet.on'); R.wait_for_timeout(1500)
+    R.locator('.sh-foot [data-act=jfopen]').first.click(); R.wait_for_selector('#joinForm'); R.wait_for_timeout(300)
     # card-first: transport is never reused without a tap. Her level is kept; the way she gets there is the I'M IN
     check(R.locator('[data-act=jflevel][data-v=regular][aria-pressed=true]').count() == 1 and R.locator('[data-act=jfget][aria-pressed=true]').count() == 0, "a rider who's joined before: her level is kept, the way she gets there is not")
     R.locator('[data-act=jfget][data-v=seat]').click(); R.wait_for_timeout(2500)
